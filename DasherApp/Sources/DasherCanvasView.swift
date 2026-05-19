@@ -86,7 +86,7 @@ final class DasherCanvas: UIView {
     // MARK: - Hover input (eye gaze / pointer / assistive devices)
 
     @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
-        guard let vm = viewModel, vm.eyeGazeMode else { return }
+        guard let vm = viewModel, vm.pointerHoverEnabled else { return }
         let point = gesture.location(in: self)
 
         switch gesture.state {
@@ -96,8 +96,8 @@ final class DasherCanvas: UIView {
 
             let distance = hypot(point.x - lastHoverPoint.x, point.y - lastHoverPoint.y)
             if distance > dwellRadius {
-                resetDwell(point: point)
-            } else if !isDwelling {
+                startDwell(point: point)
+            } else if !isDwelling && vm.appLevelDwell {
                 startDwell(point: point)
             }
 
@@ -184,7 +184,7 @@ final class DasherCanvas: UIView {
 
         vm.outputText = vm.bridge.getOutputText()
 
-        if vm.eyeGazeMode && isDwelling && dwellProgress > 0 {
+        if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
             drawDwellIndicator(in: ctx)
         }
     }

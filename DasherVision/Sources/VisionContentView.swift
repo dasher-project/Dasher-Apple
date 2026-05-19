@@ -14,7 +14,7 @@ struct VisionContentView: View {
                     toolbarButton("doc.badge.plus") { viewModel.newMessage() }
                     toolbarButton(viewModel.isPlaying ? "pause.fill" : "play.fill", isAccent: true) { viewModel.togglePlay() }
                     Spacer()
-                    toolbarButton("eye.fill", isAccent: viewModel.eyeGazeMode) { viewModel.eyeGazeMode.toggle() }
+                    toolbarButton("eye.fill", isAccent: viewModel.pointerHoverEnabled) { viewModel.pointerHoverEnabled.toggle() }
                     toolbarButton("gearshape") { showSettings = true }
                 }
                 .padding(.horizontal, 24)

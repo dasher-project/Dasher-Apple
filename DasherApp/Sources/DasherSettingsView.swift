@@ -66,19 +66,30 @@ struct DasherSettingsView: View {
     private var inputSection: some View {
         Section {
             #if os(iOS) || os(visionOS)
-            Toggle(isOn: $viewModel.eyeGazeMode) {
+            Toggle(isOn: $viewModel.pointerHoverEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Eye Gaze Mode")
-                    Text("Pointer hover as input")
+                    Text("Pointer Hover Input")
+                    Text("Accept hover/pointer events as Dasher input. Enable for eye tracking or external pointers.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
             }
 
-            if viewModel.eyeGazeMode {
-                Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
-                    ForEach(DasherViewModel.dwellDurationOptions, id: \.1) { option in
-                        Text(option.0).tag(option.1)
+            if viewModel.pointerHoverEnabled {
+                Toggle(isOn: $viewModel.appLevelDwell) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("App-Level Dwell to Select")
+                        Text("Auto-select after fixating. Only enable if OS dwell is off.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+
+                if viewModel.appLevelDwell {
+                    Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
+                        ForEach(DasherViewModel.dwellDurationOptions, id: \.1) { option in
+                            Text(option.0).tag(option.1)
+                        }
                     }
                 }
             }

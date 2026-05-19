@@ -98,13 +98,13 @@ struct ContentView: View {
 
             Spacer()
 
-            Button(action: { viewModel.eyeGazeMode.toggle() }) {
-                Image(systemName: viewModel.eyeGazeMode ? "eye.fill" : "eye")
+            Button(action: { viewModel.pointerHoverEnabled.toggle() }) {
+                Image(systemName: viewModel.pointerHoverEnabled ? "eye.fill" : "eye")
                     .font(.system(size: 14))
-                    .foregroundColor(viewModel.eyeGazeMode ? .white : Color("BarText"))
+                    .foregroundColor(viewModel.pointerHoverEnabled ? .white : Color("BarText"))
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(viewModel.eyeGazeMode ? Color.blue : Color("ButtonBackground")))
+                    .background(RoundedRectangle(cornerRadius: 6).fill(viewModel.pointerHoverEnabled ? Color.blue : Color("ButtonBackground")))
             }
             .buttonStyle(.plain)
 

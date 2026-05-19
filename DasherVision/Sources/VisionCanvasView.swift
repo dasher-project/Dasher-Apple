@@ -71,7 +71,7 @@ final class VisionCanvas: UIView {
     // MARK: - Eye gaze input (native on visionOS — eyes = pointer)
 
     @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
-        guard let vm = viewModel, vm.eyeGazeMode else { return }
+        guard let vm = viewModel, vm.pointerHoverEnabled else { return }
         let point = gesture.location(in: self)
 
         switch gesture.state {
@@ -81,7 +81,7 @@ final class VisionCanvas: UIView {
             let distance = hypot(point.x - lastHoverPoint.x, point.y - lastHoverPoint.y)
             if distance > dwellRadius {
                 startDwell(point: point)
-            } else if !isDwelling {
+            } else if !isDwelling && vm.appLevelDwell {
                 startDwell(point: point)
             }
 
@@ -156,7 +156,7 @@ final class VisionCanvas: UIView {
 
         vm.outputText = vm.bridge.getOutputText()
 
-        if vm.eyeGazeMode && isDwelling && dwellProgress > 0 {
+        if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
             drawDwellIndicator(in: ctx)
         }
     }

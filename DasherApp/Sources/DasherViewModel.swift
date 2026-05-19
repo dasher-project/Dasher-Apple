@@ -6,7 +6,8 @@ class DasherViewModel: ObservableObject {
     @Published var isPlaying: Bool = true
     @Published var speed: Double = 1.0
     @Published var autoSpeed: Bool = false
-    @Published var eyeGazeMode: Bool = false
+    @Published var pointerHoverEnabled: Bool = false
+    @Published var appLevelDwell: Bool = false
     @Published var dwellDuration: Double = 0.5
 
     let bridge: DasherBridge
