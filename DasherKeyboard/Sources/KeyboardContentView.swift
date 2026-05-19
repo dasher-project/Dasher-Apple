@@ -5,33 +5,52 @@ struct KeyboardContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            GeometryReader { geo in
-                KeyboardCanvasView(viewModel: viewModel)
-            }
+            KeyboardCanvasView(viewModel: viewModel)
+
+            Divider()
 
             HStack(spacing: 8) {
-                Button(action: {
-                    let s = max(20, viewModel.bridge.speedPercent - 10)
-                    viewModel.bridge.setSpeedPercent(s)
-                }) {
-                    Text("-").frame(width: 28, height: 28)
+                Button(action: { viewModel.decreaseSpeed() }) {
+                    Image(systemName: "minus")
+                        .font(.system(size: 11, weight: .medium))
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color(white: 0.9)))
                 }
+                .buttonStyle(.plain)
+
                 Text("\(viewModel.bridge.speedPercent)%")
                     .font(.system(size: 12, design: .monospaced))
-                Button(action: {
-                    let s = min(400, viewModel.bridge.speedPercent + 10)
-                    viewModel.bridge.setSpeedPercent(s)
-                }) {
-                    Text("+").frame(width: 28, height: 28)
+                    .foregroundColor(.primary)
+
+                Button(action: { viewModel.increaseSpeed() }) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11, weight: .medium))
+                        .frame(width: 28, height: 28)
+                        .background(Circle().fill(Color(white: 0.9)))
                 }
+                .buttonStyle(.plain)
+
                 Spacer()
-                Button(action: { viewModel.advanceToNextInputMode() }) {
-                    Text("🌐").font(.system(size: 20))
+
+                Button(action: { viewModel.bridge.resetOutputText() }) {
+                    Image(systemName: "delete.left")
+                        .font(.system(size: 13))
+                        .frame(width: 32, height: 28)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(white: 0.9)))
                 }
+                .buttonStyle(.plain)
+
+                Button(action: { viewModel.advanceToNextInputMode() }) {
+                    Image(systemName: "globe")
+                        .font(.system(size: 15))
+                        .frame(width: 32, height: 28)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(white: 0.9)))
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color(red: 0.95, green: 0.95, blue: 0.95))
+            .background(Color(white: 0.95))
         }
     }
 }
@@ -90,6 +109,10 @@ final class KeyboardCanvas: UIView {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        viewModel?.bridge.mouseUp()
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         viewModel?.bridge.mouseUp()
     }
 

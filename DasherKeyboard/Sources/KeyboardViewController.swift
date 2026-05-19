@@ -1,6 +1,5 @@
 import UIKit
 import SwiftUI
-import DasherEngine
 
 class KeyboardViewController: UIInputViewController {
     private var hostingController: UIHostingController<KeyboardContentView>?
@@ -10,6 +9,9 @@ class KeyboardViewController: UIInputViewController {
         super.viewDidLoad()
 
         let vm = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
+        vm.onAdvanceInputMode = { [weak self] in
+            self?.advanceToNextInputMode()
+        }
         viewModel = vm
 
         let contentView = KeyboardContentView(viewModel: vm)
@@ -31,14 +33,6 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         viewModel?.setCanvasSize(view.bounds.size)
-    }
-
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-    }
-
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
     }
 
     required init?(coder: NSCoder) {

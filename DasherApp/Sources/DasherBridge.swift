@@ -43,6 +43,11 @@ class DasherBridge {
         dasher_mouse_up(ctx)
     }
 
+    func keyEvent(key: Int, pressed: Bool) {
+        guard let ctx = ctx else { return }
+        dasher_key_event(ctx, Int32(key), pressed ? 1 : 0)
+    }
+
     func frame(timeMs: Int64) -> DrawCommands? {
         guard let ctx = ctx else { return nil }
         var cmds: UnsafeMutablePointer<Int32>?

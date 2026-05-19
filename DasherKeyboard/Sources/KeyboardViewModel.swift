@@ -4,6 +4,7 @@ import SwiftUI
 class KeyboardViewModel: ObservableObject {
     let bridge: DasherBridge
     weak var textDocumentProxy: UITextDocumentProxy?
+    var onAdvanceInputMode: (() -> Void)?
 
     init(textDocumentProxy: UITextDocumentProxy) {
         self.textDocumentProxy = textDocumentProxy
@@ -15,5 +16,17 @@ class KeyboardViewModel: ObservableObject {
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
     }
 
-    func advanceToNextInputMode() {}
+    func advanceToNextInputMode() {
+        onAdvanceInputMode?()
+    }
+
+    func decreaseSpeed() {
+        let s = max(20, bridge.speedPercent - 10)
+        bridge.setSpeedPercent(s)
+    }
+
+    func increaseSpeed() {
+        let s = min(400, bridge.speedPercent + 10)
+        bridge.setSpeedPercent(s)
+    }
 }
