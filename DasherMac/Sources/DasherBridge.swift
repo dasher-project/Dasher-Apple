@@ -6,13 +6,83 @@ import UIKit
 import AppKit
 #endif
 
+// MARK: - Parameter types
+
+enum DasherParamType: Int {
+    case bool = 0, long = 1, string = 2, invalid = -1
+}
+
+enum DasherUIControl: Int {
+    case none = 0, `switch` = 1, slider = 2, step = 3, dropdown = 4, textField = 5
+}
+
+struct DasherParameterInfo {
+    let key: Int
+    let name: String
+    let desc: String
+    let group: String
+    let type: DasherParamType
+    let uiType: DasherUIControl
+    let minVal: Int
+    let maxVal: Int
+    let step: Int
+    let advanced: Bool
+
+    init(from raw: dasher_parameter_info) {
+        key = Int(raw.key)
+        name = String(cString: raw.name)
+        desc = String(cString: raw.desc)
+        group = String(cString: raw.group)
+        type = DasherParamType(rawValue: Int(raw.type)) ?? .invalid
+        uiType = DasherUIControl(rawValue: Int(raw.ui_type)) ?? .none
+        minVal = Int(raw.min_val)
+        maxVal = Int(raw.max_val)
+        step = Int(raw.step)
+        advanced = raw.advanced != 0
+    }
+}
+
+struct DasherPalette {
+    let name: String
+    let previewColors: [CGColor]
+}
+
+struct DasherAlphabet {
+    let name: String
+}
+
+// MARK: - Settings section grouping
+
+enum DasherSettingsSection: String, CaseIterable {
+    case input = "Input"
+    case language = "Language"
+    case appearance = "Appearance"
+    case speed = "Speed"
+    case output = "Output"
+    case advanced = "Advanced"
+    case other = "Other"
+
+    static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
+        if param.advanced { return .advanced }
+        return DasherSettingsSection(rawValue: param.group) ?? .other
+    }
+}
+
+// MARK: - Bridge
+
 @MainActor
 class DasherBridge {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
 
-    init(dataDir: String) {
-        ctx = dasher_create(dataDir)
+    private(set) var lastError: String?
+
+    init(dataDir: String, userDir: String? = nil) {
+        var errorMsg: UnsafeMutablePointer<CChar>?
+        ctx = dasher_create(dataDir, userDir, &errorMsg)
+        if let errorMsg = errorMsg {
+            lastError = String(cString: errorMsg)
+        }
     }
 
     deinit {
@@ -22,6 +92,8 @@ class DasherBridge {
     }
 
     var isReady: Bool { ctx != nil }
+
+    // MARK: - Core input/output
 
     func setScreenSize(width: Int, height: Int) {
         guard let ctx = ctx else { return }
@@ -85,6 +157,8 @@ class DasherBridge {
         lastOutputText = ""
     }
 
+    // MARK: - Convenience getters/setters
+
     var alphabetId: String {
         guard let ctx = ctx, let cStr = dasher_get_alphabet_id(ctx) else { return "" }
         return String(cString: cStr)
@@ -104,7 +178,142 @@ class DasherBridge {
         guard let ctx = ctx else { return }
         dasher_set_speed_percent(ctx, Int32(percent))
     }
+
+    // MARK: - Parameter schema
+
+    static var parameterCount: Int {
+        Int(dasher_get_parameter_count())
+    }
+
+    static func getParameterInfo(index: Int) -> DasherParameterInfo? {
+        var raw = dasher_parameter_info()
+        guard dasher_get_parameter_info(Int32(index), &raw) == 0 else { return nil }
+        return DasherParameterInfo(from: raw)
+    }
+
+    static var allParameters: [DasherParameterInfo] {
+        let count = parameterCount
+        return (0..<count).compactMap { getParameterInfo(index: $0) }
+    }
+
+    // MARK: - Enum values
+
+    static func getEnumValues(key: Int) -> [(name: String, value: Int)] {
+        let count = Int(dasher_get_parameter_enum_count(Int32(key)))
+        return (0..<count).compactMap { i -> (String, Int)? in
+            guard let namePtr = dasher_get_parameter_enum_name(Int32(key), Int32(i)) else { return nil }
+            let val = Int(dasher_get_parameter_enum_value(Int32(key), Int32(i)))
+            return (String(cString: namePtr), val)
+        }
+    }
+
+    func getStringValues(key: Int) -> [String] {
+        guard let ctx = ctx else { return [] }
+        let bufSize = 64
+        var buffer: [UnsafePointer<CChar>?] = Array(repeating: nil, count: bufSize)
+        let actual = Int(dasher_get_parameter_string_values(ctx, Int32(key), &buffer, Int32(bufSize)))
+        return (0..<min(actual, bufSize)).compactMap { ptr in
+            guard let p = buffer[ptr] else { return nil }
+            return String(cString: p)
+        }
+    }
+
+    // MARK: - Palettes
+
+    var paletteCount: Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_palette_count(ctx))
+    }
+
+    func getPalette(index: Int) -> DasherPalette? {
+        guard let ctx = ctx,
+              let namePtr = dasher_get_palette_name(ctx, Int32(index)) else { return nil }
+        let name = String(cString: namePtr)
+        var colors: [Int32] = [0, 0, 0, 0]
+        guard dasher_get_palette_preview_colors(ctx, Int32(index), &colors) == 0 else { return nil }
+        let cgColors = colors.map { argbToCGColor($0) }
+        return DasherPalette(name: name, previewColors: cgColors)
+    }
+
+    var allPalettes: [DasherPalette] {
+        guard let ctx = ctx else { return [] }
+        let count = Int(dasher_get_palette_count(ctx))
+        if count == 0 { return [] }
+        return (0..<count).compactMap { getPalette(index: $0) }
+    }
+
+    func setPalette(_ name: String) {
+        guard let ctx = ctx else { return }
+        dasher_set_palette(ctx, name)
+    }
+
+    var currentPalette: String {
+        guard let ctx = ctx, let cStr = dasher_get_current_palette(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+
+    // MARK: - Alphabets
+
+    var alphabetCount: Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_alphabet_count(ctx))
+    }
+
+    func getAlphabet(index: Int) -> DasherAlphabet? {
+        guard let ctx = ctx,
+              let namePtr = dasher_get_alphabet_name(ctx, Int32(index)) else { return nil }
+        return DasherAlphabet(name: String(cString: namePtr))
+    }
+
+    var allAlphabets: [DasherAlphabet] {
+        guard let ctx = ctx else { return [] }
+        let count = Int(dasher_get_alphabet_count(ctx))
+        if count == 0 { return [] }
+        return (0..<count).compactMap { getAlphabet(index: $0) }
+    }
+
+    // MARK: - Generic parameter get/set
+
+    func getBoolParameter(key: Int) -> Bool {
+        guard let ctx = ctx else { return false }
+        return dasher_get_bool_parameter(ctx, Int32(key)) != 0
+    }
+
+    func setBoolParameter(key: Int, value: Bool) {
+        guard let ctx = ctx else { return }
+        dasher_set_bool_parameter(ctx, Int32(key), value ? 1 : 0)
+    }
+
+    func getLongParameter(key: Int) -> Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_long_parameter(ctx, Int32(key)))
+    }
+
+    func setLongParameter(key: Int, value: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_long_parameter(ctx, Int32(key), Int(value))
+    }
+
+    func getStringParameter(key: Int) -> String {
+        guard let ctx = ctx,
+              let cStr = dasher_get_string_parameter(ctx, Int32(key)) else { return "" }
+        return String(cString: cStr)
+    }
+
+    func setStringParameter(key: Int, value: String) {
+        guard let ctx = ctx else { return }
+        dasher_set_string_parameter(ctx, Int32(key), value)
+    }
+
+    // MARK: - Persistence
+
+    func saveSettings() {
+        guard let ctx = ctx else { return }
+        dasher_save_settings(ctx)
+    }
 }
+
+// MARK: - Draw commands
 
 struct DrawCommands {
     let commands: UnsafeMutablePointer<Int32>
@@ -119,6 +328,8 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
             blue: CGFloat(argb & 0xFF) / 255.0,
             alpha: CGFloat((argb >> 24) & 0xFF) / 255.0)
 }
+
+// MARK: - UIKit rendering
 
 #if canImport(UIKit)
 extension DrawCommands {

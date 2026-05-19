@@ -153,21 +153,7 @@ struct ContentView: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
-                ForEach(0..<viewModel.colourPresets.count, id: \.self) { index in
-                    let preset = viewModel.colourPresets[index]
-                    Button(action: { viewModel.selectedColourIndex = index }) {
-                        Circle()
-                            .fill(preset.1)
-                            .frame(width: 18, height: 18)
-                            .overlay(
-                                Circle()
-                                    .stroke(viewModel.selectedColourIndex == index ? Color("AccentColor") : Color.clear, lineWidth: 2)
-                            )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
+            PaletteBarPicker(bridge: viewModel.bridge)
         }
         .padding(.horizontal, 14)
         .background(Color("BarBackground"))

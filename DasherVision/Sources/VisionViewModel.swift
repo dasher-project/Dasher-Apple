@@ -1,12 +1,12 @@
 import SwiftUI
+import UIKit
 
 @MainActor
-class DasherViewModel: ObservableObject {
+class VisionViewModel: ObservableObject {
     @Published var outputText: String = ""
     @Published var isPlaying: Bool = true
     @Published var speed: Double = 1.0
-    @Published var autoSpeed: Bool = false
-    @Published var eyeGazeMode: Bool = false
+    @Published var eyeGazeMode: Bool = true
     @Published var dwellDuration: Double = 0.5
 
     let bridge: DasherBridge
@@ -21,9 +21,7 @@ class DasherViewModel: ObservableObject {
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
-        let userPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first
-        self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
-        bridge.setScreenSize(width: 800, height: 600)
+        self.bridge = DasherBridge(dataDir: dataPath)
     }
 
     func setCanvasSize(_ size: CGSize) {
@@ -36,10 +34,6 @@ class DasherViewModel: ObservableObject {
 
     func handleTouch(at point: CGPoint) {
         bridge.mouseDown()
-        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
-    }
-
-    func handleTouchMove(at point: CGPoint) {
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
@@ -66,5 +60,9 @@ class DasherViewModel: ObservableObject {
         let newSpeed = max(bridge.speedPercent - 10, 20)
         bridge.setSpeedPercent(newSpeed)
         speed = Double(newSpeed) / 100.0
+    }
+
+    func copyOutput() {
+        UIPasteboard.general.string = outputText
     }
 }
