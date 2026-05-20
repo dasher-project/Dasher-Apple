@@ -13,7 +13,12 @@ enum DasherParamType: Int {
 }
 
 enum DasherUIControl: Int {
-    case none = 0, `switch` = 1, slider = 2, step = 3, dropdown = 4, textField = 5
+    case `switch` = 0
+    case textField = 1
+    case slider = 2
+    case dropdown = 3
+    case step = 4
+    case none = 5
 }
 
 struct DasherParameterInfo {
@@ -21,6 +26,7 @@ struct DasherParameterInfo {
     let name: String
     let desc: String
     let group: String
+    let subgroup: String
     let type: DasherParamType
     let uiType: DasherUIControl
     let minVal: Int
@@ -33,6 +39,7 @@ struct DasherParameterInfo {
         name = String(cString: raw.name)
         desc = String(cString: raw.desc)
         group = String(cString: raw.group)
+        subgroup = String(cString: raw.subgroup)
         type = DasherParamType(rawValue: Int(raw.type)) ?? .invalid
         uiType = DasherUIControl(rawValue: Int(raw.ui_type)) ?? .none
         minVal = Int(raw.min_val)
@@ -40,6 +47,10 @@ struct DasherParameterInfo {
         step = Int(raw.step)
         advanced = raw.advanced != 0
     }
+}
+
+extension DasherParameterInfo: Identifiable {
+    var id: Int { key }
 }
 
 struct DasherPalette {
@@ -54,17 +65,15 @@ struct DasherAlphabet {
 // MARK: - Settings section grouping
 
 enum DasherSettingsSection: String, CaseIterable {
+    case customization = "Customization"
     case input = "Input"
     case language = "Language"
-    case appearance = "Appearance"
-    case speed = "Speed"
     case output = "Output"
-    case advanced = "Advanced"
-    case other = "Other"
+    case gameMode = "Game Mode"
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
-        if param.advanced { return .advanced }
-        return DasherSettingsSection(rawValue: param.group) ?? .other
+        if param.advanced { return .input }
+        return DasherSettingsSection(rawValue: param.group) ?? .input
     }
 }
 
@@ -75,6 +84,9 @@ class DasherBridge {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
 
+    var onOutput: ((String) -> Void)?
+    var onDelete: ((String) -> Void)?
+
     private(set) var lastError: String?
 
     init(dataDir: String, userDir: String? = nil) {
@@ -82,6 +94,19 @@ class DasherBridge {
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
             lastError = String(cString: errorMsg)
+        }
+        if let ctx = ctx {
+            let retained = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_output_callback(ctx, { eventType, text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                if eventType == 0 {
+                    instance.onOutput?(str)
+                } else if eventType == 1 {
+                    instance.onDelete?(str)
+                }
+            }, retained)
         }
     }
 

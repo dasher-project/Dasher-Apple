@@ -11,12 +11,49 @@ class MacDasherViewModel: ObservableObject {
     @Published var selectedColourIndex: Int = 0
     @Published var showShareSheet = false
     @Published var showOpenFile = false
+    @Published var outputMode: OutputMode = .right {
+        didSet {
+            directMode = (outputMode == .direct)
+            showMessagePane = (outputMode != .direct)
+        }
+    }
+    @Published var directMode: Bool = false {
+        didSet { updateDirectMode() }
+    }
 
     let bridge: DasherBridge
+    let directService = DirectModeService()
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
-        self.bridge = DasherBridge(dataDir: dataPath)
+        let userPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
+        bridge.setScreenSize(width: 900, height: 600)
+
+        bridge.onOutput = { [weak self] text in
+            guard let self else { return }
+            if self.directMode {
+                self.directService.injectText(text)
+            }
+            self.outputText = self.bridge.getOutputText()
+        }
+
+        bridge.onDelete = { [weak self] text in
+            guard let self else { return }
+            if self.directMode {
+                self.directService.injectDelete(count: text.count)
+            }
+            self.outputText = self.bridge.getOutputText()
+        }
+    }
+
+    private func updateDirectMode() {
+        if directMode {
+            directService.checkAccessibility()
+            directService.startWatching()
+        } else {
+            directService.stopWatching()
+        }
     }
 
     func setCanvasSize(_ size: CGSize) {
@@ -73,4 +110,22 @@ class MacDasherViewModel: ObservableObject {
         ("2", Color(red: 1.0, green: 0.82, blue: 0.40)),
         ("3", Color(red: 0.95, green: 0.91, blue: 0.35)),
     ]
+}
+
+enum OutputMode: String, CaseIterable {
+    case right = "Right side"
+    case left = "Left side"
+    case bottom = "Bottom"
+    case top = "Top"
+    case direct = "Direct Mode"
+
+    var icon: String {
+        switch self {
+        case .right: return "sidebar.right"
+        case .left: return "sidebar.left"
+        case .bottom: return "rectangle.split.1x2"
+        case .top: return "rectangle.split.1x2"
+        case .direct: return "keyboard"
+        }
+    }
 }
