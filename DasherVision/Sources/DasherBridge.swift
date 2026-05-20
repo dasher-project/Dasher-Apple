@@ -311,6 +311,28 @@ class DasherBridge {
         guard let ctx = ctx else { return }
         dasher_save_settings(ctx)
     }
+
+    // MARK: - Locale
+
+    var locale: String {
+        guard let ctx = ctx, let cStr = dasher_get_locale(ctx) else { return "en" }
+        return String(cString: cStr)
+    }
+
+    func setLocale(_ code: String) -> Bool {
+        guard let ctx = ctx else { return false }
+        return dasher_set_locale(ctx, code) == 0
+    }
+
+    func getLocalizedString(_ key: String) -> String? {
+        guard let ctx = ctx, let cStr = dasher_get_localized_string(ctx, key) else { return nil }
+        return String(cString: cStr)
+    }
+
+    func setStringOverride(key: String, value: String?) {
+        guard let ctx = ctx else { return }
+        dasher_set_string_override(ctx, key, value)
+    }
 }
 
 // MARK: - Draw commands

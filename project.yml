@@ -94,6 +94,12 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
+    preBuildScripts:
+      - name: Copy Locale Strings
+        basedOnDependencyAnalysis: false
+        script: |
+          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
+          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.dasherproject.Dasher
@@ -126,6 +132,12 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
+    preBuildScripts:
+      - name: Copy Locale Strings
+        basedOnDependencyAnalysis: false
+        script: |
+          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
+          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.dasherproject.Dasher.Keyboard
@@ -160,6 +172,12 @@ targets:
         link: true
       - target: pugixml_macos
         link: true
+    preBuildScripts:
+      - name: Copy Locale Strings
+        basedOnDependencyAnalysis: false
+        script: |
+          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
+          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.dasherproject.Dasher.macOS
@@ -192,6 +210,12 @@ targets:
         link: true
       - target: pugixml_visionos
         link: true
+    preBuildScripts:
+      - name: Copy Locale Strings
+        basedOnDependencyAnalysis: false
+        script: |
+          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
+          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: org.dasherproject.Dasher.visionOS

@@ -5,6 +5,41 @@ struct DasherSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var parameters: [DasherParameterInfo] = []
     @State private var showAdvanced: Bool = false
+    @State private var selectedLocale: String = "en"
+    @State private var currentInputFilter: String = ""
+
+    private let availableLocales: [(code: String, name: String)] = [
+        ("en", "English"),
+        ("de", "Deutsch"),
+        ("es", "Español"),
+        ("fr", "Français"),
+        ("it", "Italiano"),
+        ("pt", "Português (BR)"),
+        ("pt-PT", "Português (PT)"),
+        ("zh-CN", "中文"),
+        ("ar", "العربية")
+    ]
+
+    private static let spInputFilter = 103 // SP_INPUT_FILTER enum value
+
+    private let filterToSubgroup: [String: Set<String>] = [
+        "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons"],
+        "Press Mode": ["CPressFilter"],
+        "Smoothing Mode": ["CSmoothingFilter", "CPressFilter"],
+        "Stylus Control": ["CStylusFilter"],
+        "Click Mode": ["CClickFilter"],
+        "Button Mode": ["CButtonMode", "CDasherButtons"],
+        "Direct Mode": ["CButtonMode", "CDasherButtons"],
+        "Menu Mode": ["CButtonMode", "CDasherButtons"],
+        "Alternating Direct Mode": ["CButtonMode", "CDasherButtons"],
+        "Compass Mode": ["CCompassMode"],
+        "One Button Mode": ["COneButtonFilter", "CStaticFilter"],
+        "One Button Dynamic Mode": ["COneButtonFilter"],
+        "Two Button Dynamic Mode": ["CTwoButtonDynamicFilter"],
+        "Two Push Dynamic Mode": ["CTwoPushDynamicFilter"],
+        "Button Dynamic Mode": ["CDynamicButtons"],
+        "Multi-Press Mode": ["CButtonMultiPress"],
+    ]
 
     private let sectionIcons: [String: String] = [
         "Input": "cursorarrow.motionlines",
@@ -21,6 +56,7 @@ struct DasherSettingsView: View {
     var body: some View {
         NavigationView {
             List {
+                localeSection
                 inputSection
 
                 ForEach([DasherSettingsSection.language, .appearance, .speed, .output, .other], id: \.rawValue) { section in
@@ -53,12 +89,45 @@ struct DasherSettingsView: View {
             }
         }
         .onAppear {
+            selectedLocale = viewModel.bridge.locale
+            currentInputFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter)
+            parameters = DasherBridge.allParameters
+        }
+        .onChange(of: currentInputFilter) { _ in
             parameters = DasherBridge.allParameters
         }
     }
 
+    private var activeSubgroups: Set<String> {
+        let currentFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter) // SP_INPUT_FILTER
+        return filterToSubgroup[currentFilter] ?? []
+    }
+
     private func parameters(for section: DasherSettingsSection) -> [DasherParameterInfo] {
-        parameters.filter { DasherSettingsSection.section(for: $0) == section }
+        parameters.filter { param in
+            guard DasherSettingsSection.section(for: param) == section else { return false }
+            if param.subgroup.isEmpty { return true }
+            return activeSubgroups.contains(param.subgroup)
+        }
+    }
+
+    // MARK: - Locale
+
+    private var localeSection: some View {
+        Section {
+            Picker("Language", selection: $selectedLocale) {
+                ForEach(availableLocales, id: \.code) { loc in
+                    Text(loc.name).tag(loc.code)
+                }
+            }
+            .onChange(of: selectedLocale) { newLocale in
+                if viewModel.bridge.setLocale(newLocale) {
+                    parameters = DasherBridge.allParameters
+                }
+            }
+        } header: {
+            Label("Language", systemImage: "globe")
+        }
     }
 
     // MARK: - Input (with platform-specific eye gaze)
@@ -284,7 +353,10 @@ struct DasherSettingsView: View {
         if param.uiType == .dropdown && !stringValues.isEmpty {
             let binding = Binding<String>(
                 get: { viewModel.bridge.getStringParameter(key: param.key) },
-                set: { viewModel.bridge.setStringParameter(key: param.key, value: $0) }
+                set: { newValue in
+                    viewModel.bridge.setStringParameter(key: param.key, value: newValue)
+                    if param.key == Self.spInputFilter { currentInputFilter = newValue }
+                }
             )
             Picker(param.name, selection: binding) {
                 ForEach(stringValues, id: \.self) { value in
@@ -296,7 +368,10 @@ struct DasherSettingsView: View {
             if !enumVals.isEmpty {
                 let binding = Binding<Int>(
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
-                    set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                    set: { newValue in
+                        viewModel.bridge.setLongParameter(key: param.key, value: newValue)
+                        if param.key == 14 { currentInputFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter) }
+                    }
                 )
                 Picker(param.name, selection: binding) {
                     ForEach(enumVals, id: \.value) { ev in

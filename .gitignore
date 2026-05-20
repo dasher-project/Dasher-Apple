@@ -14,3 +14,6 @@ build/
 *.o
 *.a
 *.framework
+
+# Auto-copied from DasherCore submodule by build phase
+DasherEngine/Resources/Data/Strings/
