@@ -7,6 +7,7 @@ struct ContentView: View {
     @State private var currentLayoutPosition = "Right"
     @State private var showShareSheet = false
     @State private var showOpenFile = false
+    @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
 
     var body: some View {
         GeometryReader { geometry in
@@ -60,8 +61,7 @@ struct ContentView: View {
         let isWide = geometry.size.width > 500
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
-        let textHeight = geometry.size.height / 4
-        let canvasHeight = geometry.size.height - barHeight - bottomBarHeight - textHeight
+        let contentHeight = geometry.size.height - barHeight - bottomBarHeight
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -70,12 +70,20 @@ struct ContentView: View {
             Divider().overlay(Color("BarBorder"))
 
             DasherCanvasView(viewModel: viewModel)
-                .frame(height: canvasHeight)
+                .frame(height: contentHeight * (1 - outputPaneFraction))
 
             Divider().overlay(Color("GridBorder"))
 
-            OutputTextView(viewModel: viewModel)
-                .frame(height: textHeight)
+            OutputTextView(
+                viewModel: viewModel,
+                paneSize: Binding(
+                    get: { contentHeight * outputPaneFraction },
+                    set: { outputPaneFraction = $0 / contentHeight }
+                ),
+                handleEdge: .top,
+                availableSpace: contentHeight
+            )
+            .frame(height: contentHeight * outputPaneFraction)
 
             Divider().overlay(Color("BarBorder"))
 
@@ -88,8 +96,7 @@ struct ContentView: View {
         let isWide = geometry.size.width > 500
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
-        let textHeight = geometry.size.height / 4
-        let canvasHeight = geometry.size.height - barHeight - bottomBarHeight - textHeight
+        let contentHeight = geometry.size.height - barHeight - bottomBarHeight
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -97,13 +104,21 @@ struct ContentView: View {
 
             Divider().overlay(Color("BarBorder"))
 
-            OutputTextView(viewModel: viewModel)
-                .frame(height: textHeight)
+            OutputTextView(
+                viewModel: viewModel,
+                paneSize: Binding(
+                    get: { contentHeight * outputPaneFraction },
+                    set: { outputPaneFraction = $0 / contentHeight }
+                ),
+                handleEdge: .bottom,
+                availableSpace: contentHeight
+            )
+            .frame(height: contentHeight * outputPaneFraction)
 
             Divider().overlay(Color("GridBorder"))
 
             DasherCanvasView(viewModel: viewModel)
-                .frame(height: canvasHeight)
+                .frame(height: contentHeight * (1 - outputPaneFraction))
 
             Divider().overlay(Color("BarBorder"))
 
@@ -116,8 +131,7 @@ struct ContentView: View {
         let isWide = geometry.size.width > 500
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
-        let textWidth = geometry.size.width * 2 / 9
-        let canvasWidth = geometry.size.width - textWidth
+        let contentWidth = geometry.size.width
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
 
         return VStack(spacing: 0) {
@@ -128,12 +142,20 @@ struct ContentView: View {
 
             HStack(spacing: 0) {
                 DasherCanvasView(viewModel: viewModel)
-                    .frame(width: canvasWidth, height: contentHeight)
+                    .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
 
                 Divider().overlay(Color("GridBorder"))
 
-                OutputTextView(viewModel: viewModel)
-                    .frame(width: textWidth, height: contentHeight)
+                OutputTextView(
+                    viewModel: viewModel,
+                    paneSize: Binding(
+                        get: { contentWidth * outputPaneFraction },
+                        set: { outputPaneFraction = $0 / contentWidth }
+                    ),
+                    handleEdge: .leading,
+                    availableSpace: contentWidth
+                )
+                .frame(width: contentWidth * outputPaneFraction, height: contentHeight)
             }
 
             Divider().overlay(Color("BarBorder"))
@@ -147,8 +169,7 @@ struct ContentView: View {
         let isWide = geometry.size.width > 500
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
-        let textWidth = geometry.size.width * 2 / 9
-        let canvasWidth = geometry.size.width - textWidth
+        let contentWidth = geometry.size.width
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
 
         return VStack(spacing: 0) {
@@ -158,13 +179,21 @@ struct ContentView: View {
             Divider().overlay(Color("BarBorder"))
 
             HStack(spacing: 0) {
-                OutputTextView(viewModel: viewModel)
-                    .frame(width: textWidth, height: contentHeight)
+                OutputTextView(
+                    viewModel: viewModel,
+                    paneSize: Binding(
+                        get: { contentWidth * outputPaneFraction },
+                        set: { outputPaneFraction = $0 / contentWidth }
+                    ),
+                    handleEdge: .trailing,
+                    availableSpace: contentWidth
+                )
+                .frame(width: contentWidth * outputPaneFraction, height: contentHeight)
 
                 Divider().overlay(Color("GridBorder"))
 
                 DasherCanvasView(viewModel: viewModel)
-                    .frame(width: canvasWidth, height: contentHeight)
+                    .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
             }
 
             Divider().overlay(Color("BarBorder"))

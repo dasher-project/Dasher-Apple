@@ -13,7 +13,12 @@ enum DasherParamType: Int {
 }
 
 enum DasherUIControl: Int {
-    case none = 0, `switch` = 1, slider = 2, step = 3, dropdown = 4, textField = 5
+    case `switch` = 0
+    case textField = 1
+    case slider = 2
+    case dropdown = 3
+    case step = 4
+    case none = 5
 }
 
 struct DasherParameterInfo {
@@ -56,17 +61,15 @@ struct DasherAlphabet {
 // MARK: - Settings section grouping
 
 enum DasherSettingsSection: String, CaseIterable {
+    case customization = "Customization"
     case input = "Input"
     case language = "Language"
-    case appearance = "Appearance"
-    case speed = "Speed"
     case output = "Output"
-    case advanced = "Advanced"
-    case other = "Other"
+    case gameMode = "Game Mode"
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
-        if param.advanced { return .advanced }
-        return DasherSettingsSection(rawValue: param.group) ?? .other
+        if param.advanced { return .input }
+        return DasherSettingsSection(rawValue: param.group) ?? .input
     }
 }
 
