@@ -15,8 +15,9 @@ struct OutputTextView: View {
                 if !viewModel.outputText.isEmpty {
                     Button(action: { copyText() }) {
                         Image(systemName: "doc.on.doc")
-                            .font(.system(size: 11))
+                            .font(.system(size: 12))
                             .foregroundColor(Color("MutedText"))
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
                 }

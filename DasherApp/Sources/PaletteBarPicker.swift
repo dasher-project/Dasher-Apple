@@ -7,7 +7,7 @@ struct PaletteBarPicker: View {
     private let maxVisible = 5
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 4) {
             ForEach(0..<min(palettes.count, maxVisible), id: \.self) { i in
                 let palette = palettes[i]
                 let isSelected = bridge.currentPalette == palette.name
@@ -19,14 +19,14 @@ struct PaletteBarPicker: View {
                                 .frame(width: 5, height: 5)
                         }
                     }
-                    .padding(2)
+                    .frame(width: 44, height: 44)
                     .background(
                         Circle()
-                            .fill(isSelected ? Color("AccentColor") : Color.clear)
+                            .fill(isSelected ? Color("AccentColor").opacity(0.2) : Color.clear)
                     )
                     .overlay(
                         Circle()
-                            .stroke(isSelected ? Color("AccentColor") : Color("Divider"), lineWidth: 1)
+                            .stroke(isSelected ? Color("AccentColor") : Color("Divider"), lineWidth: isSelected ? 2 : 1)
                     )
                 }
                 .buttonStyle(.plain)

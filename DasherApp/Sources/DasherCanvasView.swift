@@ -5,7 +5,6 @@ struct DasherCanvasView: View {
 
     var body: some View {
         DasherCanvasRepresentable(viewModel: viewModel)
-            .background(Color(UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0)))
     }
 }
 
@@ -38,7 +37,7 @@ final class DasherCanvas: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         isMultipleTouchEnabled = false
-        backgroundColor = UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0)
+        backgroundColor = UIColor(named: "CanvasBackground") ?? UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0)
 
         let hover = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
         addGestureRecognizer(hover)
@@ -119,7 +118,7 @@ final class DasherCanvas: UIView {
         dwellProgress = 0
 
         hoverTimer?.invalidate()
-        let dwellSeconds = viewModel?.dwellDuration ?? 0.5
+        let _ = viewModel?.dwellDuration ?? 0.5
         let tickInterval = 1.0 / 60.0
 
         hoverTimer = Timer.scheduledTimer(withTimeInterval: tickInterval, repeats: true) { [weak self] _ in
@@ -174,7 +173,7 @@ final class DasherCanvas: UIView {
     override func draw(_ rect: CGRect) {
         guard let ctx = UIGraphicsGetCurrentContext(), let vm = viewModel else { return }
 
-        ctx.setFillColor(UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0).cgColor)
+        ctx.setFillColor((UIColor(named: "CanvasBackground") ?? UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0)).cgColor)
         ctx.fill(rect)
 
         let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)

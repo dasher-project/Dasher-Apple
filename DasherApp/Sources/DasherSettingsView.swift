@@ -93,7 +93,7 @@ struct DasherSettingsView: View {
             currentInputFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter)
             parameters = DasherBridge.allParameters
         }
-        .onChange(of: currentInputFilter) { _ in
+        .onChange(of: currentInputFilter) {
             parameters = DasherBridge.allParameters
         }
     }
@@ -120,8 +120,8 @@ struct DasherSettingsView: View {
                     Text(loc.name).tag(loc.code)
                 }
             }
-            .onChange(of: selectedLocale) { newLocale in
-                if viewModel.bridge.setLocale(newLocale) {
+            .onChange(of: selectedLocale) {
+                if viewModel.bridge.setLocale(selectedLocale) {
                     parameters = DasherBridge.allParameters
                 }
             }
