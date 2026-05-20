@@ -207,8 +207,31 @@ struct MacContentView: View {
             }
 
             Divider()
-            bottomBar
+
+            HStack(spacing: 12) {
+                Image(systemName: "textbox")
+                    .font(.system(size: 11))
+                    .foregroundColor(.secondary)
+                Slider(value: $viewModel.directOpacity, in: 0.2...1.0, step: 0.05)
+                    .frame(width: 120)
+                Text("\(Int(viewModel.directOpacity * 100))%")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .frame(width: 32, alignment: .trailing)
+                Spacer()
+                speedStepper
+                Spacer()
+                speechPicker
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 44)
+            .background(.ultraThinMaterial)
         }
+        .background(
+            VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
+                .opacity(viewModel.directOpacity)
+                .ignoresSafeArea()
+        )
     }
 
     private var targetAppIndicator: some View {
@@ -399,11 +422,13 @@ struct MacContentView: View {
             if floating {
                 window.level = .floating
                 window.isOpaque = false
+                window.hasShadow = false
                 window.backgroundColor = .clear
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             } else {
                 window.level = .normal
                 window.isOpaque = true
+                window.hasShadow = true
                 window.backgroundColor = .windowBackgroundColor
                 window.collectionBehavior = []
             }
@@ -640,5 +665,24 @@ final class MacDasherCanvas: NSView {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
         }
         vm.outputText = vm.bridge.getOutputText()
+    }
+}
+
+struct VisualEffectBlur: NSViewRepresentable {
+    let material: NSVisualEffectView.Material
+    let blendingMode: NSVisualEffectView.BlendingMode
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .active
+        view.wantsLayer = true
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
     }
 }

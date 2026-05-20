@@ -20,6 +20,7 @@ class MacDasherViewModel: ObservableObject {
     @Published var directMode: Bool = false {
         didSet { updateDirectMode() }
     }
+    @Published var directOpacity: Double = 0.75
 
     let bridge: DasherBridge
     let directService = DirectModeService()

@@ -29,7 +29,7 @@ struct DasherMacApp: App {
                     }
                 }
         }
-        .windowStyle(.titleBar)
+        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 900, height: 600)
         .commands {
             CommandGroup(replacing: .newItem) {
