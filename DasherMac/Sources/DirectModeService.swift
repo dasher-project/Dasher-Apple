@@ -8,6 +8,7 @@ class DirectModeService: ObservableObject {
     @Published var targetAppName: String = ""
 
     private var frontmostObserver: Any?
+    private var pollTimer: Timer?
 
     func checkAccessibility() {
         hasAccessibilityPermission = AXIsProcessTrustedWithOptions(
@@ -19,6 +20,25 @@ class DirectModeService: ObservableObject {
         hasAccessibilityPermission = AXIsProcessTrustedWithOptions(
             [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): true] as CFDictionary
         )
+    }
+
+    func startPolling() {
+        stopPolling()
+        checkAccessibility()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
+            guard let self else { return }
+            let trusted = AXIsProcessTrustedWithOptions(
+                [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
+            )
+            if trusted != self.hasAccessibilityPermission {
+                self.hasAccessibilityPermission = trusted
+            }
+        }
+    }
+
+    func stopPolling() {
+        pollTimer?.invalidate()
+        pollTimer = nil
     }
 
     func startWatching() {

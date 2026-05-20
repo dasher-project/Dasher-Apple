@@ -49,9 +49,10 @@ class MacDasherViewModel: ObservableObject {
 
     private func updateDirectMode() {
         if directMode {
-            directService.checkAccessibility()
+            directService.startPolling()
             directService.startWatching()
         } else {
+            directService.stopPolling()
             directService.stopWatching()
         }
     }
