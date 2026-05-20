@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct MacContentView: View {
-    @StateObject private var viewModel = MacDasherViewModel()
+    @ObservedObject var viewModel: MacDasherViewModel
 
     var body: some View {
         VStack(spacing: 0) {
@@ -130,11 +130,17 @@ final class MacDasherCanvas: NSView {
         ctx.setFillColor(CGColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0))
         ctx.fill(dirtyRect)
 
-        let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
-        if let cmds = vm.bridge.frame(timeMs: timeMs) {
-            cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
+        if vm.isPlaying {
+            let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
+            if let cmds = vm.bridge.frame(timeMs: timeMs) {
+                cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
+            }
+            vm.outputText = vm.bridge.getOutputText()
+        } else {
+            let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
+            if let cmds = vm.bridge.frame(timeMs: timeMs) {
+                cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
+            }
         }
-
-        vm.outputText = vm.bridge.getOutputText()
     }
 }
