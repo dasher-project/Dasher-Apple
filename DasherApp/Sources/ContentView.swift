@@ -1,27 +1,64 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var viewModel = DasherViewModel()
     @State private var showSettings = false
+    @State private var currentLayoutPosition = "Right"
+    @State private var showShareSheet = false
+    @State private var showOpenFile = false
 
     var body: some View {
         GeometryReader { geometry in
-            let isLandscape = geometry.size.width > geometry.size.height
+            let isPortrait = geometry.size.width <= geometry.size.height
 
-            if isLandscape {
-                landscapeLayout(geometry: geometry)
+            if isPortrait {
+                bottomTextLayout(geometry: geometry)
+            } else if currentLayoutPosition == "Left" {
+                leftTextLayout(geometry: geometry)
+            } else if currentLayoutPosition == "Bottom" {
+                bottomTextLayout(geometry: geometry)
+            } else if currentLayoutPosition == "Top" {
+                topTextLayout(geometry: geometry)
             } else {
-                portraitLayout(geometry: geometry)
+                rightTextLayout(geometry: geometry)
             }
         }
         .background(Color("BarBackground").ignoresSafeArea())
         .sheet(isPresented: $showSettings) {
             DasherSettingsView(viewModel: viewModel)
         }
+        .sheet(isPresented: $showShareSheet) {
+            ShareSheet(activityItems: [viewModel.shareText])
+        }
+        .fileImporter(
+            isPresented: $showOpenFile,
+            allowedContentTypes: [.plainText],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    if let text = try? String(contentsOf: url, encoding: .utf8) {
+                        viewModel.openText(text)
+                    }
+                }
+            case .failure:
+                break
+            }
+        }
+        .onChange(of: viewModel.importedText) { _, newText in
+            if let text = newText {
+                viewModel.importedText = nil
+            }
+        }
     }
 
-    private func portraitLayout(geometry: GeometryProxy) -> some View {
-        let barHeight: CGFloat = 44
+    // MARK: - Layouts
+
+    private func bottomTextLayout(geometry: GeometryProxy) -> some View {
+        let isWide = geometry.size.width > 500
+        let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
         let textHeight = geometry.size.height / 4
         let canvasHeight = geometry.size.height - barHeight - bottomBarHeight - textHeight
@@ -29,6 +66,8 @@ struct ContentView: View {
         return VStack(spacing: 0) {
             toolbarBar
                 .frame(height: barHeight)
+
+            Divider().overlay(Color("BarBorder"))
 
             DasherCanvasView(viewModel: viewModel)
                 .frame(height: canvasHeight)
@@ -45,8 +84,37 @@ struct ContentView: View {
         }
     }
 
-    private func landscapeLayout(geometry: GeometryProxy) -> some View {
-        let barHeight: CGFloat = 44
+    private func topTextLayout(geometry: GeometryProxy) -> some View {
+        let isWide = geometry.size.width > 500
+        let barHeight: CGFloat = isWide ? 64 : 44
+        let bottomBarHeight: CGFloat = 44
+        let textHeight = geometry.size.height / 4
+        let canvasHeight = geometry.size.height - barHeight - bottomBarHeight - textHeight
+
+        return VStack(spacing: 0) {
+            toolbarBar
+                .frame(height: barHeight)
+
+            Divider().overlay(Color("BarBorder"))
+
+            OutputTextView(viewModel: viewModel)
+                .frame(height: textHeight)
+
+            Divider().overlay(Color("GridBorder"))
+
+            DasherCanvasView(viewModel: viewModel)
+                .frame(height: canvasHeight)
+
+            Divider().overlay(Color("BarBorder"))
+
+            bottomBar
+                .frame(height: bottomBarHeight)
+        }
+    }
+
+    private func rightTextLayout(geometry: GeometryProxy) -> some View {
+        let isWide = geometry.size.width > 500
+        let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
         let textWidth = geometry.size.width * 2 / 9
         let canvasWidth = geometry.size.width - textWidth
@@ -55,6 +123,39 @@ struct ContentView: View {
         return VStack(spacing: 0) {
             toolbarBar
                 .frame(height: barHeight)
+
+            Divider().overlay(Color("BarBorder"))
+
+            HStack(spacing: 0) {
+                DasherCanvasView(viewModel: viewModel)
+                    .frame(width: canvasWidth, height: contentHeight)
+
+                Divider().overlay(Color("GridBorder"))
+
+                OutputTextView(viewModel: viewModel)
+                    .frame(width: textWidth, height: contentHeight)
+            }
+
+            Divider().overlay(Color("BarBorder"))
+
+            bottomBar
+                .frame(height: bottomBarHeight)
+        }
+    }
+
+    private func leftTextLayout(geometry: GeometryProxy) -> some View {
+        let isWide = geometry.size.width > 500
+        let barHeight: CGFloat = isWide ? 64 : 44
+        let bottomBarHeight: CGFloat = 44
+        let textWidth = geometry.size.width * 2 / 9
+        let canvasWidth = geometry.size.width - textWidth
+        let contentHeight = geometry.size.height - barHeight - bottomBarHeight
+
+        return VStack(spacing: 0) {
+            toolbarBar
+                .frame(height: barHeight)
+
+            Divider().overlay(Color("BarBorder"))
 
             HStack(spacing: 0) {
                 OutputTextView(viewModel: viewModel)
@@ -73,69 +174,173 @@ struct ContentView: View {
         }
     }
 
+    // MARK: - Top Toolbar
+
     private var toolbarBar: some View {
-        HStack(spacing: 8) {
-            Button(action: { viewModel.newMessage() }) {
-                Image(systemName: "doc.badge.plus")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color("DeepNavy"))
-                    .frame(width: 44, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color("ButtonBackground")))
-            }
-            .buttonStyle(.plain)
+        GeometryReader { geo in
+            let isWide = geo.size.width > 500
+            let barHeight: CGFloat = isWide ? 64 : 44
 
-            Button(action: { viewModel.togglePlay() }) {
-                Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 16))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color("AccentColor")))
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: isWide ? 6 : 4) {
+                    if isWide {
+                        toolbarButton(icon: "doc.badge.plus", label: "New") {
+                            viewModel.newMessage()
+                        }
+                        toolbarButton(icon: "folder", label: "Open") {
+                            showOpenFile = true
+                        }
+                        toolbarButton(icon: "square.and.arrow.down", label: "Save") {
+                            showShareSheet = true
+                        }
+                        barDivider
+                        toolbarButton(
+                            icon: viewModel.isPlaying ? "pause.fill" : "play.fill",
+                            label: viewModel.isPlaying ? "Pause" : "Play"
+                        ) {
+                            viewModel.togglePlay()
+                        }
+                        barDivider
+                        layoutPicker
+                        barDivider
+                        toolbarButton(icon: "slider.horizontal.3", label: "Prefs") {
+                            showSettings = true
+                        }
+                    } else {
+                        compactToolbarButton(icon: "doc.badge.plus") {
+                            viewModel.newMessage()
+                        }
+                        compactToolbarButton(icon: "folder") {
+                            showOpenFile = true
+                        }
+                        compactToolbarButton(icon: "square.and.arrow.down") {
+                            showShareSheet = true
+                        }
+                        barDivider
+                        compactToolbarButton(icon: viewModel.isPlaying ? "pause.fill" : "play.fill") {
+                            viewModel.togglePlay()
+                        }
+                        barDivider
+                        layoutPickerCompact
+                        barDivider
+                        compactToolbarButton(icon: "slider.horizontal.3") {
+                            showSettings = true
+                        }
+                    }
+                }
+                .padding(.horizontal, 10)
             }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            Button(action: { viewModel.pointerHoverEnabled.toggle() }) {
-                Image(systemName: viewModel.pointerHoverEnabled ? "eye.fill" : "eye")
-                    .font(.system(size: 16))
-                    .foregroundColor(viewModel.pointerHoverEnabled ? .white : Color("BarText"))
-                    .frame(width: 44, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(viewModel.pointerHoverEnabled ? Color("AccentColor") : Color("ButtonBackground")))
-            }
-            .buttonStyle(.plain)
-
-            Button(action: { showSettings = true }) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 16))
-                    .foregroundColor(Color("BarText"))
-                    .frame(width: 44, height: 44)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color("ButtonBackground")))
-            }
-            .buttonStyle(.plain)
+            .frame(height: barHeight)
+            .background(Color("BarBackground"))
         }
-        .padding(.horizontal, 14)
-        .background(Color("BarBackground"))
     }
 
-    private var bottomBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 0) {
-                alphabetPicker
-                barDivider
-                speedStepper
-                barDivider
-                learningToggle
-                barDivider
-                palettePicker
-                barDivider
-                fontPicker
-                barDivider
-                fontSizeStepper
-                barDivider
-                speechPicker
+    private func toolbarButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 16))
+                    .foregroundColor(Color("DeepNavy"))
+                Text(label)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundColor(Color("BarText"))
             }
-            .padding(.horizontal, 10)
+            .frame(width: 54, height: 52)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
         }
+        .buttonStyle(.plain)
+    }
+
+    private func compactToolbarButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 16))
+                .foregroundColor(Color("DeepNavy"))
+                .frame(width: 38, height: 38)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var layoutPicker: some View {
+        Menu {
+            Button("Right side") { currentLayoutPosition = "Right" }
+            Button("Left side") { currentLayoutPosition = "Left" }
+            Button("Bottom") { currentLayoutPosition = "Bottom" }
+            Button("Top") { currentLayoutPosition = "Top" }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: layoutIcon)
+                    .font(.system(size: 14))
+                    .foregroundColor(Color("DeepNavy"))
+
+                Text(currentLayoutPosition)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(Color("BarText"))
+
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(Color("MutedText"))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 52)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var layoutPickerCompact: some View {
+        Menu {
+            Button("Right side") { currentLayoutPosition = "Right" }
+            Button("Left side") { currentLayoutPosition = "Left" }
+            Button("Bottom") { currentLayoutPosition = "Bottom" }
+            Button("Top") { currentLayoutPosition = "Top" }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: layoutIcon)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color("DeepNavy"))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundColor(Color("MutedText"))
+            }
+            .frame(width: 38, height: 38)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var layoutIcon: String {
+        switch currentLayoutPosition {
+        case "Right": return "sidebar.right"
+        case "Left": return "sidebar.left"
+        case "Bottom": return "rectangle.split.1x2"
+        case "Top": return "rectangle.split.1x2"
+        default: return "sidebar.right"
+        }
+    }
+
+    // MARK: - Bottom Bar
+
+    private var bottomBar: some View {
+        HStack(spacing: 0) {
+            alphabetPicker
+            barDivider
+            speedStepper
+            barDivider
+            learningToggle
+            barDivider
+            palettePicker
+            barDivider
+            fontPicker
+            barDivider
+            fontSizeStepper
+            barDivider
+            speechPicker
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
         .frame(height: 44)
         .background(Color("BarBackground"))
     }
@@ -144,7 +349,7 @@ struct ContentView: View {
         Rectangle()
             .fill(Color("Divider"))
             .frame(width: 1, height: 24)
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 6)
     }
 
     private var alphabetPicker: some View {
@@ -185,10 +390,18 @@ struct ContentView: View {
             get: { viewModel.bridge.getBoolParameter(key: 15) },
             set: { viewModel.bridge.setBoolParameter(key: 15, value: $0) }
         )
-        return Toggle("Learning ", isOn: binding)
-            .font(.system(size: 12))
-            .toggleStyle(.switch)
-            .controlSize(.small)
+
+        return HStack(spacing: 6) {
+            Text("Learning")
+                .font(.system(size: 12))
+                .foregroundColor(Color("MutedText"))
+
+            Toggle("", isOn: binding)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+        .fixedSize()
     }
 
     private var palettePicker: some View {
@@ -200,14 +413,14 @@ struct ContentView: View {
                 }
             }
         } label: {
-            paletteSwatchIcon
-                .overlay(
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 7, weight: .medium))
-                        .foregroundColor(Color("MutedText"))
-                        .offset(x: 12, y: 8)
-                )
+            HStack(spacing: 4) {
+                paletteSwatchIcon
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7, weight: .medium))
+                    .foregroundColor(Color("MutedText"))
+            }
         }
+        .buttonStyle(.plain)
     }
 
     private var paletteSwatchIcon: some View {
@@ -314,6 +527,16 @@ struct ContentView: View {
                 .stroke(Color("Divider"), lineWidth: 1)
         )
     }
+}
+
+struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

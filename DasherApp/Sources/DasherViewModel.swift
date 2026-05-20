@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 @MainActor
 class DasherViewModel: ObservableObject {
@@ -9,6 +10,9 @@ class DasherViewModel: ObservableObject {
     @Published var pointerHoverEnabled: Bool = false
     @Published var appLevelDwell: Bool = false
     @Published var dwellDuration: Double = 0.5
+    @Published var showOpenFile = false
+    @Published var showShareSheet = false
+    @Published var importedText: String?
 
     let bridge: DasherBridge
 
@@ -32,19 +36,23 @@ class DasherViewModel: ObservableObject {
     }
 
     func handlePointerHover(at point: CGPoint) {
+        guard isPlaying else { return }
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
     func handleTouch(at point: CGPoint) {
+        guard isPlaying else { return }
         bridge.mouseDown()
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
     func handleTouchMove(at point: CGPoint) {
+        guard isPlaying else { return }
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
     func handleTouchEnd() {
+        guard isPlaying else { return }
         bridge.mouseUp()
     }
 
@@ -55,6 +63,15 @@ class DasherViewModel: ObservableObject {
     func newMessage() {
         bridge.resetOutputText()
         outputText = ""
+    }
+
+    func openText(_ text: String) {
+        bridge.resetOutputText()
+        outputText = text
+    }
+
+    var shareText: String {
+        outputText
     }
 
     func increaseSpeed() {

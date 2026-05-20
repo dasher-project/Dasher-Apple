@@ -58,6 +58,7 @@ final class DasherCanvas: UIView {
     }
 
     @objc private func tick(_ link: CADisplayLink) {
+        guard let vm = viewModel, vm.isPlaying else { return }
         setNeedsDisplay()
     }
 
@@ -65,21 +66,25 @@ final class DasherCanvas: UIView {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         cancelDwell()
+        guard let vm = viewModel, vm.isPlaying else { return }
         guard let touch = touches.first else { return }
-        viewModel?.handleTouch(at: touch.location(in: self))
+        vm.handleTouch(at: touch.location(in: self))
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let vm = viewModel, vm.isPlaying else { return }
         guard let touch = touches.first else { return }
-        viewModel?.handleTouchMove(at: touch.location(in: self))
+        vm.handleTouchMove(at: touch.location(in: self))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        viewModel?.handleTouchEnd()
+        guard let vm = viewModel, vm.isPlaying else { return }
+        vm.handleTouchEnd()
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        viewModel?.handleTouchEnd()
+        guard let vm = viewModel, vm.isPlaying else { return }
+        vm.handleTouchEnd()
     }
 
     // MARK: - Hover input (eye gaze / pointer / assistive devices)
@@ -176,12 +181,17 @@ final class DasherCanvas: UIView {
         ctx.setFillColor((UIColor(named: "CanvasBackground") ?? UIColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0)).cgColor)
         ctx.fill(rect)
 
-        let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
-        if let cmds = vm.bridge.frame(timeMs: timeMs) {
-            cmds.render(in: ctx, bounds: bounds)
+        if vm.isPlaying {
+            let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
+            if let cmds = vm.bridge.frame(timeMs: timeMs) {
+                cmds.render(in: ctx, bounds: bounds)
+            }
+            vm.outputText = vm.bridge.getOutputText()
+        } else {
+            if let cmds = vm.bridge.frame(timeMs: Int64(Date().timeIntervalSince1970 * 1000.0)) {
+                cmds.render(in: ctx, bounds: bounds)
+            }
         }
-
-        vm.outputText = vm.bridge.getOutputText()
 
         if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
             drawDwellIndicator(in: ctx)
