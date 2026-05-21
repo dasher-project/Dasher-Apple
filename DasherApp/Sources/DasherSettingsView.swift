@@ -125,6 +125,8 @@ struct DasherSettingsView: View {
             languageSection(params)
         case .output:
             outputSection(params)
+        case .speech:
+            speechSection
         case .gameMode:
             genericSection(params, icon: "gamecontroller")
         }
@@ -281,6 +283,14 @@ struct DasherSettingsView: View {
     }
 
     // MARK: - Generic
+
+    private var speechSection: some View {
+        Section {
+            SpeechSettingsView(service: SpeechService.shared)
+        } header: {
+            Label("Speech", systemImage: "speaker.wave.2")
+        }
+    }
 
     private func genericSection(_ params: [DasherParameterInfo], icon: String) -> some View {
         Section {

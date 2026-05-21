@@ -11,6 +11,9 @@ class VisionViewModel: ObservableObject {
     @Published var dwellDuration: Double = 0.5
 
     let bridge: DasherBridge
+    let speech = SpeechService.shared
+    private var lastSpokenText: String = ""
+    private var speechDebounceTask: Task<Void, Never>?
 
     static let dwellDurationOptions: [(String, Double)] = [
         ("0.3s", 0.3),
@@ -49,6 +52,20 @@ class VisionViewModel: ObservableObject {
     func newMessage() {
         bridge.resetOutputText()
         outputText = ""
+        lastSpokenText = ""
+    }
+
+    func checkSpeech() {
+        let text = bridge.getOutputText()
+        guard text != lastSpokenText, !text.isEmpty else { return }
+        lastSpokenText = text
+        guard bridge.getBoolParameter(key: 24) else { return }
+        speechDebounceTask?.cancel()
+        speechDebounceTask = Task {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            speech.speak(text)
+        }
     }
 
     func increaseSpeed() {

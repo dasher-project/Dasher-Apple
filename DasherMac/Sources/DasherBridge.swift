@@ -69,6 +69,7 @@ enum DasherSettingsSection: String, CaseIterable {
     case input = "Input"
     case language = "Language"
     case output = "Output"
+    case speech = "Speech"
     case gameMode = "Game Mode"
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {

@@ -8,6 +8,11 @@ options:
   createIntermediateGroups: true
   generateEmptyDirectories: true
 
+packages:
+  SwiftTTSWrapper:
+    url: https://github.com/aactools/swift-tts-wrapper
+    from: "1.0.1"
+
 settings:
   base:
     CLANG_CXX_LANGUAGE_STANDARD: c++17
@@ -86,6 +91,7 @@ targets:
       - path: DasherApp
         excludes:
           - "**/.gitkeep"
+      - path: DasherShared
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -94,6 +100,8 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
+      - package: SwiftTTSWrapper
+        product: SwiftTTSWrapper
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -164,6 +172,7 @@ targets:
       - path: DasherMac
         excludes:
           - "**/.gitkeep"
+      - path: DasherShared
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
       - path: DasherEngine/Resources/Data
@@ -174,6 +183,8 @@ targets:
         link: true
       - target: pugixml_macos
         link: true
+      - package: SwiftTTSWrapper
+        product: SwiftTTSWrapper
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -204,6 +215,7 @@ targets:
       - path: DasherVision
         excludes:
           - "**/.gitkeep"
+      - path: DasherShared
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -212,6 +224,8 @@ targets:
         link: true
       - target: pugixml_visionos
         link: true
+      - package: SwiftTTSWrapper
+        product: SwiftTTSWrapper
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false

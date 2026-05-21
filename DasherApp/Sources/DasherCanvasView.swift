@@ -187,6 +187,7 @@ final class DasherCanvas: UIView {
                 cmds.render(in: ctx, bounds: bounds)
             }
             vm.outputText = vm.bridge.getOutputText()
+            vm.checkSpeech()
         } else {
             if let cmds = vm.bridge.frame(timeMs: Int64(Date().timeIntervalSince1970 * 1000.0)) {
                 cmds.render(in: ctx, bounds: bounds)

@@ -24,6 +24,8 @@ class MacDasherViewModel: ObservableObject {
 
     let bridge: DasherBridge
     let directService = DirectModeService()
+    let speech = SpeechService.shared
+    private var speechDebounceTask: Task<Void, Never>?
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
@@ -37,6 +39,7 @@ class MacDasherViewModel: ObservableObject {
                 self.directService.injectText(text)
             }
             self.outputText = self.bridge.getOutputText()
+            self.triggerSpeechIfNeeded()
         }
 
         bridge.onDelete = { [weak self] text in
@@ -112,6 +115,21 @@ class MacDasherViewModel: ObservableObject {
         ("2", Color(red: 1.0, green: 0.82, blue: 0.40)),
         ("3", Color(red: 0.95, green: 0.91, blue: 0.35)),
     ]
+    private func triggerSpeechIfNeeded() {
+        guard bridge.getBoolParameter(key: 24) else { return }
+        speechDebounceTask?.cancel()
+        speechDebounceTask = Task {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            let text = bridge.getOutputText()
+            guard !text.isEmpty else { return }
+            speech.speak(text)
+        }
+    }
+
+    func stopSpeech() {
+        speech.stop()
+    }
 }
 
 enum OutputMode: String, CaseIterable {

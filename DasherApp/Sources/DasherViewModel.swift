@@ -15,6 +15,9 @@ class DasherViewModel: ObservableObject {
     @Published var importedText: String?
 
     let bridge: DasherBridge
+    let speech = SpeechService.shared
+    private var lastSpokenText: String = ""
+    private var speechDebounceTask: Task<Void, Never>?
 
     static let dwellDurationOptions: [(String, Double)] = [
         ("0.3s", 0.3),
@@ -63,11 +66,26 @@ class DasherViewModel: ObservableObject {
     func newMessage() {
         bridge.resetOutputText()
         outputText = ""
+        lastSpokenText = ""
     }
 
     func openText(_ text: String) {
         bridge.resetOutputText()
         outputText = text
+        lastSpokenText = ""
+    }
+
+    func checkSpeech() {
+        let text = bridge.getOutputText()
+        guard text != lastSpokenText, !text.isEmpty else { return }
+        lastSpokenText = text
+        guard bridge.getBoolParameter(key: 24) else { return }
+        speechDebounceTask?.cancel()
+        speechDebounceTask = Task {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            speech.speak(text)
+        }
     }
 
     var shareText: String {

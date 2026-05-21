@@ -210,6 +210,8 @@ struct MacDasherSettingsView: View {
             languageSection(params)
         case .output:
             outputSection(params)
+        case .speech:
+            SpeechSettingsView(service: SpeechService.shared)
         case .gameMode:
             genericSection(params, icon: "gamecontroller")
         }

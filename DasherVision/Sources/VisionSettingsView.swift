@@ -73,6 +73,12 @@ struct VisionSettingsView: View {
                         .pickerStyle(.segmented)
                     }
                 }
+
+                Section {
+                    SpeechSettingsView(service: SpeechService.shared)
+                } header: {
+                    Label("Speech", systemImage: "speaker.wave.2")
+                }
             }
             .navigationTitle("Settings")
             .toolbar {

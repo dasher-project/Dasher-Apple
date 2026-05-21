@@ -155,6 +155,7 @@ final class VisionCanvas: UIView {
         }
 
         vm.outputText = vm.bridge.getOutputText()
+        vm.checkSpeech()
 
         if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
             drawDwellIndicator(in: ctx)
