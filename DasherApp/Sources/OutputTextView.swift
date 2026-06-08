@@ -112,6 +112,11 @@ struct OutputTextView: View {
 
             Divider().overlay(Color("BarBorder"))
 
+            if viewModel.isGameModeActive && !viewModel.gameTargetText.isEmpty {
+                gameTargetBar
+                Divider().overlay(Color("BarBorder"))
+            }
+
             ScrollViewReader { proxy in
                 ScrollView {
                     Text(viewModel.outputText)
@@ -130,6 +135,49 @@ struct OutputTextView: View {
                 }
             }
         }
+    }
+
+    private var gameTargetBar: some View {
+        let target = viewModel.gameTargetText
+        let correct = viewModel.gameCorrectCount
+        let wrong = viewModel.gameWrongText
+        let correctIdx = target.index(target.startIndex, offsetBy: correct, limitedBy: target.endIndex) ?? target.endIndex
+        let correctPart = String(target[..<correctIdx])
+        let wrongCount = wrong.count
+        let remainingIdx = target.index(target.startIndex, offsetBy: correct + wrongCount, limitedBy: target.endIndex) ?? target.endIndex
+        let remainingPart = String(target[remainingIdx...])
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Target:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(correct)/\(viewModel.gameTargetLength)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            HStack(spacing: 0) {
+                if !correctPart.isEmpty {
+                    Text(correctPart)
+                        .foregroundColor(.green)
+                        .fontWeight(.semibold)
+                }
+                if !wrong.isEmpty {
+                    Text(wrong)
+                        .foregroundColor(.red)
+                        .strikethrough()
+                }
+                if !remainingPart.isEmpty {
+                    Text(remainingPart)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .font(.system(size: 16))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color("BarBackground"))
     }
 
     // MARK: - Drag Handle

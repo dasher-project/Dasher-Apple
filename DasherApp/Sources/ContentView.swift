@@ -53,6 +53,18 @@ struct ContentView: View {
                 viewModel.importedText = nil
             }
         }
+        .alert(
+            viewModel.pendingMessage?.isWarning == true ? "Dasher Warning" : "Dasher",
+            isPresented: Binding(
+                get: { viewModel.pendingMessage != nil },
+                set: { if !$0 { viewModel.pendingMessage = nil } }
+            ),
+            presenting: viewModel.pendingMessage
+        ) { _ in
+            Button("OK") { viewModel.pendingMessage = nil }
+        } message: { msg in
+            Text(msg.text)
+        }
     }
 
     // MARK: - Layouts
@@ -229,6 +241,12 @@ struct ContentView: View {
                         ) {
                             viewModel.togglePlay()
                         }
+                        toolbarButton(
+                            icon: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller",
+                            label: viewModel.isGameModeActive ? "Game On" : "Game"
+                        ) {
+                            viewModel.toggleGameMode()
+                        }
                         barDivider
                         layoutPicker
                         barDivider
@@ -248,6 +266,9 @@ struct ContentView: View {
                         barDivider
                         compactToolbarButton(icon: viewModel.isPlaying ? "pause.fill" : "play.fill") {
                             viewModel.togglePlay()
+                        }
+                        compactToolbarButton(icon: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller") {
+                            viewModel.toggleGameMode()
                         }
                         barDivider
                         layoutPickerCompact

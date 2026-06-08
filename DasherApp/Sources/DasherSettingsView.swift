@@ -21,6 +21,8 @@ struct DasherSettingsView: View {
     ]
 
     private static let spInputFilter = 103
+    private static let spGameTextFile = 102
+    @State private var showGameTextFileImporter = false
 
     private let filterToSubgroup: [String: Set<String>] = [
         "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons"],
@@ -128,7 +130,7 @@ struct DasherSettingsView: View {
         case .speech:
             speechSection
         case .gameMode:
-            genericSection(params, icon: "gamecontroller")
+            gameModeSection(params)
         }
     }
 
@@ -299,6 +301,63 @@ struct DasherSettingsView: View {
             }
         } header: {
             Label(selectedSection.rawValue, systemImage: icon)
+        }
+    }
+
+    private func gameModeSection(_ params: [DasherParameterInfo]) -> some View {
+        let otherParams = params.filter { $0.key != Self.spGameTextFile }
+        let currentFile = viewModel.bridge.getStringParameter(key: Self.spGameTextFile)
+
+        return Section {
+            HStack {
+                Text("Game Text File")
+                Spacer()
+                if currentFile.isEmpty {
+                    Text("Default")
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                } else {
+                    Text(URL(fileURLWithPath: currentFile).lastPathComponent)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                Button("Choose...") {
+                    showGameTextFileImporter = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                if !currentFile.isEmpty {
+                    Button {
+                        viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: "")
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            ForEach(otherParams) { param in
+                parameterRow(param)
+            }
+        } header: {
+            Label("Game Mode", systemImage: "gamecontroller")
+        }
+        .fileImporter(
+            isPresented: $showGameTextFileImporter,
+            allowedContentTypes: [.plainText, .item],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    let accessing = url.startAccessingSecurityScopedResource()
+                    let path = url.path
+                    viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: path)
+                    if accessing { url.stopAccessingSecurityScopedResource() }
+                }
+            case .failure:
+                break
+            }
         }
     }
 

@@ -5,6 +5,12 @@ import UniformTypeIdentifiers
 class DasherViewModel: ObservableObject {
     @Published var outputText: String = ""
     @Published var isPlaying: Bool = true
+    @Published var isGameModeActive: Bool = false
+    @Published var gameTargetText: String = ""
+    @Published var gameCorrectCount: Int = 0
+    @Published var gameTargetLength: Int = 0
+    @Published var gameWrongText: String = ""
+    @Published var pendingMessage: (isWarning: Bool, text: String)?
     @Published var speed: Double = 1.0
     @Published var autoSpeed: Bool = false
     @Published var pointerHoverEnabled: Bool = false
@@ -32,6 +38,9 @@ class DasherViewModel: ObservableObject {
         let userPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
         bridge.setScreenSize(width: 800, height: 600)
+        bridge.onMessage = { [weak self] isWarning, text in
+            self?.pendingMessage = (isWarning, text)
+        }
     }
 
     func setCanvasSize(_ size: CGSize) {
@@ -61,6 +70,38 @@ class DasherViewModel: ObservableObject {
 
     func togglePlay() {
         isPlaying.toggle()
+    }
+
+    func toggleGameMode() {
+        if isGameModeActive {
+            bridge.leaveGameMode()
+            isGameModeActive = false
+        } else {
+            let success = bridge.enterGameMode()
+            isGameModeActive = success
+            if !success {
+                bridge.resetOutputText()
+                outputText = ""
+            }
+        }
+    }
+
+    func syncGameModeState() {
+        let active = bridge.isGameModeActive
+        if active != isGameModeActive {
+            isGameModeActive = active
+        }
+        if active {
+            gameTargetText = bridge.getGameTargetText()
+            gameCorrectCount = bridge.getGameCorrectCount()
+            gameTargetLength = bridge.getGameTargetLength()
+            gameWrongText = bridge.getGameWrongText()
+        } else {
+            gameTargetText = ""
+            gameCorrectCount = 0
+            gameTargetLength = 0
+            gameWrongText = ""
+        }
     }
 
     func newMessage() {
