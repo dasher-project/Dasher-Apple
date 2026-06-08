@@ -29,6 +29,18 @@ struct MacContentView: View {
             viewModel.directMode = (newValue == "Direct")
             setFloatingWindow(newValue == "Direct")
         }
+        .alert(
+            viewModel.pendingMessage?.isWarning == true ? "Dasher Warning" : "Dasher",
+            isPresented: Binding(
+                get: { viewModel.pendingMessage != nil },
+                set: { if !$0 { viewModel.pendingMessage = nil } }
+            ),
+            presenting: viewModel.pendingMessage
+        ) { _ in
+            Button("OK") { viewModel.pendingMessage = nil }
+        } message: { msg in
+            Text(msg.text)
+        }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: { viewModel.newMessage() }) {
@@ -37,6 +49,11 @@ struct MacContentView: View {
                 Button(action: { viewModel.togglePlay() }) {
                     Label(viewModel.isPlaying ? "Pause" : "Play",
                           systemImage: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                }
+
+                Button(action: { viewModel.toggleGameMode() }) {
+                    Label(viewModel.isGameModeActive ? "Game On" : "Game Mode",
+                          systemImage: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller")
                 }
 
                 layoutPickerMenu
@@ -665,6 +682,7 @@ final class MacDasherCanvas: NSView {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
         }
         vm.outputText = vm.bridge.getOutputText()
+        vm.syncGameModeState()
     }
 }
 

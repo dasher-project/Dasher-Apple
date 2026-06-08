@@ -110,6 +110,8 @@ struct MacDasherSettingsView: View {
     ]
 
     private static let spInputFilter = 103
+    private static let spGameTextFile = 102
+    @State private var showGameTextFileImporter = false
 
     private let filterToSubgroup: [String: Set<String>] = [
         "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons"],
@@ -213,7 +215,7 @@ struct MacDasherSettingsView: View {
         case .speech:
             SpeechSettingsView(service: SpeechService.shared)
         case .gameMode:
-            genericSection(params, icon: "gamecontroller")
+            gameModeSection(params)
         }
     }
 
@@ -322,6 +324,65 @@ struct MacDasherSettingsView: View {
         VStack(alignment: .leading, spacing: 12) {
             ForEach(params) { param in
                 parameterRow(param)
+            }
+        }
+    }
+
+    private func gameModeSection(_ params: [DasherParameterInfo]) -> some View {
+        let otherParams = params.filter { $0.key != Self.spGameTextFile }
+        let currentFile = viewModel.bridge.getStringParameter(key: Self.spGameTextFile)
+
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Game Text File")
+                    .frame(width: 120, alignment: .leading)
+                if currentFile.isEmpty {
+                    Text("Default")
+                        .foregroundColor(.secondary)
+                    Spacer()
+                    Button("Choose File...") {
+                        showGameTextFileImporter = true
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                } else {
+                    Text(URL(fileURLWithPath: currentFile).lastPathComponent)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                    Spacer()
+                    Button("Choose File...") {
+                        showGameTextFileImporter = true
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    Button {
+                        viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: "")
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            ForEach(otherParams) { param in
+                parameterRow(param)
+            }
+        }
+        .fileImporter(
+            isPresented: $showGameTextFileImporter,
+            allowedContentTypes: [.plainText, .item],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    let accessing = url.startAccessingSecurityScopedResource()
+                    let path = url.path
+                    viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: path)
+                    if accessing { url.stopAccessingSecurityScopedResource() }
+                }
+            case .failure:
+                break
             }
         }
     }

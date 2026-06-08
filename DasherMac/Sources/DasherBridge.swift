@@ -87,6 +87,7 @@ class DasherBridge {
 
     var onOutput: ((String) -> Void)?
     var onDelete: ((String) -> Void)?
+    var onMessage: ((Bool, String) -> Void)?
 
     private(set) var lastError: String?
 
@@ -108,6 +109,14 @@ class DasherBridge {
                     instance.onDelete?(str)
                 }
             }, retained)
+            let retained2 = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_message_callback(ctx, { messageType, text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                let isWarning = messageType == 1
+                instance.onMessage?(isWarning, str)
+            }, retained2)
         }
     }
 
@@ -329,6 +338,47 @@ class DasherBridge {
     func setStringParameter(key: Int, value: String) {
         guard let ctx = ctx else { return }
         dasher_set_string_parameter(ctx, Int32(key), value)
+    }
+
+    // MARK: - Game Mode
+
+    var isGameModeActive: Bool {
+        guard let ctx = ctx else { return false }
+        return dasher_game_mode_active(ctx) != 0
+    }
+
+    func enterGameMode() -> Bool {
+        guard let ctx = ctx else { return false }
+        let result = dasher_enter_game_mode(ctx) == 0
+        if result {
+            dasher_game_set_canvas_text(ctx, 0)
+        }
+        return result
+    }
+
+    func leaveGameMode() {
+        guard let ctx = ctx else { return }
+        dasher_leave_game_mode(ctx)
+    }
+
+    func getGameTargetText() -> String {
+        guard let ctx = ctx, let cStr = dasher_game_get_target_text(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+
+    func getGameCorrectCount() -> Int {
+        guard let ctx = ctx else { return -1 }
+        return Int(dasher_game_get_correct_count(ctx))
+    }
+
+    func getGameTargetLength() -> Int {
+        guard let ctx = ctx else { return -1 }
+        return Int(dasher_game_get_target_length(ctx))
+    }
+
+    func getGameWrongText() -> String {
+        guard let ctx = ctx, let cStr = dasher_game_get_wrong_text(ctx) else { return "" }
+        return String(cString: cStr)
     }
 
     // MARK: - Persistence
