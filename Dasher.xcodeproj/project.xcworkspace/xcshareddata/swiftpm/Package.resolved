@@ -1,0 +1,24 @@
+{
+  "originHash" : "635a817845a559ef0a4becdf377639447c05c1c8b93470b2dbcf082092f38c8c",
+  "pins" : [
+    {
+      "identity" : "sherpa-onnx-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/willwade/sherpa-onnx-spm.git",
+      "state" : {
+        "revision" : "13cafec391ace99cf928f1a32339efaf734a3feb",
+        "version" : "1.13.2"
+      }
+    },
+    {
+      "identity" : "swift-tts-wrapper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aactools/swift-tts-wrapper",
+      "state" : {
+        "revision" : "82b1437a291815365829bd0dc6f296ad09ae268e",
+        "version" : "1.0.1"
+      }
+    }
+  ],
+  "version" : 3
+}
