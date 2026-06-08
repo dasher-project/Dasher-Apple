@@ -11,6 +11,12 @@
       "idiom": "mac",
       "scale": "2x",
       "size": "512x512"
+    },
+    {
+      "filename": "AppIcon-512@2x.png",
+      "idiom": "universal",
+      "platform": "visionos",
+      "size": "1024x1024"
     }
   ],
   "info": {
