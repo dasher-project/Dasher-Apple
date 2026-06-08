@@ -31,4 +31,7 @@ fi
 echo "Regenerating project from project.yml..."
 xcodegen generate
 
+echo "Resolving Swift Package Manager dependencies..."
+xcodebuild -resolvePackageDependencies -project Dasher.xcodeproj -scheme DasherApp -clonedSourcePackagesDirPath SourcePackages 2>&1 || true
+
 echo "=== CI Post-Clone Complete ==="
