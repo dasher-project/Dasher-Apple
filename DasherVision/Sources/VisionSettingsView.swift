@@ -63,7 +63,7 @@ struct VisionSettingsView: View {
                     Label("Pointer Input", systemImage: "eye")
                 }
 
-                if viewModel.eyeGazeMode {
+                if viewModel.appLevelDwell {
                     Section("Dwell Duration") {
                         Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
                             ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
