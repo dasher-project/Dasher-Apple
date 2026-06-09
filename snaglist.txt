@@ -17,15 +17,148 @@ None currently open.
 
 ## Engine / Platform
 
-- [ ] **TTS rate and pitch controls** — `swift-tts-wrapper` exposes `rate` and `pitch` for AVSpeechSynthesizer. Need to expose these in the Dasher settings UI per-voice, and pass through to the wrapper. Some engines (e.g. offline voices) may not support pitch.
-  - **Action**: Add rate/pitch sliders to Speech settings section. Consume from swift-tts-wrapper. Fall back gracefully if engine doesn't support.
-  - **Priority**: Medium
-  - **Files**: DasherSettingsView.swift (speech section), SpeechService.swift, swift-tts-wrapper package
+- [ ] **TTS rate, pitch, and volume controls** — `swift-tts-wrapper` 1.1.0 now supports `SpeakOptions.rate` (`SpeechRate` enum: .xSlow/.slow/.medium/.fast/.xFast), `SpeakOptions.pitch` (`SpeechPitch` enum: .xLow/.low/.medium/.high/.xHigh), and `SpeakOptions.volume` (Float 0.0–1.0). SSML engines (Azure, Google, Polly, Watson) use `<prosody>` tags. Native param engines: ElevenLabs (`voice_settings.speed`), OpenAI (`speed`), System (`AVSpeechUtterance`). Non-SSML engines silently ignore these options. **We need to update the package dependency from 1.0.1 → 1.1.0, add the controls to the UI, and wire them through.**
 
-- [ ] **Input options naming and organization** — Currently only "Stylus" is shown. On iOS we need: Touch, Eyegaze (built-in iPad Pro tracker or hardware), Switch Access (switch control), Keyboard (hardware keyboard), Mouse/Joystick. DasherCore has `LP_INPUT_FILTER` and `SP_INPUT_FILTER` with filter classes (DefaultFilter, OneButtonFilter, TwoButtonDynamicFilter, etc.). The mapping between user-facing names and DasherCore filters needs rethinking.
-  - **Action**: Map DasherCore input filters to user-friendly names per platform. iOS: Touch=DefaultFilter, Eyegaze=StylusFilter with eye tracking, Switch=OneButtonFilter/TwoButtonFilter, Keyboard=DefaultFilter+keyboard input. Create platform-specific input filter presets. This is partly a naming/organizational change, partly needs new platform detection code.
-  - **Priority**: Medium (important for accessibility compliance)
-  - **Files**: Input filter setup in DasherBridge/DasherViewModel, possibly new InputConfiguration.swift
+  ### What swift-tts-wrapper 1.1.0 provides (from `Types.swift`)
+  ```swift
+  public struct SpeakOptions {
+      public var rate: SpeechRate?        // enum: .xSlow, .slow, .medium, .fast, .xFast
+      public var pitch: SpeechPitch?      // enum: .xLow, .low, .medium, .high, .xHigh
+      public var volume: Float?           // 0.0 – 1.0
+      public var voice: String?
+      public var useWordBoundary: Bool
+      // ...
+  }
+  ```
+
+  ### Implementation Steps
+  1. **Bump dependency**: In `project.yml`, change `swift-tts-wrapper` from `"1.0.1"` to `"1.1.0"`
+  2. **Add properties to SpeechService**: Add `@Observable` stored properties:
+     - `speechRate: SpeechRate?` (default `.medium`)
+     - `speechPitch: SpeechPitch?` (default `.medium`)
+     - `speechVolume: Float` (default `1.0`)
+     - Persist to `UserDefaults` like engine/voice selection
+  3. **Wire to speak()**: In `SpeechService.speak()`, set the options:
+     ```swift
+     var options = SpeakOptions(useWordBoundary: true)
+     options.rate = speechRate
+     options.pitch = speechPitch
+     options.volume = speechVolume
+     ```
+  4. **Add UI controls in SpeechSettingsView**: After the voice picker, add:
+     - Rate picker: 5 options (xSlow → xFast) as segmented or menu
+     - Pitch picker: 5 options (xLow → xHigh) as segmented or menu
+     - Volume slider: 0.0–1.0 with step 0.05
+  5. **Graceful degradation**: No engine-specific logic needed — swift-tts-wrapper handles SSML wrapping per engine. Non-SSML engines silently ignore. We could show a small note if the engine doesn't support prosody.
+
+  ### Files to change
+  - `project.yml` — bump swift-tts-wrapper to 1.1.0
+  - `DasherShared/SpeechService.swift` — add rate/pitch/volume properties + persistence + wire to speak()
+  - `DasherShared/SpeechSettingsView.swift` — add rate picker, pitch picker, volume slider
+  - Run `xcodegen` after project.yml change
+
+  - **Priority**: Medium
+  - **Effort**: Small — mostly UI wiring, the engine side is already done
+
+- [ ] **Input system overhaul — device + filter presets per platform** — Currently only "Stylus" is shown as a single setting. The original Dasher v5 had a two-part architecture: **Input Device** (`SP_INPUT_DEVICE`) provides raw coordinates, **Input Filter** (`SP_INPUT_FILTER`) interprets them. The v5 iPhone app paired them into user-friendly presets via `InputMethodSelector.mm` (3 sections: Normal Steering, Box Modes, Dynamic Modes). We need to recreate this for v6 with modern iOS/macOS/visionOS input capabilities.
+
+  ### Background: DasherCore Architecture
+  DasherCore already has this split built in. `CreateModules()` in `DasherInterfaceBase.cpp:700` registers 15+ filters. The engine doesn't need changes — we need platform-specific `CDasherInput` subclasses and a preset selector UI.
+
+  ### Original v5 iPhone Inputs (from `../dasher/Src/iPhone/Classes/`)
+  - **Touch Input** (`TOUCH_INPUT` = "Mouse Input", Module 9) — standard touch with optional X-axis doubling for full-screen control. `CIPhoneMouseInput` in `IPhoneInputs.mm`.
+  - **Undoubled Touch** (Module 7) — raw touch, no doubling. `UndoubledTouch`.
+  - **Tilt Input** (`TILT_INPUT` = "Tilt Input", Module 8) — `CIPhoneTiltInput` used `UIAccelerometer` (deprecated iOS 5) with median filter (SBTree), orientation-aware axis mapping, Vec3 dot product for main/slow axes. Had calibration UI (`CalibrationController`). **Needs rewriting with `CMMotionManager` (CoreMotion)**, but the math is directly reusable from `IPhoneInputs.mm:114-142`.
+  - **Two-finger Input** (`TWO_FINGER_INPUT`, Module 10) — midpoint Y of two touches, distance between fingers = speed, 3+ fingers = reverse. `CIPhoneTwoFingerInput` in `IPhoneInputs.mm:216-238`.
+
+  ### Original v5 iPhone Filters (from `IPhoneFilters.h`)
+  - **Touch Filter** — `CStylusFilter` subclass, optional tilt for X-axis
+  - **Tilt Filter** — `COneDimensionalFilter` subclass, hold-to-go support, optional touch for X-axis, 1D mode
+  - **Two-finger Filter** — `CDefaultFilter` subclass with 3+ finger reverse
+
+  ### Original v5 Input Method Selector (from `InputMethodSelector.mm`)
+  Grouped into 3 sections with per-method settings panels:
+  1. **Normal Steering**: Touch Control, Multitouch, Tilt Control (with Calibrate button)
+  2. **Box Modes**: Direct Mode (tap box to select), Scanning (tap when highlighted)
+  3. **Dynamic Modes**: Dynamic 1B (tap anywhere twice), Dynamic 2B (tap top or bottom)
+
+  ### What We Need for v6
+
+  **iOS Input Presets** (new `InputMethodSelector` Swift UI):
+  | User-facing name | Input Device | Input Filter | Notes |
+  |---|---|---|---|
+  | Touch | Touch (pointer) | Normal Control | Default. Direct touch control. |
+  | Touch + Double X | Touch (doubled) | Normal Control | Full-width pointer from half-screen. LP from v5. |
+  | Two-finger | Two-finger | Two-finger filter | Pinch = speed, 3+ = reverse. Port from v5. |
+  | Tilt | CoreMotion accelerometer | One-dimensional + hold-to-go | Rewrite from v5 using CMMotionManager. Needs calibration. |
+  | Eyegaze | Pointer (iPad Pro built-in) | Stylus/Normal | iPad Pro has native eye tracking via AssistiveTouch. May Just Work with pointer events. |
+  | Switch (1 switch) | Key event 100 | One-button Dynamic | iOS Switch Control sends key events. |
+  | Switch (2 switches) | Key events 1+2 | Two-button Dynamic | Two-switch scanning via iOS Switch Control or Bluetooth switches. |
+  | Keyboard arrows | Key events | Two-button / compass | Hardware keyboard arrow keys. |
+  | Scanning | Touch | Menu Mode (scanning) | Auto-scan boxes, tap to select. Accessibility critical. |
+
+  **macOS Input Presets**:
+  | User-facing name | Input Device | Input Filter | Notes |
+  |---|---|---|---|
+  | Mouse | Mouse/trackpad | Normal Control | Default. |
+  | Eyegaze | Pointer | Stylus/Normal | If eye tracker presents as mouse/pointer. |
+  | Switch (via keyboard) | Key events | One-button / Two-button | Accessibility switches via keyboard. |
+  | Joystick | GameController framework | Normal Control or Discrete | Use GCController for MFi/gamepad. See v5 `joystick_input.h` for Linux implementation. |
+
+  **visionOS Input Presets**:
+  | User-facing name | Input Device | Input Filter | Notes |
+  |---|---|---|---|
+  | Hand tracking | Pointer (visionOS default) | Normal Control | Default. Pinch + hand position. |
+  | Hand point + finger switches | Hand position (pointer) + finger pinch/gestures (key events) | One-button / Two-button Dynamic | **See below.** |
+  | Dwell | Pointer + dwell timer | Normal Control | Look at position, dwell to activate. |
+
+  ### visionOS: Hand Point + Finger Switches
+  Use one hand to point (position feeds `dasher_mouse_move()` as the Dasher crosshair), and individual finger gestures on the other hand as discrete switch inputs (feed `dasher_key_event()`). This gives a hands-free two-switch setup without any hardware.
+
+  **How it would work**:
+  - **Pointer hand**: Track palm/fingertip position in 3D space using ARKit hand tracking (`HandTrackingProvider` from `ARKit`). Map the hand's projected screen position to Dasher coordinates — the crosshair follows where you point.
+  - **Switch hand**: Detect specific finger pinches via ARKit as switch events:
+    - Thumb + index pinch = switch 1 (key 1) → e.g. "go" / select
+    - Thumb + middle pinch = switch 2 (key 2) → e.g. "reverse" / deselect
+    - Thumb + ring pinch = switch 3 (key 3) → optional third action
+    - Open hand (all fingers extended) = pause / start-stop (key 0)
+  - Pair with appropriate filter: One-button Dynamic (1 switch), Two-button Dynamic (2 switches), or Two-push Dynamic (2 switches, different timing)
+
+  **Implementation**:
+  1. Use `ARKit.HandTrackingProvider` to get `HandAnchor` updates each frame (already available on visionOS, no extra permissions beyond standard hand tracking entitlement)
+  2. Map pointer hand: project `HandAnchor.originFromAnchorTransform` to 2D screen coordinates relative to the Dasher window. Feed to `dasher_mouse_move()`
+  3. Map switch hand: detect pinch gestures from `HandAnchor.handSkeleton?.joint(.thumbTip)` proximity to other fingertip joints. Debounce (min 200ms between events). Feed to `dasher_key_event(key, pressed)`
+  4. Add UI to configure which hand is pointer vs. switch, and which fingers map to which keys
+  5. Add visual feedback: show hand skeleton overlay or indicator dot on the Dasher canvas so user sees where they're pointing
+
+  **Why this matters**: This is the most accessible visionOS input — no hardware needed, no precise eye tracking, uses natural hand gestures. Two-switch dynamic mode with hand pointing could be very efficient for experienced users.
+
+  **Reference**: ARKit hand tracking docs — `HandTrackingProvider`, `HandAnchor`, `HandSkeleton`. visionOS apps get hand tracking data at up to 30fps without any special entitlement beyond `com.apple.developer.arkit.hand-tracking`.
+
+  ### Implementation Steps
+  1. Create `InputMethodPreset` struct in Swift: `{ name, subtitle, deviceName, filterName, platform: [.iOS, .macOS, .visionOS], icon }`
+  2. Build `InputMethodSelectorView` (SwiftUI) — grouped list like v5's 3 sections, with checkmark for active
+  3. Create `CMMotionManager`-based tilt input (Swift, bridges to `dasher_mouse_move()`) — reuse median filter math from `IPhoneInputs.mm`
+  4. Add calibration UI for tilt (SwiftUI view that records neutral position, main axis, slow axis)
+  5. Map iOS pointer events (iPad Pro eye tracking) — may already work if pointer events feed `dasher_mouse_move()`
+  6. Test switch access — verify iOS Switch Control sends key events that reach `dasher_key_event()`
+  7. Add GameController framework support for macOS joystick/gamepad
+  8. Wire preset selection to `SP_INPUT_DEVICE` + `SP_INPUT_FILTER` via bridge
+
+  ### Key Reference Files
+  - `../dasher/Src/iPhone/Classes/IPhoneInputs.h/.mm` — all 4 input devices with math
+  - `../dasher/Src/iPhone/Classes/IPhoneFilters.h/.mm` — iPhone-specific filters
+  - `../dasher/Src/iPhone/Classes/InputMethodSelector.mm` — the preset UI we're recreating
+  - `../dasher/Src/iPhone/Classes/CalibrationController.mm/.h` — tilt calibration UI
+  - `../dasher/Src/Gtk2/tilt_input.h` — Linux tilt input (serial port, for reference)
+  - `../dasher/Src/Gtk2/joystick_input.h` — Linux joystick (3 variants: continuous, discrete zones, 1D)
+  - `DasherCore/src/DasherCore/DasherInterfaceBase.cpp:700` — all 15 registered filters
+  - `DasherCore/src/DasherCore/DasherInput.h` — base class for input devices
+  - `DasherCore/src/DasherCore/InputFilter.h` — base class for input filters
+
+  - **Priority**: High (accessibility compliance — switch/eyegaze users can't use Dasher without this)
+  - **Effort**: Large — multiple new Swift files, CoreMotion integration, GameController, calibration UI
+  - **Can be phased**: Phase 1 = presets UI + touch/switch/keyboard (mostly wiring). Phase 2 = tilt + calibration. Phase 3 = eyegaze/joystick/gamepad.
 
 ## Done
 
