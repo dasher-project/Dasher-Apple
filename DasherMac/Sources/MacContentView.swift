@@ -647,7 +647,11 @@ final class MacDasherCanvas: NSView {
     var viewModel: MacDasherViewModel?
     private var timer: Timer?
 
-    override init(frame: CGRect) { super.init(frame: frame) }
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        wantsLayer = true
+        layer?.masksToBounds = true
+    }
     required init?(coder: NSCoder) { super.init(coder: coder) }
 
     override func layout() {
