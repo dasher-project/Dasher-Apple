@@ -50,7 +50,7 @@ class VisionViewModel: ObservableObject {
     }
 
     func newMessage() {
-        bridge.resetOutputText()
+        bridge.reset()
         outputText = ""
         lastSpokenText = ""
     }

@@ -1,0 +1,46 @@
+Things to fix - these are from iPhone (portrait) use but much of this is probably relevant to DasherMac and DasherVision. We need a equal response. Keep this snag list updated and add things as we find it. Make a action plan on each to tackle if neccesary. 
+
+## Critical / UX-breaking
+
+None currently open.
+
+## Medium / Missing Features
+
+None currently open.
+
+## Settings Cleanup
+
+- [ ] **Duplicate colour theme picker in Customization settings** — Settings shows both a nice colour swatch picker AND a "Color Palette" dropdown parameter. Remove the dropdown; keep the swatch picker. Dasher Font should be a proper font picker (not just text field) plus size slider.
+  - **Action**: In `customizationSection`, hide the `SP_COLOUR_PALETTE` param (it's redundant with the swatch picker). Add a native font picker for `SP_DASHER_FONT`. The size slider already exists (`LP_DASHER_FONTSIZE`).
+  - **Priority**: Medium
+  - **Files**: DasherSettingsView.swift or ContentView.swift (customization section)
+
+## Engine / Platform
+
+- [ ] **TTS rate and pitch controls** — `swift-tts-wrapper` exposes `rate` and `pitch` for AVSpeechSynthesizer. Need to expose these in the Dasher settings UI per-voice, and pass through to the wrapper. Some engines (e.g. offline voices) may not support pitch.
+  - **Action**: Add rate/pitch sliders to Speech settings section. Consume from swift-tts-wrapper. Fall back gracefully if engine doesn't support.
+  - **Priority**: Medium
+  - **Files**: DasherSettingsView.swift (speech section), SpeechService.swift, swift-tts-wrapper package
+
+- [ ] **Input options naming and organization** — Currently only "Stylus" is shown. On iOS we need: Touch, Eyegaze (built-in iPad Pro tracker or hardware), Switch Access (switch control), Keyboard (hardware keyboard), Mouse/Joystick. DasherCore has `LP_INPUT_FILTER` and `SP_INPUT_FILTER` with filter classes (DefaultFilter, OneButtonFilter, TwoButtonDynamicFilter, etc.). The mapping between user-facing names and DasherCore filters needs rethinking.
+  - **Action**: Map DasherCore input filters to user-friendly names per platform. iOS: Touch=DefaultFilter, Eyegaze=StylusFilter with eye tracking, Switch=OneButtonFilter/TwoButtonFilter, Keyboard=DefaultFilter+keyboard input. Create platform-specific input filter presets. This is partly a naming/organizational change, partly needs new platform detection code.
+  - **Priority**: Medium (important for accessibility compliance)
+  - **Files**: Input filter setup in DasherBridge/DasherViewModel, possibly new InputConfiguration.swift
+
+## Done
+
+- [x] ~~Clear button doesn't reset zooming boxes~~ — Fixed: added `dasher_reset()` CAPI (calls `SetOffset(0, true)`), all bridges now call `reset()` instead of `resetOutputText()` on clear/newMessage/paste
+- [x] ~~Left-side safe area gap on iPhone portrait~~ — Fixed: `.ignoresSafeArea(edges: .leading)` applied to canvas views in bottom/top layouts
+- [x] ~~Missing auto speed button~~ — Fixed: added auto-speed toggle (BP_AUTO_SPEEDCONTROL, key 14) to iOS + Mac bottom bars
+- [x] ~~Bottom bar overflow on small screens~~ — Fixed: wrapped iOS bottom bar in `ScrollView(.horizontal)`, removed palette picker and font size stepper
+- [x] ~~Small iOS screens: output text area should only allow top/bottom~~ — Fixed: `layoutPickerCompact(portrait:)` hides Left/Right when in portrait orientation
+- [x] ~~Remove theme/colour switcher from bottom bar~~ — Removed from both iOS and Mac bottom bars
+- [x] ~~Font size stepper on bottom bar~~ — Removed from both iOS and Mac bottom bars
+- [x] ~~Language Model dropdown showing as "0" text field~~ — Fixed: added dropdown rendering for long params with `uiType == .dropdown`
+- [x] ~~Adaptive LM settings~~ — Fixed: Language section filters params by active LM via LMRegistry paramKeys
+- [x] ~~Alphabet picker and history showing in Language settings~~ — Fixed: string params hidden from language section
+- [x] ~~Canvas text warnings~~ — Fixed: suppress canvas text when frontend message callback registered
+- [x] ~~CTW crash~~ — Fixed: typo `<` vs `<<` in CTWLanguageModel.cpp
+- [x] ~~Mac signing: "Unknown Team"~~ — Fixed: correct team ID is TRKU383G7Z
+- [x] ~~Mac direct mode: text not reaching other apps~~ — Fixed: track last non-Dasher app, use postToPid()
+- [x] ~~Mac game mode target bar~~ — Added: green/red/gray game target bar in Mac output pane

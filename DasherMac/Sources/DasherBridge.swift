@@ -195,6 +195,12 @@ class DasherBridge {
         lastOutputText = ""
     }
 
+    func reset() {
+        guard let ctx = ctx else { return }
+        dasher_reset(ctx)
+        lastOutputText = ""
+    }
+
     // MARK: - Convenience getters/setters
 
     var alphabetId: String {

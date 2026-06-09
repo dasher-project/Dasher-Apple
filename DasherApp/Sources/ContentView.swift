@@ -15,6 +15,7 @@ struct ContentView: View {
 
             if isPortrait {
                 bottomTextLayout(geometry: geometry)
+                    .ignoresSafeArea(edges: .leading)
             } else if currentLayoutPosition == "Left" {
                 leftTextLayout(geometry: geometry)
             } else if currentLayoutPosition == "Bottom" {
@@ -83,6 +84,7 @@ struct ContentView: View {
 
             DasherCanvasView(viewModel: viewModel)
                 .frame(height: contentHeight * (1 - outputPaneFraction))
+                .ignoresSafeArea(edges: .leading)
 
             Divider().overlay(Color("GridBorder"))
 
@@ -131,6 +133,7 @@ struct ContentView: View {
 
             DasherCanvasView(viewModel: viewModel)
                 .frame(height: contentHeight * (1 - outputPaneFraction))
+                .ignoresSafeArea(edges: .leading)
 
             Divider().overlay(Color("BarBorder"))
 
@@ -220,6 +223,7 @@ struct ContentView: View {
     private var toolbarBar: some View {
         GeometryReader { geo in
             let isWide = geo.size.width > 500
+            let isPortrait = geo.size.width <= geo.size.height
             let barHeight: CGFloat = isWide ? 64 : 44
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -271,7 +275,7 @@ struct ContentView: View {
                             viewModel.toggleGameMode()
                         }
                         barDivider
-                        layoutPickerCompact
+                        layoutPickerCompact(portrait: isPortrait)
                         barDivider
                         compactToolbarButton(icon: "slider.horizontal.3") {
                             showSettings = true
@@ -360,6 +364,29 @@ struct ContentView: View {
         .buttonStyle(.plain)
     }
 
+    private func layoutPickerCompact(portrait: Bool) -> some View {
+        Menu {
+            if !portrait {
+                Button("Right side") { currentLayoutPosition = "Right" }
+                Button("Left side") { currentLayoutPosition = "Left" }
+            }
+            Button("Bottom") { currentLayoutPosition = "Bottom" }
+            Button("Top") { currentLayoutPosition = "Top" }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: layoutIcon)
+                    .font(.system(size: 13))
+                    .foregroundColor(Color("DeepNavy"))
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundColor(Color("MutedText"))
+            }
+            .frame(width: 38, height: 38)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+        .buttonStyle(.plain)
+    }
+
     private var layoutIcon: String {
         switch currentLayoutPosition {
         case "Right": return "sidebar.right"
@@ -373,24 +400,24 @@ struct ContentView: View {
     // MARK: - Bottom Bar
 
     private var bottomBar: some View {
-        HStack(spacing: 0) {
-            alphabetPicker
-            barDivider
-            speedStepper
-            barDivider
-            learningToggle
-            barDivider
-            palettePicker
-            barDivider
-            fontPicker
-            barDivider
-            fontSizeStepper
-            barDivider
-            speechPicker
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 0) {
+                alphabetPicker
+                barDivider
+                speedStepper
+                barDivider
+                autoSpeedToggle
+                barDivider
+                learningToggle
+                barDivider
+                fontPicker
+                barDivider
+                speechPicker
 
-            Spacer(minLength: 0)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
         }
-        .padding(.horizontal, 12)
         .frame(height: 44)
         .background(Color("BarBackground"))
     }
@@ -443,6 +470,25 @@ struct ContentView: View {
 
         return HStack(spacing: 6) {
             Text("Learning")
+                .font(.system(size: 12))
+                .foregroundColor(Color("MutedText"))
+
+            Toggle("", isOn: binding)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+        .fixedSize()
+    }
+
+    private var autoSpeedToggle: some View {
+        let binding = Binding<Bool>(
+            get: { viewModel.bridge.getBoolParameter(key: 14) },
+            set: { viewModel.bridge.setBoolParameter(key: 14, value: $0) }
+        )
+
+        return HStack(spacing: 6) {
+            Text("Auto")
                 .font(.system(size: 12))
                 .foregroundColor(Color("MutedText"))
 

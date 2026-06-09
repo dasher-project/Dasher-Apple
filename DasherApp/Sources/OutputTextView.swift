@@ -390,7 +390,7 @@ struct OutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
-            viewModel.bridge.resetOutputText()
+            viewModel.bridge.reset()
             viewModel.outputText = clipboardString
         }
     }

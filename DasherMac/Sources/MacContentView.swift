@@ -291,13 +291,11 @@ struct MacContentView: View {
             barDivider
             speedStepper
             barDivider
+            autoSpeedToggle
+            barDivider
             learningToggle
             barDivider
-            palettePicker
-            barDivider
             fontPicker
-            barDivider
-            fontSizeStepper
             barDivider
             speechPicker
             Spacer(minLength: 0)
@@ -352,6 +350,23 @@ struct MacContentView: View {
         )
         return HStack(spacing: 6) {
             Text("Learning")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary)
+            Toggle("", isOn: binding)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .controlSize(.small)
+        }
+        .fixedSize()
+    }
+
+    private var autoSpeedToggle: some View {
+        let binding = Binding<Bool>(
+            get: { viewModel.bridge.getBoolParameter(key: 14) },
+            set: { viewModel.bridge.setBoolParameter(key: 14, value: $0) }
+        )
+        return HStack(spacing: 6) {
+            Text("Auto")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
             Toggle("", isOn: binding)

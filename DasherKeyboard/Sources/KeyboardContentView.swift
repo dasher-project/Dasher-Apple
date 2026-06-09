@@ -32,7 +32,7 @@ struct KeyboardContentView: View {
 
                 Spacer()
 
-                Button(action: { viewModel.bridge.resetOutputText() }) {
+                Button(action: { viewModel.bridge.reset() }) {
                     Image(systemName: "delete.left")
                         .font(.system(size: 13))
                         .frame(width: 32, height: 28)

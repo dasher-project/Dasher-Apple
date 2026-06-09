@@ -98,7 +98,7 @@ class MacDasherViewModel: ObservableObject {
             let success = bridge.enterGameMode()
             isGameModeActive = success
             if !success {
-                bridge.resetOutputText()
+                bridge.reset()
                 outputText = ""
             }
         }
@@ -123,12 +123,12 @@ class MacDasherViewModel: ObservableObject {
     }
 
     func newMessage() {
-        bridge.resetOutputText()
+        bridge.reset()
         outputText = ""
     }
 
     func openText(_ text: String) {
-        bridge.resetOutputText()
+        bridge.reset()
         outputText = text
     }
 
