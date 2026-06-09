@@ -28,6 +28,9 @@ struct MacContentView: View {
         .onChange(of: currentLayoutPosition) { _, newValue in
             viewModel.directMode = (newValue == "Direct")
             setFloatingWindow(newValue == "Direct")
+            if newValue == "Direct" && viewModel.isGameModeActive {
+                viewModel.toggleGameMode()
+            }
         }
         .alert(
             viewModel.pendingMessage?.isWarning == true ? "Dasher Warning" : "Dasher",
@@ -51,9 +54,11 @@ struct MacContentView: View {
                           systemImage: viewModel.isPlaying ? "pause.fill" : "play.fill")
                 }
 
-                Button(action: { viewModel.toggleGameMode() }) {
-                    Label(viewModel.isGameModeActive ? "Game On" : "Game Mode",
-                          systemImage: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller")
+                if currentLayoutPosition != "Direct" {
+                    Button(action: { viewModel.toggleGameMode() }) {
+                        Label(viewModel.isGameModeActive ? "Game On" : "Game Mode",
+                              systemImage: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller")
+                    }
                 }
 
                 layoutPickerMenu
@@ -238,6 +243,11 @@ struct MacContentView: View {
                 Spacer()
                 speedStepper
                 Spacer()
+                Button("Exit Direct Mode") {
+                    currentLayoutPosition = "Right"
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
                 speechPicker
             }
             .padding(.horizontal, 12)
