@@ -73,8 +73,11 @@ enum DasherSettingsSection: String, CaseIterable {
     case gameMode = "Game Mode"
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
-        if param.advanced { return .input }
-        return DasherSettingsSection(rawValue: param.group) ?? .input
+        if param.group == "Game Mode" { return .gameMode }
+        if param.group == "Output" { return .output }
+        if param.group == "Language" { return .language }
+        if param.group == "Appearance" || param.group == "Customization" { return .customization }
+        return .input
     }
 }
 
@@ -409,6 +412,50 @@ class DasherBridge {
         guard let ctx = ctx else { return }
         dasher_set_string_override(ctx, key, value)
     }
+
+    // MARK: - Language Model Registry
+
+    struct LanguageModelInfo {
+        let id: Int
+        let name: String
+        let description: String
+    }
+
+    func getAvailableLanguageModels() -> [LanguageModelInfo] {
+        let count = Int(dasher_get_language_model_count())
+        var models: [LanguageModelInfo] = []
+        models.reserveCapacity(count)
+        for i in 0..<count {
+            let id = Int(dasher_get_language_model_id_at(Int32(i)))
+            let namePtr = dasher_get_language_model_name(Int32(id))
+            let descPtr = dasher_get_language_model_description(Int32(id))
+            models.append(LanguageModelInfo(
+                id: id,
+                name: namePtr != nil ? String(cString: namePtr!) : "Unknown",
+                description: descPtr != nil ? String(cString: descPtr!) : ""
+            ))
+        }
+        return models
+    }
+
+    var currentLanguageModelId: Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_language_model_id(ctx))
+    }
+
+    func setLanguageModelId(_ id: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_language_model_id(ctx, Int32(id))
+    }
+
+    func getLanguageModelParamKeys(_ id: Int) -> [Int] {
+        let count = Int(dasher_get_language_model_param_count(Int32(id)))
+        return (0..<count).map { Int(dasher_get_language_model_param_key(Int32(id), Int32($0))) }
+    }
+
+    lazy var languageModelIdParamKey: Int = {
+        Int(dasher_find_parameter_key("LP_LANGUAGE_MODEL_ID"))
+    }()
 }
 
 // MARK: - Draw commands
