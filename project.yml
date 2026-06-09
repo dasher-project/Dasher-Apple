@@ -17,7 +17,7 @@ settings:
   base:
     CLANG_CXX_LANGUAGE_STANDARD: c++17
     CLANG_CXX_LIBRARY: libc++
-    DEVELOPMENT_TEAM: W26R53U58L
+    DEVELOPMENT_TEAM: TRKU383G7Z
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
 
@@ -120,7 +120,7 @@ targets:
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: W26R53U58L
+        DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -160,7 +160,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: W26R53U58L
+        DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -208,7 +208,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: W26R53U58L
+        DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -253,7 +253,7 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: W26R53U58L
+        DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
