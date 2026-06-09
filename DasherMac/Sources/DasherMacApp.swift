@@ -295,7 +295,16 @@ struct MacDasherSettingsView: View {
                 }
             }
 
-            ForEach(params) { param in
+            let lmId = viewModel.bridge.currentLanguageModelId
+            let lmParamKeys = Set(viewModel.bridge.getLanguageModelParamKeys(lmId))
+            let lmSelKey = viewModel.bridge.languageModelIdParamKey
+
+            ForEach(params.filter { param in
+                if param.type == .string { return false }
+                if param.type == .bool { return true }
+                if param.key == lmSelKey { return true }
+                return lmParamKeys.contains(param.key)
+            }) { param in
                 parameterRow(param)
             }
         }
@@ -411,7 +420,22 @@ struct MacDasherSettingsView: View {
             }
 
         case .long:
-            if param.uiType == .slider && param.maxVal > param.minVal {
+            if param.uiType == .dropdown {
+                let enumVals = DasherBridge.getEnumValues(key: param.key)
+                if !enumVals.isEmpty {
+                    let binding = Binding<Int>(
+                        get: { viewModel.bridge.getLongParameter(key: param.key) },
+                        set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                    )
+                    Picker(param.name, selection: binding) {
+                        ForEach(enumVals, id: \.value) { ev in
+                            Text(ev.name).tag(ev.value)
+                        }
+                    }
+                } else {
+                    longField(param)
+                }
+            } else if param.uiType == .slider && param.maxVal > param.minVal {
                 let binding = Binding<Double>(
                     get: { Double(viewModel.bridge.getLongParameter(key: param.key)) },
                     set: { viewModel.bridge.setLongParameter(key: param.key, value: Int($0)) }
@@ -439,17 +463,7 @@ struct MacDasherSettingsView: View {
                     }
                 }
             } else {
-                let binding = Binding<Int>(
-                    get: { viewModel.bridge.getLongParameter(key: param.key) },
-                    set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
-                )
-                HStack {
-                    Text(param.name)
-                    Spacer()
-                    TextField("", value: binding, format: .number)
-                        .multilineTextAlignment(.trailing)
-                        .frame(width: 60)
-                }
+                longField(param)
             }
 
         case .string:
@@ -498,6 +512,21 @@ struct MacDasherSettingsView: View {
             }
         } else {
             stringField(param)
+        }
+    }
+
+    @ViewBuilder
+    private func longField(_ param: DasherParameterInfo) -> some View {
+        let binding = Binding<Int>(
+            get: { viewModel.bridge.getLongParameter(key: param.key) },
+            set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+        )
+        HStack {
+            Text(param.name)
+            Spacer()
+            TextField("", value: binding, format: .number)
+                .multilineTextAlignment(.trailing)
+                .frame(width: 60)
         }
     }
 
