@@ -118,6 +118,9 @@ targets:
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: YES
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: W26R53U58L
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -155,6 +158,9 @@ targets:
         INFOPLIST_FILE: DasherKeyboard/Info.plist
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: W26R53U58L
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -200,6 +206,9 @@ targets:
         INFOPLIST_FILE: DasherMac/Info.plist
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: W26R53U58L
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:
@@ -242,6 +251,9 @@ targets:
         INFOPLIST_FILE: DasherVision/Info.plist
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
+        CODE_SIGN_IDENTITY: "Apple Development"
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: W26R53U58L
         OTHER_LDFLAGS:
           - "-lc++"
         HEADER_SEARCH_PATHS:

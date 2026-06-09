@@ -226,9 +226,19 @@ struct MacContentView: View {
         VStack(spacing: 0) {
             if !viewModel.directService.hasAccessibilityPermission {
                 accessibilityPrompt
+                    .onAppear {
+                        viewModel.directService.checkAccessibility()
+                        viewModel.directService.startPolling()
+                    }
+                    .onDisappear {
+                        if !viewModel.directMode {
+                            viewModel.directService.stopPolling()
+                        }
+                    }
             } else {
                 ZStack(alignment: .topTrailing) {
                     MacCanvasView(viewModel: viewModel)
+                        .background(Color.clear)
                     targetAppIndicator.padding(8)
                 }
             }
@@ -445,7 +455,7 @@ struct MacContentView: View {
 
     private func setFloatingWindow(_ floating: Bool) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            guard let window = NSApp.windows.first(where: { $0.isVisible && $0.isKeyWindow }) else { return }
+            guard let window = NSApp.windows.first(where: { $0.isVisible }) else { return }
             if floating {
                 window.level = .floating
                 window.isOpaque = false
@@ -602,6 +612,11 @@ struct MacOutputTextView: View {
 
             Divider()
 
+            if viewModel.isGameModeActive && !viewModel.gameTargetText.isEmpty {
+                macGameTargetBar
+                Divider()
+            }
+
             ScrollViewReader { proxy in
                 ScrollView {
                     Text(viewModel.outputText)
@@ -624,6 +639,49 @@ struct MacOutputTextView: View {
     private func copyAllText() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(viewModel.outputText, forType: .string)
+    }
+
+    private var macGameTargetBar: some View {
+        let target = viewModel.gameTargetText
+        let correct = viewModel.gameCorrectCount
+        let wrong = viewModel.gameWrongText
+        let correctIdx = target.index(target.startIndex, offsetBy: correct, limitedBy: target.endIndex) ?? target.endIndex
+        let correctPart = String(target[..<correctIdx])
+        let wrongCount = wrong.count
+        let remainingIdx = target.index(target.startIndex, offsetBy: correct + wrongCount, limitedBy: target.endIndex) ?? target.endIndex
+        let remainingPart = String(target[remainingIdx...])
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Target:")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(correct)/\(viewModel.gameTargetLength)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            HStack(spacing: 0) {
+                if !correctPart.isEmpty {
+                    Text(correctPart)
+                        .foregroundColor(.green)
+                        .fontWeight(.semibold)
+                }
+                if !wrong.isEmpty {
+                    Text(wrong)
+                        .foregroundColor(.red)
+                        .strikethrough()
+                }
+                if !remainingPart.isEmpty {
+                    Text(remainingPart)
+                        .foregroundColor(.gray)
+                }
+            }
+            .font(.body)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color(nsColor: .controlBackgroundColor).opacity(0.8))
     }
 }
 
@@ -651,6 +709,7 @@ final class MacDasherCanvas: NSView {
         super.init(frame: frame)
         wantsLayer = true
         layer?.masksToBounds = true
+        layer?.backgroundColor = .clear
     }
     required init?(coder: NSCoder) { super.init(coder: coder) }
 

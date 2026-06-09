@@ -9,6 +9,7 @@ class DirectModeService: ObservableObject {
 
     private var frontmostObserver: Any?
     private var pollTimer: Timer?
+    private var lastTargetApp: NSRunningApplication?
 
     func checkAccessibility() {
         hasAccessibilityPermission = AXIsProcessTrustedWithOptions(
@@ -48,12 +49,20 @@ class DirectModeService: ObservableObject {
         ) { [weak self] note in
             guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
             if app.bundleIdentifier != Bundle.main.bundleIdentifier {
+                self?.lastTargetApp = app
                 self?.targetAppName = app.localizedName ?? "Unknown"
             }
         }
         if let front = NSWorkspace.shared.frontmostApplication {
             if front.bundleIdentifier != Bundle.main.bundleIdentifier {
+                lastTargetApp = front
                 targetAppName = front.localizedName ?? "Unknown"
+            } else {
+                let apps = NSWorkspace.shared.runningApplications.filter {
+                    $0.bundleIdentifier != Bundle.main.bundleIdentifier && $0.isActive
+                }
+                lastTargetApp = apps.first
+                targetAppName = apps.first?.localizedName ?? ""
             }
         }
     }
@@ -70,11 +79,11 @@ class DirectModeService: ObservableObject {
         guard hasAccessibilityPermission else { return }
 
         if text == "\u{08}" {
-            sendKeycode(51) // Backspace
+            postKeycode(51)
             return
         }
         if text == "\n" {
-            sendKeycode(36) // Return
+            postKeycode(36)
             return
         }
 
@@ -83,24 +92,37 @@ class DirectModeService: ObservableObject {
         unichars.withUnsafeMutableBufferPointer { buf in
             let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)
             event?.keyboardSetUnicodeString(stringLength: buf.count, unicodeString: buf.baseAddress)
-            event?.post(tap: .cghidEventTap)
+            postEvent(event)
 
             let up = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
             up?.keyboardSetUnicodeString(stringLength: buf.count, unicodeString: buf.baseAddress)
-            up?.post(tap: .cghidEventTap)
+            postEvent(up)
         }
     }
 
     func injectDelete(count: Int) {
+        guard hasAccessibilityPermission else { return }
         for _ in 0..<count {
-            sendKeycode(51)
+            let down = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: true)
+            postEvent(down)
+            let up = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: false)
+            postEvent(up)
         }
     }
 
-    private func sendKeycode(_ code: CGKeyCode) {
+    private func postEvent(_ event: CGEvent?) {
+        guard let event else { return }
+        if let pid = lastTargetApp?.processIdentifier {
+            event.postToPid(pid)
+        } else {
+            event.post(tap: .cghidEventTap)
+        }
+    }
+
+    private func postKeycode(_ code: CGKeyCode) {
         let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true)
-        down?.post(tap: .cghidEventTap)
+        postEvent(down)
         let up = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false)
-        up?.post(tap: .cghidEventTap)
+        postEvent(up)
     }
 }
