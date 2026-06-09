@@ -132,6 +132,7 @@ struct MacContentView: View {
         VStack(spacing: 0) {
             GeometryReader { geo in
                 let contentWidth = geo.size.width
+                let contentHeight = geo.size.height - 44
 
                 HStack(spacing: 0) {
                     MacOutputTextView(
@@ -144,11 +145,13 @@ struct MacContentView: View {
                         availableSpace: contentWidth
                     )
                     .frame(width: contentWidth * outputPaneFraction)
+                    .frame(height: contentHeight)
 
                     Divider()
 
                     MacCanvasView(viewModel: viewModel)
                         .frame(width: contentWidth * (1 - outputPaneFraction))
+                        .frame(height: contentHeight)
                 }
             }
 
@@ -162,23 +165,26 @@ struct MacContentView: View {
     private var bottomTextLayout: some View {
         VStack(spacing: 0) {
             GeometryReader { geo in
-                let contentHeight = geo.size.height
+                let contentWidth = geo.size.width
+                let contentHeight = geo.size.height - 44
 
-                MacCanvasView(viewModel: viewModel)
-                    .frame(height: contentHeight * (1 - outputPaneFraction))
+                VStack(spacing: 0) {
+                    MacCanvasView(viewModel: viewModel)
+                        .frame(height: contentHeight * (1 - outputPaneFraction))
 
-                Divider()
+                    Divider()
 
-                MacOutputTextView(
-                    viewModel: viewModel,
-                    paneSize: Binding(
-                        get: { contentHeight * outputPaneFraction },
-                        set: { outputPaneFraction = $0 / contentHeight }
-                    ),
-                    handleEdge: .top,
-                    availableSpace: contentHeight
-                )
-                .frame(height: contentHeight * outputPaneFraction)
+                    MacOutputTextView(
+                        viewModel: viewModel,
+                        paneSize: Binding(
+                            get: { contentHeight * outputPaneFraction },
+                            set: { outputPaneFraction = $0 / contentHeight }
+                        ),
+                        handleEdge: .top,
+                        availableSpace: contentHeight
+                    )
+                    .frame(height: contentHeight * outputPaneFraction)
+                }
             }
 
             Divider()
@@ -191,23 +197,26 @@ struct MacContentView: View {
     private var topTextLayout: some View {
         VStack(spacing: 0) {
             GeometryReader { geo in
-                let contentHeight = geo.size.height
+                let contentWidth = geo.size.width
+                let contentHeight = geo.size.height - 44
 
-                MacOutputTextView(
-                    viewModel: viewModel,
-                    paneSize: Binding(
-                        get: { contentHeight * outputPaneFraction },
-                        set: { outputPaneFraction = $0 / contentHeight }
-                    ),
-                    handleEdge: .bottom,
-                    availableSpace: contentHeight
-                )
-                .frame(height: contentHeight * outputPaneFraction)
+                VStack(spacing: 0) {
+                    MacOutputTextView(
+                        viewModel: viewModel,
+                        paneSize: Binding(
+                            get: { contentHeight * outputPaneFraction },
+                            set: { outputPaneFraction = $0 / contentHeight }
+                        ),
+                        handleEdge: .bottom,
+                        availableSpace: contentHeight
+                    )
+                    .frame(height: contentHeight * outputPaneFraction)
 
-                Divider()
+                    Divider()
 
-                MacCanvasView(viewModel: viewModel)
-                    .frame(height: contentHeight * (1 - outputPaneFraction))
+                    MacCanvasView(viewModel: viewModel)
+                        .frame(height: contentHeight * (1 - outputPaneFraction))
+                }
             }
 
             Divider()
