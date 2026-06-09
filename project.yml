@@ -19,6 +19,7 @@ settings:
     CLANG_CXX_LIBRARY: libc++
     DEVELOPMENT_TEAM: W26R53U58L
     CODE_SIGN_IDENTITY: "Apple Development"
+    CODE_SIGN_STYLE: Automatic
 
 targetTemplates:
   DasherCoreTemplate:
