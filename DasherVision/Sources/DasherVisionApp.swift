@@ -6,6 +6,6 @@ struct DasherVisionApp: App {
         WindowGroup {
             VisionContentView()
         }
-        .defaultSize(width: 1.2, height: 0.8, in: .meters)
+        .defaultSize(width: 1.2, height: 0.8, depth: 0.0, in: .meters)
     }
 }
