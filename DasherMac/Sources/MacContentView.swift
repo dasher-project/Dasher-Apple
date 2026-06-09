@@ -243,11 +243,6 @@ struct MacContentView: View {
                 Spacer()
                 speedStepper
                 Spacer()
-                Button("Exit Direct Mode") {
-                    currentLayoutPosition = "Right"
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
                 speechPicker
             }
             .padding(.horizontal, 12)
