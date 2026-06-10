@@ -1,13 +1,19 @@
 import SwiftUI
 
-struct MessageBanner: View {
-    let isWarning: Bool
-    let text: String
-    var onDismiss: () -> Void
+public struct MessageBanner: View {
+    public let isWarning: Bool
+    public let text: String
+    public var onDismiss: () -> Void
 
     @State private var isVisible = false
 
-    var body: some View {
+    public init(isWarning: Bool, text: String, onDismiss: @escaping () -> Void) {
+        self.isWarning = isWarning
+        self.text = text
+        self.onDismiss = onDismiss
+    }
+
+    public var body: some View {
         HStack(spacing: 8) {
             Image(systemName: isWarning ? "exclamationmark.triangle.fill" : "info.circle.fill")
                 .foregroundColor(isWarning ? .orange : .accentColor)

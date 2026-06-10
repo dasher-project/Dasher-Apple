@@ -4,78 +4,46 @@ import Foundation
 import CoreMotion
 import UIKit
 
-/// Provides tilt/accelerometer-based pointer control using CoreMotion.
-///
-/// Replaces the v5 CIPhoneTiltInput which used the deprecated UIAccelerometer.
-/// The math is the same: project the gravity vector onto calibrated axes,
-/// then apply a running median filter to smooth jitter.
-///
-/// ## How it works
-/// 1. CMMotionManager provides device gravity (acceleration minus user accel)
-/// 2. The gravity vector is projected onto two calibrated axes:
-///    - **main axis**: maps tilt range to Y position (0 = top, 1 = bottom)
-///    - **slow axis**: maps tilt range to X position (0 = left, 1 = right)
-/// 3. A running median filter (window size 20) smooths the raw values
-/// 4. The smoothed (x, y) is fed to the bridge as screen coordinates
-///
-/// ## Calibration
-/// Two calibration modes, matching v5:
-/// - **Vertical**: user tilts phone forward/back for Y, left/right for X.
-///   Records minY/maxY and minX/maxX from live accelerometer data.
-/// - **Custom**: user sets min vector, max vector, and slow axis vector.
-///   For advanced users with non-standard mounting positions.
-///
-/// Calibration is persisted to UserDefaults and loaded on next session.
 @MainActor
 @Observable
-final class TiltInputService {
-    var isActive = false
-    var isCalibrating = false
-    var calibrationMode: TiltCalibrationMode = .vertical
+public final class TiltInputService {
+    public var isActive = false
+    public var isCalibrating = false
+    public var calibrationMode: TiltCalibrationMode = .vertical
 
-    /// Live accelerometer values for calibration UI
-    var currentGravity: (x: Double, y: Double, z: Double) = (0, 0, 0)
-    var calibrationMinY: Double = 1.0
-    var calibrationMaxY: Double = -1.0
-    var calibrationMinX: Double = 1.0
-    var calibrationMaxX: Double = -1.0
+    public var currentGravity: (x: Double, y: Double, z: Double) = (0, 0, 0)
+    public var calibrationMinY: Double = 1.0
+    public var calibrationMaxY: Double = -1.0
+    public var calibrationMinX: Double = 1.0
+    public var calibrationMaxX: Double = -1.0
 
     private var motionManager: CMMotionManager?
     private var medianFilter = MedianFilter(windowSize: 20)
 
-    /// The bridge to feed coordinates to. Set when tilt input activates.
-    weak var bridge: InputMethodBridge?
+    public weak var bridge: InputMethodBridge?
 
-    /// Screen dimensions for coordinate mapping. Updated by the canvas.
-    var screenWidth: Int = 1
-    var screenHeight: Int = 1
+    public var screenWidth: Int = 1
+    public var screenHeight: Int = 1
 
-    // MARK: - Tilt Axes (from calibration)
-
-    /// Main axis direction (normalized). Default: (0, 1, 0) = vertical.
     private var mainAxis: Vec3 = Vec3(x: 0, y: 1, z: 0)
-    /// Offset for main axis projection (dot product at zero position).
     private var mainOffset: Double = 0
-    /// Slow axis direction (normalized). Default: (1, 0, 0) = horizontal.
     private var slowAxis: Vec3 = Vec3(x: 1, y: 0, z: 0)
-    /// Offset for slow axis projection.
     private var slowOffset: Double = 0
 
-    // MARK: - Lifecycle
+    public init() {}
 
-    func activate(bridge: InputMethodBridge) {
+    public func activate(bridge: InputMethodBridge) {
         self.bridge = bridge
         loadCalibration()
         motionManager = CMMotionManager()
         guard let motionManager, motionManager.isDeviceMotionAvailable else { return }
 
-        motionManager.deviceMotionUpdateInterval = 1.0 / 100.0 // 100Hz
+        motionManager.deviceMotionUpdateInterval = 1.0 / 100.0
         motionManager.startDeviceMotionUpdates(using: .xArbitraryZVertical)
 
         isActive = true
         medianFilter.reset()
 
-        // Feed motion data on main thread via Timer
         Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] timer in
             Task { @MainActor [weak self] in
                 guard let self, self.isActive else {
@@ -87,7 +55,7 @@ final class TiltInputService {
         }
     }
 
-    func startCalibrationMotionUpdates() {
+    public func startCalibrationMotionUpdates() {
         if motionManager == nil {
             motionManager = CMMotionManager()
         }
@@ -99,14 +67,12 @@ final class TiltInputService {
         isActive = true
     }
 
-    func deactivate() {
+    public func deactivate() {
         isActive = false
         motionManager?.stopDeviceMotionUpdates()
         motionManager = nil
         medianFilter.reset()
     }
-
-    // MARK: - Motion Processing
 
     private func processMotion() {
         guard let data = motionManager?.deviceMotion else { return }
@@ -117,28 +83,21 @@ final class TiltInputService {
 
         let inVec = Vec3(x: gravity.x, y: gravity.y, z: gravity.z)
 
-        // Project gravity onto main axis → Y position
         var y = dot(mainAxis, inVec) - mainOffset
         y = clamp(y, 0, 1)
 
-        // Project gravity onto slow axis → X position
         var x = dot(slowAxis, inVec) - slowOffset
         x = clamp(x, 0, 1)
 
-        // Map to screen coordinates
         let screenX = Int(x * Double(screenWidth))
         let screenY = Int(y * Double(screenHeight))
 
-        // Apply median filter
         let filtered = medianFilter.push(x: screenX, y: screenY)
 
-        // Feed to Dasher engine
         bridge?.setTiltPosition(x: Float(filtered.x), y: Float(filtered.y))
     }
 
-    // MARK: - Calibration
-
-    func startCalibration() {
+    public func startCalibration() {
         isCalibrating = true
         calibrationMinY = 1.0
         calibrationMaxY = -1.0
@@ -146,7 +105,7 @@ final class TiltInputService {
         calibrationMaxX = -1.0
     }
 
-    func stopCalibration() {
+    public func stopCalibration() {
         isCalibrating = false
         if calibrationMaxY > calibrationMinY {
             applyVerticalCalibration(
@@ -157,9 +116,7 @@ final class TiltInputService {
         }
     }
 
-    /// Update calibration range from live accelerometer data.
-    /// Called from the motion timer during calibration.
-    func updateCalibrationFromMotion() {
+    public func updateCalibrationFromMotion() {
         guard isCalibrating else { return }
         if let data = motionManager?.deviceMotion {
             currentGravity = (data.gravity.x, data.gravity.y, data.gravity.z)
@@ -182,8 +139,6 @@ final class TiltInputService {
         slowOffset = minX / xRange
     }
 
-    // MARK: - Persistence
-
     private static let calibrationKey = "DasherTiltCalibration"
 
     private struct TiltCalibrationData: Codable {
@@ -203,7 +158,6 @@ final class TiltInputService {
     private func loadCalibration() {
         guard let data = UserDefaults.standard.data(forKey: Self.calibrationKey),
               let decoded = try? JSONDecoder().decode(TiltCalibrationData.self, from: data) else {
-            // Default calibration: moderate tilt range
             applyVerticalCalibration(minY: -0.1, maxY: -0.9, minX: -0.4, maxX: 0.4)
             return
         }
@@ -220,18 +174,15 @@ final class TiltInputService {
 
 #endif
 
-// MARK: - Supporting Types
-
-enum TiltCalibrationMode {
+public enum TiltCalibrationMode {
     case vertical
     case custom
 }
 
-/// 3D vector for tilt axis math. Replaces v5's Vec3 C struct.
-struct Vec3 {
-    let x, y, z: Double
+public struct Vec3 {
+    public let x, y, z: Double
 
-    static func - (lhs: Vec3, rhs: Vec3) -> Vec3 {
+    public static func - (lhs: Vec3, rhs: Vec3) -> Vec3 {
         Vec3(x: lhs.x - rhs.x, y: lhs.y - rhs.y, z: lhs.z - rhs.z)
     }
 }
@@ -244,24 +195,21 @@ private func clamp(_ value: Double, _ min: Double, _ max: Double) -> Double {
     Swift.max(min, Swift.min(max, value))
 }
 
-/// Running median filter with configurable window size.
-/// Replaces v5's SBTree-based median filter with a simpler sorted-array approach.
-/// Keeps the last N samples and returns the median of each axis.
-struct MedianFilter {
-    let windowSize: Int
+public struct MedianFilter {
+    public let windowSize: Int
     private var xBuffer: [Int] = []
     private var yBuffer: [Int] = []
 
-    init(windowSize: Int = 20) {
+    public init(windowSize: Int = 20) {
         self.windowSize = windowSize
     }
 
-    mutating func reset() {
+    public mutating func reset() {
         xBuffer.removeAll()
         yBuffer.removeAll()
     }
 
-    mutating func push(x: Int, y: Int) -> (x: Int, y: Int) {
+    public mutating func push(x: Int, y: Int) -> (x: Int, y: Int) {
         xBuffer.append(x)
         yBuffer.append(y)
         if xBuffer.count > windowSize {

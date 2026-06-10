@@ -14,12 +14,12 @@ import SwiftUI
 /// Default calibration assumes moderate vertical tilt (forward/back = Y,
 /// left/right = X).
 @available(iOS 17, *)
-struct TiltCalibrationView: View {
-    var tiltService: TiltInputService
+public struct TiltCalibrationView: View {
+    public var tiltService: TiltInputService
     @Environment(\.dismiss) private var dismiss
     @State private var tick = 0
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 20) {
             Text("Tilt Calibration")
                 .font(.title2.bold())

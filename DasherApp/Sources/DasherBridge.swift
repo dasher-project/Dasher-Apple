@@ -1,4 +1,5 @@
 import Foundation
+import DasherShared
 
 #if canImport(UIKit)
 import UIKit

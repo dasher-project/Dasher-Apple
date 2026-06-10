@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
+public enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
     case continuous
     case pressToMove
     case clickToZoom
@@ -11,9 +11,9 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
     case scanning
     case directBoxes
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .continuous: return "Continuous"
         case .pressToMove: return "Press to Move"
@@ -27,7 +27,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var subtitle: String {
+    public var subtitle: String {
         switch self {
         case .continuous: return "Always follows pointer"
         case .pressToMove: return "Hold to move, release to pause"
@@ -41,7 +41,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var iconName: String {
+    public var iconName: String {
         switch self {
         case .continuous: return "cursorarrow.motionlines"
         case .pressToMove: return "hand.tap"
@@ -55,7 +55,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var filterName: String {
+    public var filterName: String {
         switch self {
         case .continuous: return "Normal Control"
         case .pressToMove: return "Press Mode"
@@ -69,7 +69,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var isSwitchBased: Bool {
+    public var isSwitchBased: Bool {
         switch self {
         case .oneSwitch, .twoSwitches, .twoPush, .scanning, .directBoxes:
             return true
@@ -78,7 +78,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var requiredSwitchCount: Int {
+    public var requiredSwitchCount: Int {
         switch self {
         case .oneSwitch, .twoPush: return 1
         case .twoSwitches: return 2
@@ -87,7 +87,7 @@ enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    static func validFor(method: AccessMethod) -> [SelectionMethod] {
+    public static func validFor(method: AccessMethod) -> [SelectionMethod] {
         allCases.filter { $0.isCompatible(with: method) }
     }
 

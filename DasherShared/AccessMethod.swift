@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum AccessMethod: String, CaseIterable, Identifiable, Codable {
+public enum AccessMethod: String, CaseIterable, Identifiable, Codable {
     case pointer
     case touch
     case eyeGaze
@@ -9,9 +9,9 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
     case handTracking
     case switchesOnly
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .pointer: return "Pointer"
         case .touch: return "Touch"
@@ -23,7 +23,7 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var subtitle: String {
+    public var subtitle: String {
         switch self {
         case .pointer: return "Mouse or trackpad"
         case .touch: return "Direct touch or stylus"
@@ -35,7 +35,7 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var iconName: String {
+    public var iconName: String {
         switch self {
         case .pointer: return "cursorarrow"
         case .touch: return "hand.draw"
@@ -47,7 +47,7 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var availablePlatforms: InputPlatform {
+    public var availablePlatforms: InputPlatform {
         switch self {
         case .pointer: return .macOS
         case .touch: return .iOS
@@ -59,7 +59,7 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var isAvailable: Bool {
+    public var isAvailable: Bool {
         #if os(iOS)
         availablePlatforms.contains(.iOS)
         #elseif os(macOS)
@@ -71,7 +71,7 @@ enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         #endif
     }
 
-    var hasContinuousInput: Bool {
+    public var hasContinuousInput: Bool {
         self != .switchesOnly
     }
 }

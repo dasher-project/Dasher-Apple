@@ -1,16 +1,29 @@
 import SwiftUI
 
-struct AccessSettingsView: View {
-    let bridge: AccessSettingsBridge
-    var onMethodChanged: ((AccessMethod) -> Void)?
+public struct AccessSettingsView: View {
+    public let bridge: AccessSettingsBridge
+    public var onMethodChanged: ((AccessMethod) -> Void)?
     #if canImport(UIKit)
-    var tiltService: TiltInputService?
+    public var tiltService: TiltInputService?
     #endif
 
     @State private var config: AccessConfiguration = .current
     @State private var showTiltCalibration = false
 
-    var body: some View {
+    #if canImport(UIKit)
+    public init(bridge: AccessSettingsBridge, onMethodChanged: ((AccessMethod) -> Void)? = nil, tiltService: TiltInputService? = nil) {
+        self.bridge = bridge
+        self.onMethodChanged = onMethodChanged
+        self.tiltService = tiltService
+    }
+    #else
+    public init(bridge: AccessSettingsBridge, onMethodChanged: ((AccessMethod) -> Void)? = nil) {
+        self.bridge = bridge
+        self.onMethodChanged = onMethodChanged
+    }
+    #endif
+
+    public var body: some View {
         let validSelections = SelectionMethod.validFor(method: config.method)
 
         List {

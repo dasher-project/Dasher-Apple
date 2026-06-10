@@ -1,13 +1,13 @@
 import Foundation
 
-struct AccessConfiguration: Codable, Equatable {
-    var method: AccessMethod
-    var selection: SelectionMethod
-    var switchProfile: SwitchProfile?
+public struct AccessConfiguration: Codable, Equatable {
+    public var method: AccessMethod
+    public var selection: SelectionMethod
+    public var switchProfile: SwitchProfile?
 
-    static let storageKey = "access_configuration"
+    public static let storageKey = "access_configuration"
 
-    static var current: AccessConfiguration {
+    public static var current: AccessConfiguration {
         get {
             guard let data = UserDefaults.standard.data(forKey: storageKey),
                   let config = try? JSONDecoder().decode(AccessConfiguration.self, from: data) else {
@@ -21,7 +21,7 @@ struct AccessConfiguration: Codable, Equatable {
         }
     }
 
-    static var defaultConfiguration: AccessConfiguration {
+    public static var defaultConfiguration: AccessConfiguration {
         #if os(iOS)
         AccessConfiguration(method: .touch, selection: .continuous, switchProfile: nil)
         #elseif os(macOS)
@@ -33,11 +33,11 @@ struct AccessConfiguration: Codable, Equatable {
         #endif
     }
 
-    var needsSwitchProfile: Bool {
+    public var needsSwitchProfile: Bool {
         selection.isSwitchBased
     }
 
-    func apply(to bridge: AccessSettingsBridge) {
+    public func apply(to bridge: AccessSettingsBridge) {
         bridge.setStringParameter(key: ParameterKeys.spInputFilter, value: selection.filterName)
 
         if selection == .dwell {
@@ -55,13 +55,13 @@ struct AccessConfiguration: Codable, Equatable {
     }
 }
 
-enum ParameterKeys {
-    static let spInputFilter = 101
-    static let spInputDevice = 102
-    static let spButtonMappings = 103
-    static let bpStopOutside = 19
-    static let bpAutocalibrate = 21
-    static let lpButtonScanTime = 53
-    static let lpMaxBitrate = 29
-    static let bpAutoSpeedcontrol = 14
+public enum ParameterKeys {
+    public static let spInputFilter = 101
+    public static let spInputDevice = 102
+    public static let spButtonMappings = 103
+    public static let bpStopOutside = 19
+    public static let bpAutocalibrate = 21
+    public static let lpButtonScanTime = 53
+    public static let lpMaxBitrate = 29
+    public static let bpAutoSpeedcontrol = 14
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import DasherShared
 
 struct DasherSettingsView: View {
     @ObservedObject var viewModel: DasherViewModel

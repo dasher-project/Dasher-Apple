@@ -1,10 +1,14 @@
 import SwiftUI
 import SwiftTTSWrapper
 
-struct SpeechSettingsView: View {
-    @Bindable var service: SpeechService
+public struct SpeechSettingsView: View {
+    @Bindable public var service: SpeechService
 
-    var body: some View {
+    public init(service: SpeechService) {
+        self.service = service
+    }
+
+    public var body: some View {
         @Bindable var service = service
         VStack(alignment: .leading, spacing: 12) {
             enginePicker

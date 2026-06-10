@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct SwitchCaptureRow: View {
-    @Binding var slot: SwitchSlot
-    let bridge: AccessSettingsBridge
+public struct SwitchCaptureRow: View {
+    @Binding public var slot: SwitchSlot
+    public let bridge: AccessSettingsBridge
 
     @State private var isCapturing = false
 
-    var body: some View {
+    public var body: some View {
         HStack {
             Image(systemName: slot.isAssigned ? "circle.inset.filled" : "circle")
                 .foregroundColor(slot.isAssigned ? .green : .secondary)
@@ -78,5 +78,5 @@ struct SwitchCaptureRow: View {
 }
 
 extension Notification.Name {
-    static let dasherKeyDown = Notification.Name("dasherKeyDown")
+    public static let dasherKeyDown = Notification.Name("dasherKeyDown")
 }

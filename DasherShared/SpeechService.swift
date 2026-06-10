@@ -3,36 +3,36 @@ import SwiftTTSWrapper
 
 @MainActor
 @Observable
-final class SpeechService {
-    var selectedEngine: TTSEngine = .system {
+public final class SpeechService {
+    public var selectedEngine: TTSEngine = .system {
         didSet { saveEngineSelection(); client = nil }
     }
-    var credentials: [String: String] = [:]
-    var selectedVoice: String?
-    var availableVoices: [UnifiedVoice] = []
-    var isSpeaking = false
-    var isLoadingVoices = false
-    var errorMessage: String?
+    public var credentials: [String: String] = [:]
+    public var selectedVoice: String?
+    public var availableVoices: [UnifiedVoice] = []
+    public var isSpeaking = false
+    public var isLoadingVoices = false
+    public var errorMessage: String?
 
-    var speechRate: SpeechRate = .medium {
+    public var speechRate: SpeechRate = .medium {
         didSet { saveRateSelection() }
     }
-    var speechPitch: SpeechPitch = .medium {
+    public var speechPitch: SpeechPitch = .medium {
         didSet { savePitchSelection() }
     }
-    var speechVolume: Float = 1.0 {
+    public var speechVolume: Float = 1.0 {
         didSet { saveVolumeSelection() }
     }
 
     private var client: TTSClient?
 
-    static let shared = SpeechService()
+    public static let shared = SpeechService()
 
     private init() {
         loadSavedSettings()
     }
 
-    func speak(_ text: String) {
+    public func speak(_ text: String) {
         guard !text.isEmpty else { return }
         ensureClient()
         client?.onStart = { [weak self] in
@@ -61,12 +61,12 @@ final class SpeechService {
         }
     }
 
-    func stop() {
+    public func stop() {
         client?.stop()
         isSpeaking = false
     }
 
-    func loadVoices() {
+    public func loadVoices() {
         ensureClient()
         isLoadingVoices = true
         Task {
@@ -79,7 +79,7 @@ final class SpeechService {
         }
     }
 
-    func setCredential(_ key: String, value: String) {
+    public func setCredential(_ key: String, value: String) {
         credentials[key] = value
         client = nil
         saveCredentials()
@@ -90,8 +90,6 @@ final class SpeechService {
             client = TTSClientFactory.create(engine: selectedEngine, credentials: credentials)
         }
     }
-
-    // MARK: - Persistence
 
     private func loadSavedSettings() {
         let defaults = UserDefaults.standard
@@ -123,7 +121,7 @@ final class SpeechService {
         }
     }
 
-    func saveVoiceSelection() {
+    public func saveVoiceSelection() {
         UserDefaults.standard.set(selectedVoice, forKey: "tts_voice")
     }
 

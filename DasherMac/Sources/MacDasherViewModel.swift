@@ -1,4 +1,5 @@
 import SwiftUI
+import DasherShared
 import UniformTypeIdentifiers
 
 @MainActor

@@ -1,12 +1,12 @@
 import Foundation
 
-struct SwitchProfile: Codable, Equatable {
-    var switches: [SwitchSlot]
-    var scanRateMs: Int
+public struct SwitchProfile: Codable, Equatable {
+    public var switches: [SwitchSlot]
+    public var scanRateMs: Int
 
-    static let maxSwitches = 4
+    public static let maxSwitches = 4
 
-    init() {
+    public init() {
         switches = [
             SwitchSlot(id: 1, label: "Switch 1", keyCode: nil, dasherButton: 2),
             SwitchSlot(id: 2, label: "Switch 2", keyCode: nil, dasherButton: 3),
@@ -16,31 +16,31 @@ struct SwitchProfile: Codable, Equatable {
         scanRateMs = 600
     }
 
-    var assignedSwitches: [SwitchSlot] {
+    public var assignedSwitches: [SwitchSlot] {
         switches.filter { $0.keyCode != nil }
     }
 
-    var buttonMapString: String {
+    public var buttonMapString: String {
         let assigned = switches.filter { $0.keyCode != nil && $0.dasherButton > 0 }
         guard !assigned.isEmpty else { return "" }
         return assigned.map { "\($0.keyCode!)=\($0.dasherButton)" }.joined(separator: " ")
     }
 }
 
-struct SwitchSlot: Codable, Identifiable, Equatable {
-    let id: Int
-    var label: String
-    var keyCode: Int?
-    var dasherButton: Int
+public struct SwitchSlot: Codable, Identifiable, Equatable {
+    public let id: Int
+    public var label: String
+    public var keyCode: Int?
+    public var dasherButton: Int
 
-    var isAssigned: Bool { keyCode != nil }
+    public var isAssigned: Bool { keyCode != nil }
 
-    var keyDisplayName: String {
+    public var keyDisplayName: String {
         guard let code = keyCode else { return "Not set" }
         return SwitchSlot.keyName(for: code)
     }
 
-    static func keyName(for code: Int) -> String {
+    public static func keyName(for code: Int) -> String {
         switch code {
         case 32: return "Space"
         case 13: return "Enter"

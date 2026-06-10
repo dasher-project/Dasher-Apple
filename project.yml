@@ -9,6 +9,8 @@ options:
   generateEmptyDirectories: true
 
 packages:
+  DasherShared:
+    path: .
   SwiftTTSWrapper:
     url: https://github.com/aactools/swift-tts-wrapper
     from: "1.2.0"
@@ -93,7 +95,6 @@ targets:
       - path: DasherApp
         excludes:
           - "**/.gitkeep"
-      - path: DasherShared
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -102,8 +103,8 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
-      - package: SwiftTTSWrapper
-        product: SwiftTTSWrapper
+      - package: DasherShared
+        product: DasherShared
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -142,7 +143,6 @@ targets:
       - path: DasherKeyboard
         excludes:
           - "**/.gitkeep"
-      - path: DasherShared
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -151,8 +151,8 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
-      - package: SwiftTTSWrapper
-        product: SwiftTTSWrapper
+      - package: DasherShared
+        product: DasherShared
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -193,23 +193,20 @@ targets:
       - path: DasherMac
         excludes:
           - "**/.gitkeep"
-      - path: DasherShared
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
     dependencies:
-      - target: DasherCore_ios
+      - target: DasherCore_macos
         link: true
-      - target: pugixml_ios
+      - target: pugixml_macos
         link: true
       - target: DasherKeyboard
         embed: false
-      - package: SwiftTTSWrapper
-        product: SwiftTTSWrapper
-      - package: SwiftTTSWrapper
-        product: SwiftTTSWrapperSherpaOnnx
+      - package: DasherShared
+        product: DasherShared
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -252,15 +249,13 @@ targets:
         buildPhase: resources
         type: folder
     dependencies:
-      - target: DasherCore_ios
+      - target: DasherCore_visionos
         link: true
-      - target: pugixml_ios
+      - target: pugixml_visionos
         link: true
       - target: DasherKeyboard
       - package: SwiftTTSWrapper
         product: SwiftTTSWrapper
-      - package: SwiftTTSWrapper
-        product: SwiftTTSWrapperSherpaOnnx
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
