@@ -293,3 +293,23 @@ schemes:
       config: Debug
     archive:
       config: Release
+  DasherMac:
+    build:
+      targets:
+        DasherCore_macos: all
+        pugixml_macos: all
+        DasherMac: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+  DasherVision:
+    build:
+      targets:
+        DasherCore_visionos: all
+        pugixml_visionos: all
+        DasherVision: all
+    run:
+      config: Debug
+    archive:
+      config: Release
