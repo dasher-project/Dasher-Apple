@@ -8,7 +8,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)org.dasherproject.Dasher</string>
+		<string>$(AppIdentifierPrefix)org.dasherproject.v6.Dasher</string>
 	</array>
 </dict>
 </plist>
