@@ -1,0 +1,33 @@
+{
+  "originHash" : "635a817845a559ef0a4becdf377639447c05c1c8b93470b2dbcf082092f38c8c",
+  "pins" : [
+    {
+      "identity" : "sherpa-onnx-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/willwade/sherpa-onnx-spm.git",
+      "state" : {
+        "revision" : "78c979f0746d6ac449a69b94f9cec98a5e78c2ce",
+        "version" : "1.13.14"
+      }
+    },
+    {
+      "identity" : "speechmarkdown-rust",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AACTools/speechmarkdown-rust",
+      "state" : {
+        "revision" : "d25aedb773976ccfca8bbf73cf325c975fb67b20",
+        "version" : "0.4.3"
+      }
+    },
+    {
+      "identity" : "swift-tts-wrapper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aactools/swift-tts-wrapper",
+      "state" : {
+        "revision" : "62f43b470cc94db0f607a97c4a1bb7dbac2c9e11",
+        "version" : "1.2.0"
+      }
+    }
+  ],
+  "version" : 3
+}

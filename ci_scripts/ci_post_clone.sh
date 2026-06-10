@@ -29,9 +29,8 @@ xcodegen generate
 echo "Patching keyboard extension dependencies..."
 python3 patch_keyboard_dep.py
 
-echo "Resolving Swift Package Manager dependencies..."
-xcodebuild -resolvePackageDependencies -project Dasher.xcodeproj -scheme DasherApp -clonedSourcePackagesDirPath SourcePackages 2>&1 || true
-xcodebuild -resolvePackageDependencies -project Dasher.xcodeproj -scheme DasherMac -clonedSourcePackagesDirPath SourcePackages 2>&1 || true
-xcodebuild -resolvePackageDependencies -project Dasher.xcodeproj -scheme DasherVision -clonedSourcePackagesDirPath SourcePackages 2>&1 || true
+echo "Restoring Package.resolved..."
+mkdir -p Dasher.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+cp -f Package.resolved Dasher.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
 
 echo "=== CI Post-Clone Complete ==="
