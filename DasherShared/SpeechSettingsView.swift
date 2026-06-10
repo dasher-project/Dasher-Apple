@@ -70,6 +70,22 @@ struct SpeechSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+
+                Spacer()
+
+                Button {
+                    if service.isSpeaking {
+                        service.stop()
+                    } else {
+                        service.speak("Hello, this is a preview of the selected voice.")
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: service.isSpeaking ? "stop.fill" : "play.fill")
+                        Text(service.isSpeaking ? "Stop" : "Preview")
+                    }
+                }
+                .buttonStyle(.borderless)
             }
 
             if !service.availableVoices.isEmpty {
@@ -83,11 +99,53 @@ struct SpeechSettingsView: View {
                     service.saveVoiceSelection()
                 }
             }
+
+            Picker("Rate", selection: $service.speechRate) {
+                ForEach(SpeechRate.allCases, id: \.self) { rate in
+                    Text(rateDisplayName(rate)).tag(rate)
+                }
+            }
+
+            Picker("Pitch", selection: $service.speechPitch) {
+                ForEach(SpeechPitch.allCases, id: \.self) { pitch in
+                    Text(pitchDisplayName(pitch)).tag(pitch)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text("Volume")
+                    Spacer()
+                    Text("\(Int(service.speechVolume * 100))%")
+                        .foregroundStyle(.secondary)
+                }
+                Slider(value: $service.speechVolume, in: 0...1, step: 0.05)
+            }
+        }
+    }
+
+    private func rateDisplayName(_ rate: SpeechRate) -> String {
+        switch rate {
+        case .xSlow: return "Very Slow"
+        case .slow: return "Slow"
+        case .medium: return "Medium"
+        case .fast: return "Fast"
+        case .xFast: return "Very Fast"
+        }
+    }
+
+    private func pitchDisplayName(_ pitch: SpeechPitch) -> String {
+        switch pitch {
+        case .xLow: return "Very Low"
+        case .low: return "Low"
+        case .medium: return "Medium"
+        case .high: return "High"
+        case .xHigh: return "Very High"
         }
     }
 
     private var allEngines: [TTSEngine] {
-        [.system, .openai, .elevenlabs, .azure, .google, .cartesia, .playht, .deepgram, .fishaudio, .hume, .mistral, .murf, .polly, .resemble, .unrealspeech, .upliftai, .watson, .witai, .xai, .modelslab]
+        [.system, .sherpaonnx, .openai, .elevenlabs, .azure, .google, .cartesia, .playht, .deepgram, .fishaudio, .hume, .mistral, .murf, .polly, .resemble, .unrealspeech, .upliftai, .watson, .witai, .xai, .modelslab]
     }
 
     private func engineName(_ engine: TTSEngine) -> String {

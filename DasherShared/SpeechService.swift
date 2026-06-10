@@ -14,6 +14,16 @@ final class SpeechService {
     var isLoadingVoices = false
     var errorMessage: String?
 
+    var speechRate: SpeechRate = .medium {
+        didSet { saveRateSelection() }
+    }
+    var speechPitch: SpeechPitch = .medium {
+        didSet { savePitchSelection() }
+    }
+    var speechVolume: Float = 1.0 {
+        didSet { saveVolumeSelection() }
+    }
+
     private var client: TTSClient?
 
     static let shared = SpeechService()
@@ -38,6 +48,9 @@ final class SpeechService {
         if let selectedVoice {
             options.voice = selectedVoice
         }
+        options.rate = speechRate
+        options.pitch = speechPitch
+        options.volume = speechVolume
         Task {
             do {
                 try await client?.speak(text, options: options)
@@ -90,6 +103,14 @@ final class SpeechService {
             credentials = dict
         }
         selectedVoice = defaults.string(forKey: "tts_voice")
+        if let raw = defaults.string(forKey: "tts_rate"), let rate = SpeechRate(rawValue: raw) {
+            speechRate = rate
+        }
+        if let raw = defaults.string(forKey: "tts_pitch"), let pitch = SpeechPitch(rawValue: raw) {
+            speechPitch = pitch
+        }
+        speechVolume = defaults.float(forKey: "tts_volume").isNaN ? 1.0 : defaults.float(forKey: "tts_volume")
+        if speechVolume <= 0 { speechVolume = 1.0 }
     }
 
     private func saveEngineSelection() {
@@ -104,5 +125,17 @@ final class SpeechService {
 
     func saveVoiceSelection() {
         UserDefaults.standard.set(selectedVoice, forKey: "tts_voice")
+    }
+
+    private func saveRateSelection() {
+        UserDefaults.standard.set(speechRate.rawValue, forKey: "tts_rate")
+    }
+
+    private func savePitchSelection() {
+        UserDefaults.standard.set(speechPitch.rawValue, forKey: "tts_pitch")
+    }
+
+    private func saveVolumeSelection() {
+        UserDefaults.standard.set(speechVolume, forKey: "tts_volume")
     }
 }
