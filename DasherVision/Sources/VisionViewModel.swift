@@ -26,6 +26,8 @@ class VisionViewModel: ObservableObject {
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
         self.bridge = DasherBridge(dataDir: dataPath)
+        let savedConfig = AccessConfiguration.current
+        savedConfig.apply(to: bridge)
     }
 
     func setCanvasSize(_ size: CGSize) {

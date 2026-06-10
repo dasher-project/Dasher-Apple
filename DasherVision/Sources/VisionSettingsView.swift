@@ -31,6 +31,17 @@ struct VisionSettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        AccessSettingsView(bridge: viewModel.bridge)
+                    } label: {
+                        HStack {
+                            Text("Access")
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+
                     Toggle(isOn: $viewModel.pointerHoverEnabled) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Pointer Hover Input")

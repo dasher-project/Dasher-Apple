@@ -6,7 +6,7 @@ struct DasherSettingsView: View {
     @State private var parameters: [DasherParameterInfo] = []
     @State private var selectedSection: DasherSettingsSection = .input
     @State private var selectedLocale: String = "en"
-    @State private var currentInputFilter: String = ""
+    @State private var currentAccessSummary: String = ""
 
     private let availableLocales: [(code: String, name: String)] = [
         ("en", "English"),
@@ -20,9 +20,22 @@ struct DasherSettingsView: View {
         ("ar", "العربية")
     ]
 
-    private static let spInputFilter = 103
-    private static let spGameTextFile = 102
+    private static let spInputFilter = 101
+    private static let spGameTextFile = 100
     @State private var showGameTextFileImporter = false
+
+    private static let dasherFonts = [
+        "System",
+        "Georgia",
+        "Helvetica Neue",
+        "Menlo",
+        "Courier New",
+        "Avenir Next",
+        "Futura",
+        "Palatino",
+        "Trebuchet MS",
+        "Verdana",
+    ]
 
     private let filterToSubgroup: [String: Set<String>] = [
         "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons"],
@@ -88,15 +101,20 @@ struct DasherSettingsView: View {
         }
         .onAppear {
             selectedLocale = viewModel.bridge.locale
-            currentInputFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter)
+            updateAccessSummary()
             parameters = DasherBridge.allParameters
         }
-        .onChange(of: currentInputFilter) {
+        .onChange(of: currentAccessSummary) {
             parameters = DasherBridge.allParameters
         }
     }
 
     // MARK: - Filtering
+
+    private func updateAccessSummary() {
+        let config = AccessConfiguration.current
+        currentAccessSummary = "\(config.method.displayName), \(config.selection.displayName)"
+    }
 
     private var activeSubgroups: Set<String> {
         let currentFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter)
@@ -175,7 +193,7 @@ struct DasherSettingsView: View {
                     }
                 }
             }
-            ForEach(params) { param in
+            ForEach(params.filter { $0.name != "Color Palette" }) { param in
                 parameterRow(param)
             }
         } header: {
@@ -187,6 +205,24 @@ struct DasherSettingsView: View {
 
     private func inputSection(_ params: [DasherParameterInfo]) -> some View {
         Section {
+            NavigationLink {
+                AccessSettingsView(
+                    bridge: viewModel.bridge,
+                    onMethodChanged: { method in
+                        viewModel.activateTiltIfNeeded(method: method)
+                    },
+                    tiltService: viewModel.tiltService
+                )
+            } label: {
+                HStack {
+                    Label("Access", systemImage: "cursorarrow.motionlines")
+                    Spacer()
+                    Text(currentAccessSummary)
+                        .foregroundColor(.secondary)
+                        .font(.subheadline)
+                }
+            }
+
             #if os(iOS) || os(visionOS)
             Toggle(isOn: $viewModel.pointerHoverEnabled) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -221,7 +257,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label("Input", systemImage: "cursorarrow.motionlines")
+            Text("Input")
         }
     }
 
@@ -444,7 +480,11 @@ struct DasherSettingsView: View {
             }
 
         case .string:
-            stringPickerRow(param)
+            if param.name == "Dasher Font" {
+                fontPickerRow(param)
+            } else {
+                stringPickerRow(param)
+            }
 
         case .invalid:
             EmptyView()
@@ -469,12 +509,16 @@ struct DasherSettingsView: View {
     @ViewBuilder
     private func stringPickerRow(_ param: DasherParameterInfo) -> some View {
         let stringValues = viewModel.bridge.getStringValues(key: param.key)
-        if param.uiType == .dropdown && !stringValues.isEmpty {
+        let currentValue = viewModel.bridge.getStringParameter(key: param.key)
+        if param.uiType == .dropdown && !stringValues.isEmpty && (currentValue.isEmpty || stringValues.contains(currentValue)) {
             let binding = Binding<String>(
-                get: { viewModel.bridge.getStringParameter(key: param.key) },
+                get: {
+                    let val = viewModel.bridge.getStringParameter(key: param.key)
+                    return stringValues.contains(val) ? val : (stringValues.first ?? val)
+                },
                 set: { newValue in
                     viewModel.bridge.setStringParameter(key: param.key, value: newValue)
-                    if param.key == Self.spInputFilter { currentInputFilter = newValue }
+                    if param.key == Self.spInputFilter { updateAccessSummary() }
                 }
             )
             Picker(param.name, selection: binding) {
@@ -489,7 +533,7 @@ struct DasherSettingsView: View {
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
                     set: { newValue in
                         viewModel.bridge.setLongParameter(key: param.key, value: newValue)
-                        if param.key == Self.spInputFilter { currentInputFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter) }
+                        if param.key == Self.spInputFilter { updateAccessSummary() }
                     }
                 )
                 Picker(param.name, selection: binding) {
@@ -502,6 +546,21 @@ struct DasherSettingsView: View {
             }
         } else {
             stringField(param)
+        }
+    }
+
+    @ViewBuilder
+    private func fontPickerRow(_ param: DasherParameterInfo) -> some View {
+        let currentFont = viewModel.bridge.getStringParameter(key: param.key)
+        let mapped = Self.dasherFonts.contains(currentFont) ? currentFont : "System"
+        let binding = Binding<String>(
+            get: { mapped },
+            set: { viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0) }
+        )
+        Picker(param.name, selection: binding) {
+            ForEach(Self.dasherFonts, id: \.self) { font in
+                Text(font).tag(font)
+            }
         }
     }
 
