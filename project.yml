@@ -120,16 +120,18 @@ targets:
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: TRKU383G7Z
+        DEVELOPER_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
           - "-lspeechmarkdown_rust"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
         LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
-          - "$(BUILT_PRODUCTS_DIR)/../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
         LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
-          - "$(BUILT_PRODUCTS_DIR)/../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
         SWIFT_OBJC_BRIDGING_HEADER: DasherApp/Sources/DasherApp-Bridging-Header.h
     entitlements:
       path: DasherApp/DasherApp.entitlements
@@ -167,16 +169,18 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: TRKU383G7Z
+        DEVELOPER_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
           - "-lspeechmarkdown_rust"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
         LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
-          - "$(BUILT_PRODUCTS_DIR)/../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
         LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
-          - "$(BUILT_PRODUCTS_DIR)/../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
         SWIFT_OBJC_BRIDGING_HEADER: DasherKeyboard/Sources/DasherKeyboard-Bridging-Header.h
     entitlements:
       path: DasherKeyboard/DasherKeyboard.entitlements
@@ -228,7 +232,8 @@ targets:
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
         LIBRARY_SEARCH_PATHS:
-          - "$(BUILT_PRODUCTS_DIR)/../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/macos-arm64_x86_64"
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/macos-arm64_x86_64"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/macos-arm64_x86_64"
         SWIFT_OBJC_BRIDGING_HEADER: DasherMac/Sources/DasherMac-Bridging-Header.h
     entitlements:
       path: DasherMac/DasherMac.entitlements
