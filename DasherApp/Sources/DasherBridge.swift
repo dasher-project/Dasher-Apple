@@ -80,9 +80,10 @@ enum DasherSettingsSection: String, CaseIterable {
 // MARK: - Bridge
 
 @MainActor
-class DasherBridge {
+class DasherBridge: InputMethodBridge {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
+    private var fontParamKey: Int = -1
 
     var onOutput: ((String) -> Void)?
     var onDelete: ((String) -> Void)?
@@ -108,8 +109,6 @@ class DasherBridge {
                     instance.onDelete?(str)
                 }
             }, retained)
-        }
-        if let ctx = ctx {
             let retained2 = Unmanaged.passUnretained(self).toOpaque()
             dasher_set_message_callback(ctx, { messageType, text, userData in
                 guard let text = text, let userData = userData else { return }
@@ -118,6 +117,20 @@ class DasherBridge {
                 let isWarning = messageType == 1
                 instance.onMessage?(isWarning, str)
             }, retained2)
+        }
+        resolveFontParamKey()
+    }
+
+    private func resolveFontParamKey() {
+        let count = dasher_get_parameter_count()
+        var info = dasher_parameter_info()
+        for i in 0..<count {
+            guard dasher_get_parameter_info(i, &info) == 0 else { continue }
+            let name = String(cString: info.name)
+            if name == "Dasher Font" {
+                fontParamKey = Int(info.key)
+                return
+            }
         }
     }
 
@@ -166,11 +179,13 @@ class DasherBridge {
         dasher_frame(ctx, timeMs, &cmds, &cmdCount, &strs, &strCount)
 
         guard let cmds = cmds, cmdCount > 0 else { return nil }
+        let fn = fontParamKey >= 0 ? getStringParameter(key: fontParamKey) : ""
         return DrawCommands(
             commands: cmds,
             commandCount: Int(cmdCount),
             strings: strs,
-            stringCount: Int(strCount)
+            stringCount: Int(strCount),
+            fontName: fn
         )
     }
 
@@ -469,6 +484,7 @@ struct DrawCommands {
     let commandCount: Int
     let strings: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
     let stringCount: Int
+    var fontName: String = ""
 }
 
 private func argbToCGColor(_ argb: Int32) -> CGColor {
@@ -522,8 +538,14 @@ extension DrawCommands {
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
                     let text = String(cString: strPtr)
+                    let font: UIFont
+                    if self.fontName.isEmpty {
+                        font = UIFont.systemFont(ofSize: fontSize)
+                    } else {
+                        font = UIFont(name: self.fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+                    }
                     let attrs: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: fontSize),
+                        .font: font,
                         .foregroundColor: color
                     ]
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: b))
@@ -580,8 +602,14 @@ extension DrawCommands {
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
                     let text = String(cString: strPtr)
+                    let font: NSFont
+                    if self.fontName.isEmpty {
+                        font = NSFont.systemFont(ofSize: fontSize)
+                    } else {
+                        font = NSFont(name: self.fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+                    }
                     let attrs: [NSAttributedString.Key: Any] = [
-                        .font: NSFont.systemFont(ofSize: fontSize),
+                        .font: font,
                         .foregroundColor: color
                     ]
                     let flippedY = viewHeight - b - fontSize

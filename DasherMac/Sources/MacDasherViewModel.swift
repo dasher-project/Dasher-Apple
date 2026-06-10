@@ -40,6 +40,7 @@ class MacDasherViewModel: ObservableObject {
         bridge.setScreenSize(width: 900, height: 600)
 
         bridge.onMessage = { [weak self] isWarning, text in
+            if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
         }
 
@@ -59,6 +60,9 @@ class MacDasherViewModel: ObservableObject {
             }
             self.outputText = self.bridge.getOutputText()
         }
+
+        let savedConfig = AccessConfiguration.current
+        savedConfig.apply(to: bridge)
     }
 
     private func updateDirectMode() {

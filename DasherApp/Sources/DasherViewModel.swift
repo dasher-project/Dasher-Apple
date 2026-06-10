@@ -22,6 +22,9 @@ class DasherViewModel: ObservableObject {
 
     let bridge: DasherBridge
     let speech = SpeechService.shared
+    #if os(iOS)
+    let tiltService = TiltInputService()
+    #endif
     private var lastSpokenText: String = ""
     private var speechDebounceTask: Task<Void, Never>?
 
@@ -39,12 +42,24 @@ class DasherViewModel: ObservableObject {
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
         bridge.setScreenSize(width: 800, height: 600)
         bridge.onMessage = { [weak self] isWarning, text in
+            if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
         }
+        let savedConfig = AccessConfiguration.current
+        savedConfig.apply(to: bridge)
+        #if os(iOS)
+        if savedConfig.method == .tilt {
+            tiltService.activate(bridge: bridge)
+        }
+        #endif
     }
 
     func setCanvasSize(_ size: CGSize) {
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
+        #if os(iOS)
+        tiltService.screenWidth = Int(size.width)
+        tiltService.screenHeight = Int(size.height)
+        #endif
     }
 
     func handlePointerHover(at point: CGPoint) {
@@ -144,4 +159,18 @@ class DasherViewModel: ObservableObject {
         bridge.setSpeedPercent(newSpeed)
         speed = Double(newSpeed) / 100.0
     }
+
+    #if os(iOS)
+    func activateTiltIfNeeded(method: AccessMethod) {
+        if method == .tilt && tiltService.isCalibrating == false {
+            if !tiltService.isActive {
+                tiltService.activate(bridge: bridge)
+            }
+        } else {
+            if tiltService.isActive {
+                tiltService.deactivate()
+            }
+        }
+    }
+    #endif
 }

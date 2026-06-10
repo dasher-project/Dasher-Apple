@@ -71,9 +71,10 @@ enum DasherSettingsSection: String, CaseIterable {
 // MARK: - Bridge
 
 @MainActor
-class DasherBridge {
+class DasherBridge: InputMethodBridge {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
+    private var fontParamKey: Int = -1
 
     private(set) var lastError: String?
 
@@ -82,6 +83,20 @@ class DasherBridge {
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
             lastError = String(cString: errorMsg)
+        }
+        resolveFontParamKey()
+    }
+
+    private func resolveFontParamKey() {
+        let count = dasher_get_parameter_count()
+        var info = dasher_parameter_info()
+        for i in 0..<count {
+            guard dasher_get_parameter_info(i, &info) == 0 else { continue }
+            let name = String(cString: info.name)
+            if name == "Dasher Font" {
+                fontParamKey = Int(info.key)
+                return
+            }
         }
     }
 
@@ -134,7 +149,8 @@ class DasherBridge {
             commands: cmds,
             commandCount: Int(cmdCount),
             strings: strs,
-            stringCount: Int(strCount)
+            stringCount: Int(strCount),
+            fontName: fontParamKey >= 0 ? getStringParameter(key: fontParamKey) : ""
         )
     }
 
@@ -348,6 +364,7 @@ struct DrawCommands {
     let commandCount: Int
     let strings: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
     let stringCount: Int
+    var fontName: String = ""
 }
 
 private func argbToCGColor(_ argb: Int32) -> CGColor {
@@ -401,8 +418,14 @@ extension DrawCommands {
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
                     let text = String(cString: strPtr)
+                    let font: UIFont
+                    if self.fontName.isEmpty {
+                        font = UIFont.systemFont(ofSize: fontSize)
+                    } else {
+                        font = UIFont(name: self.fontName, size: fontSize) ?? UIFont.systemFont(ofSize: fontSize)
+                    }
                     let attrs: [NSAttributedString.Key: Any] = [
-                        .font: UIFont.systemFont(ofSize: fontSize),
+                        .font: font,
                         .foregroundColor: color
                     ]
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: b))

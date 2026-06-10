@@ -32,17 +32,15 @@ struct MacContentView: View {
                 viewModel.toggleGameMode()
             }
         }
-        .alert(
-            viewModel.pendingMessage?.isWarning == true ? "Dasher Warning" : "Dasher",
-            isPresented: Binding(
-                get: { viewModel.pendingMessage != nil },
-                set: { if !$0 { viewModel.pendingMessage = nil } }
-            ),
-            presenting: viewModel.pendingMessage
-        ) { _ in
-            Button("OK") { viewModel.pendingMessage = nil }
-        } message: { msg in
-            Text(msg.text)
+        .overlay(alignment: .top) {
+            if let msg = viewModel.pendingMessage {
+                MessageBanner(
+                    isWarning: msg.isWarning,
+                    text: msg.text,
+                    onDismiss: { viewModel.pendingMessage = nil }
+                )
+                .padding(.top, 8)
+            }
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
