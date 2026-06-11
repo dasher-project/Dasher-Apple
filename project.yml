@@ -1,6 +1,6 @@
 name: Dasher
 options:
-  bundleIdPrefix: org.dasherproject
+  bundleIdPrefix: at.dasher.Dasher
   deploymentTarget:
     iOS: "17.0"
     macOS: "14.0"
@@ -215,8 +215,6 @@ targets:
         link: true
       - target: pugixml_macos
         link: true
-      - target: DasherKeyboard
-        embed: false
       - package: DasherShared
         product: DasherShared
     preBuildScripts:
