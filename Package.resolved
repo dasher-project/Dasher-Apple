@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AACTools/speechmarkdown-rust",
       "state" : {
-        "revision" : "0902cd1ddce7599ffdb60f15b601efb8edf83fa9",
-        "version" : "0.4.4"
+        "revision" : "c7efe0277cb8dbfa385cdf4c27307aa70fbdeab8",
+        "version" : "0.4.6"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/aactools/swift-tts-wrapper",
       "state" : {
-        "revision" : "e9ee8acd545223bc9de520e2880a9949c8508cea",
-        "version" : "1.2.1"
+        "revision" : "15de7163fe00532f9e1be5795ce740704dd2e1b8",
+        "version" : "1.2.4"
       }
     }
   ],

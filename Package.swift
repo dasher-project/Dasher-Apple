@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "DasherShared", targets: ["DasherShared"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.1"),
+        .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.4"),
     ],
     targets: [
         .target(

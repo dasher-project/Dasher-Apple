@@ -278,8 +278,12 @@ targets:
         DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
+          - "-lspeechmarkdown_rust"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
+        LIBRARY_SEARCH_PATHS:
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
         SWIFT_OBJC_BRIDGING_HEADER: DasherVision/Sources/DasherVision-Bridging-Header.h
     entitlements:
       path: DasherVision/DasherVision.entitlements
