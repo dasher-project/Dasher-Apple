@@ -26,9 +26,6 @@ fi
 echo "Regenerating project from project.yml..."
 xcodegen generate
 
-echo "Patching keyboard extension dependencies..."
-python3 patch_keyboard_dep.py
-
 echo "Restoring Package.resolved..."
 mkdir -p Dasher.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
 cp -f Package.resolved Dasher.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
