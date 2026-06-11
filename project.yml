@@ -103,6 +103,8 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
+      - target: DasherKeyboard
+        embed: true
       - package: DasherShared
         product: DasherShared
     preBuildScripts:

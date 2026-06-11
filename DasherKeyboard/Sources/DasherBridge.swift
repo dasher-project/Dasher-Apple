@@ -71,7 +71,6 @@ enum DasherSettingsSection: String, CaseIterable {
 
 // MARK: - Bridge
 
-@MainActor
 class DasherBridge: InputMethodBridge {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
