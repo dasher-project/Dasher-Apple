@@ -151,12 +151,12 @@ public final class TiltInputService {
             minX: calibrationMinX, maxX: calibrationMaxX
         )
         if let encoded = try? JSONEncoder().encode(data) {
-            UserDefaults.standard.set(encoded, forKey: Self.calibrationKey)
+            SharedDefaults.fallback.set(encoded, forKey: Self.calibrationKey)
         }
     }
 
     private func loadCalibration() {
-        guard let data = UserDefaults.standard.data(forKey: Self.calibrationKey),
+        guard let data = SharedDefaults.fallback.data(forKey: Self.calibrationKey),
               let decoded = try? JSONDecoder().decode(TiltCalibrationData.self, from: data) else {
             applyVerticalCalibration(minY: -0.1, maxY: -0.9, minX: -0.4, maxX: 0.4)
             return

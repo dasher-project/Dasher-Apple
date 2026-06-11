@@ -9,15 +9,15 @@ public struct AccessConfiguration: Codable, Equatable {
 
     public static var current: AccessConfiguration {
         get {
-            guard let data = UserDefaults.standard.data(forKey: storageKey),
-                  let config = try? JSONDecoder().decode(AccessConfiguration.self, from: data) else {
+            guard let data = SharedDefaults.fallback.data(forKey: storageKey),
+                   let config = try? JSONDecoder().decode(AccessConfiguration.self, from: data) else {
                 return defaultConfiguration
             }
             return config
         }
         set {
             let data = try? JSONEncoder().encode(newValue)
-            UserDefaults.standard.set(data, forKey: storageKey)
+            SharedDefaults.fallback.set(data, forKey: storageKey)
         }
     }
 
@@ -27,7 +27,7 @@ public struct AccessConfiguration: Codable, Equatable {
         #elseif os(macOS)
         AccessConfiguration(method: .pointer, selection: .continuous, switchProfile: nil)
         #elseif os(visionOS)
-        AccessConfiguration(method: .handTracking, selection: .continuous, switchProfile: nil)
+        AccessConfiguration(method: .eyeGaze, selection: .continuous, switchProfile: nil)
         #else
         AccessConfiguration(method: .pointer, selection: .continuous, switchProfile: nil)
         #endif

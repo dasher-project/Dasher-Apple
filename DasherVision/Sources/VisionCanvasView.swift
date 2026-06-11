@@ -154,8 +154,7 @@ final class VisionCanvas: UIView {
             cmds.render(in: ctx, bounds: bounds)
         }
 
-        vm.outputText = vm.bridge.getOutputText()
-        vm.checkSpeech()
+        vm.syncGameModeState()
 
         if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
             drawDwellIndicator(in: ctx)

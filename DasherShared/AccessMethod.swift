@@ -51,7 +51,7 @@ public enum AccessMethod: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .pointer: return .macOS
         case .touch: return .iOS
-        case .eyeGaze: return [.iOS, .macOS]
+        case .eyeGaze: return [.iOS, .macOS, .visionOS]
         case .tilt: return .iOS
         case .joystick: return .macOS
         case .handTracking: return .visionOS

@@ -139,6 +139,8 @@ targets:
       path: DasherApp/DasherApp.entitlements
       properties:
         com.apple.security.app-sandbox: false
+        com.apple.security.application-groups:
+          - group.at.dasher.Dasher
 
   DasherKeyboard:
     type: app-extension
@@ -189,6 +191,8 @@ targets:
       properties:
         com.apple.security.app-sandbox: true
         com.apple.security.network.client: true
+        com.apple.security.application-groups:
+          - group.at.dasher.Dasher
         keychain-access-groups:
           - "$(AppIdentifierPrefix)at.dasher.Dasher"
 
@@ -240,7 +244,7 @@ targets:
     entitlements:
       path: DasherMac/DasherMac.entitlements
       properties:
-        com.apple.security.app-sandbox: false
+        com.apple.security.app-sandbox: true
 
   DasherVision:
     type: application
@@ -282,9 +286,12 @@ targets:
           - "-lspeechmarkdown_rust"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
-        LIBRARY_SEARCH_PATHS:
+        LIBRARY_SEARCH_PATHS[sdk=xros*]:
           - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
           - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
+        LIBRARY_SEARCH_PATHS[sdk=xrsimulator*]:
+          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64-simulator"
+          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64-simulator"
         SWIFT_OBJC_BRIDGING_HEADER: DasherVision/Sources/DasherVision-Bridging-Header.h
     entitlements:
       path: DasherVision/DasherVision.entitlements

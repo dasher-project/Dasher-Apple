@@ -76,6 +76,9 @@ class DasherBridge: InputMethodBridge {
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
 
+    var onOutput: ((String) -> Void)?
+    var onDelete: ((String) -> Void)?
+
     private(set) var lastError: String?
 
     init(dataDir: String, userDir: String? = nil) {
@@ -83,6 +86,19 @@ class DasherBridge: InputMethodBridge {
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
             lastError = String(cString: errorMsg)
+        }
+        if let ctx = ctx {
+            let retained = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_output_callback(ctx, { eventType, text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                if eventType == 0 {
+                    instance.onOutput?(str)
+                } else if eventType == 1 {
+                    instance.onDelete?(str)
+                }
+            }, retained)
         }
         resolveFontParamKey()
     }

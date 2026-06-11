@@ -76,6 +76,11 @@ class DasherBridge: InputMethodBridge {
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
 
+    var onOutput: ((String) -> Void)?
+    var onDelete: ((String) -> Void)?
+    var onMessage: ((Bool, String) -> Void)?
+    var onSpeak: ((String, Bool) -> Void)?
+
     private(set) var lastError: String?
 
     init(dataDir: String, userDir: String? = nil) {
@@ -83,6 +88,34 @@ class DasherBridge: InputMethodBridge {
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
             lastError = String(cString: errorMsg)
+        }
+        if let ctx = ctx {
+            let retained = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_output_callback(ctx, { eventType, text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                if eventType == 0 {
+                    instance.onOutput?(str)
+                } else if eventType == 1 {
+                    instance.onDelete?(str)
+                }
+            }, retained)
+            let retained2 = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_message_callback(ctx, { messageType, text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                let isWarning = messageType == 1
+                instance.onMessage?(isWarning, str)
+            }, retained2)
+            let retained3 = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_speak_callback(ctx, { text, interrupt, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                instance.onSpeak?(str, interrupt != 0)
+            }, retained3)
         }
         resolveFontParamKey()
     }
@@ -355,6 +388,91 @@ class DasherBridge: InputMethodBridge {
         guard let ctx = ctx else { return }
         dasher_set_string_override(ctx, key, value)
     }
+
+    // MARK: - Game Mode
+
+    func enterGameMode() -> Bool {
+        guard let ctx = ctx else { return false }
+        let result = dasher_enter_game_mode(ctx) == 0
+        if result {
+            dasher_game_set_canvas_text(ctx, 0)
+        }
+        return result
+    }
+
+    func leaveGameMode() {
+        guard let ctx = ctx else { return }
+        dasher_leave_game_mode(ctx)
+    }
+
+    var isGameModeActive: Bool {
+        guard let ctx = ctx else { return false }
+        return dasher_game_mode_active(ctx) != 0
+    }
+
+    func getGameTargetText() -> String {
+        guard let ctx = ctx, let cStr = dasher_game_get_target_text(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+
+    func getGameCorrectCount() -> Int {
+        guard let ctx = ctx else { return -1 }
+        return Int(dasher_game_get_correct_count(ctx))
+    }
+
+    func getGameTargetLength() -> Int {
+        guard let ctx = ctx else { return -1 }
+        return Int(dasher_game_get_target_length(ctx))
+    }
+
+    func getGameWrongText() -> String {
+        guard let ctx = ctx, let cStr = dasher_game_get_wrong_text(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+
+    // MARK: - Language Model Registry
+
+    struct LanguageModelInfo {
+        let id: Int
+        let name: String
+        let description: String
+    }
+
+    func getAvailableLanguageModels() -> [LanguageModelInfo] {
+        let count = Int(dasher_get_language_model_count())
+        var models: [LanguageModelInfo] = []
+        models.reserveCapacity(count)
+        for i in 0..<count {
+            let id = Int(dasher_get_language_model_id_at(Int32(i)))
+            let namePtr = dasher_get_language_model_name(Int32(id))
+            let descPtr = dasher_get_language_model_description(Int32(id))
+            models.append(LanguageModelInfo(
+                id: id,
+                name: namePtr != nil ? String(cString: namePtr!) : "Unknown",
+                description: descPtr != nil ? String(cString: descPtr!) : ""
+            ))
+        }
+        return models
+    }
+
+    var currentLanguageModelId: Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_language_model_id(ctx))
+    }
+
+    func setLanguageModelId(_ id: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_language_model_id(ctx, Int32(id))
+    }
+
+    func getLanguageModelParamKeys(_ id: Int) -> [Int] {
+        let count = Int(dasher_get_language_model_param_count(Int32(id)))
+        return (0..<count).map { Int(dasher_get_language_model_param_key(Int32(id), Int32($0))) }
+    }
+
+    lazy var languageModelIdParamKey: Int = {
+        Int(dasher_find_parameter_key("LP_LANGUAGE_MODEL_ID"))
+    }()
 }
 
 // MARK: - Draw commands

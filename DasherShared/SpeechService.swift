@@ -92,7 +92,7 @@ public final class SpeechService {
     }
 
     private func loadSavedSettings() {
-        let defaults = UserDefaults.standard
+        let defaults = SharedDefaults.fallback
         if let raw = defaults.string(forKey: "tts_engine"), let engine = TTSEngine(rawValue: raw) {
             selectedEngine = engine
         }
@@ -112,28 +112,28 @@ public final class SpeechService {
     }
 
     private func saveEngineSelection() {
-        UserDefaults.standard.set(selectedEngine.rawValue, forKey: "tts_engine")
+        SharedDefaults.fallback.set(selectedEngine.rawValue, forKey: "tts_engine")
     }
 
     private func saveCredentials() {
         if let data = try? JSONEncoder().encode(credentials) {
-            UserDefaults.standard.set(data, forKey: "tts_credentials")
+            SharedDefaults.fallback.set(data, forKey: "tts_credentials")
         }
     }
 
     public func saveVoiceSelection() {
-        UserDefaults.standard.set(selectedVoice, forKey: "tts_voice")
+        SharedDefaults.fallback.set(selectedVoice, forKey: "tts_voice")
     }
 
     private func saveRateSelection() {
-        UserDefaults.standard.set(speechRate.rawValue, forKey: "tts_rate")
+        SharedDefaults.fallback.set(speechRate.rawValue, forKey: "tts_rate")
     }
 
     private func savePitchSelection() {
-        UserDefaults.standard.set(speechPitch.rawValue, forKey: "tts_pitch")
+        SharedDefaults.fallback.set(speechPitch.rawValue, forKey: "tts_pitch")
     }
 
     private func saveVolumeSelection() {
-        UserDefaults.standard.set(speechVolume, forKey: "tts_volume")
+        SharedDefaults.fallback.set(speechVolume, forKey: "tts_volume")
     }
 }

@@ -5,6 +5,12 @@ import UIKit
 class VisionViewModel: ObservableObject {
     @Published var outputText: String = ""
     @Published var isPlaying: Bool = true
+    @Published var isGameModeActive: Bool = false
+    @Published var gameTargetText: String = ""
+    @Published var gameCorrectCount: Int = 0
+    @Published var gameTargetLength: Int = 0
+    @Published var gameWrongText: String = ""
+    @Published var pendingMessage: (isWarning: Bool, text: String)?
     @Published var speed: Double = 1.0
     @Published var pointerHoverEnabled: Bool = true
     @Published var appLevelDwell: Bool = false
@@ -13,7 +19,6 @@ class VisionViewModel: ObservableObject {
     let bridge: DasherBridge
     let speech = SpeechService.shared
     private var lastSpokenText: String = ""
-    private var speechDebounceTask: Task<Void, Never>?
 
     static let dwellDurationOptions: [(String, Double)] = [
         ("0.3s", 0.3),
@@ -25,9 +30,31 @@ class VisionViewModel: ObservableObject {
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
-        self.bridge = DasherBridge(dataDir: dataPath)
+        let sharedURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
+        )
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)
+        bridge.onOutput = { [weak self] _ in
+            self?.outputText = self?.bridge.getOutputText() ?? ""
+        }
+        bridge.onDelete = { [weak self] _ in
+            self?.outputText = self?.bridge.getOutputText() ?? ""
+        }
+        bridge.onMessage = { [weak self] isWarning, text in
+            if text.contains("No user training text found") { return }
+            self?.pendingMessage = (isWarning, text)
+        }
+        bridge.onSpeak = { [weak self] text, interrupt in
+            Task { @MainActor in
+                self?.lastSpokenText = text
+                if interrupt {
+                    self?.speech.stop()
+                }
+                self?.speech.speak(text)
+            }
+        }
     }
 
     func setCanvasSize(_ size: CGSize) {
@@ -51,23 +78,42 @@ class VisionViewModel: ObservableObject {
         isPlaying.toggle()
     }
 
+    func toggleGameMode() {
+        if isGameModeActive {
+            bridge.leaveGameMode()
+            isGameModeActive = false
+        } else {
+            let success = bridge.enterGameMode()
+            isGameModeActive = success
+            if !success {
+                bridge.reset()
+                outputText = ""
+            }
+        }
+    }
+
+    func syncGameModeState() {
+        let active = bridge.isGameModeActive
+        if active != isGameModeActive {
+            isGameModeActive = active
+        }
+        if active {
+            gameTargetText = bridge.getGameTargetText()
+            gameCorrectCount = bridge.getGameCorrectCount()
+            gameTargetLength = bridge.getGameTargetLength()
+            gameWrongText = bridge.getGameWrongText()
+        } else {
+            gameTargetText = ""
+            gameCorrectCount = 0
+            gameTargetLength = 0
+            gameWrongText = ""
+        }
+    }
+
     func newMessage() {
         bridge.reset()
         outputText = ""
         lastSpokenText = ""
-    }
-
-    func checkSpeech() {
-        let text = bridge.getOutputText()
-        guard text != lastSpokenText, !text.isEmpty else { return }
-        lastSpokenText = text
-        guard bridge.getBoolParameter(key: 24) else { return }
-        speechDebounceTask?.cancel()
-        speechDebounceTask = Task {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            guard !Task.isCancelled else { return }
-            speech.speak(text)
-        }
     }
 
     func increaseSpeed() {

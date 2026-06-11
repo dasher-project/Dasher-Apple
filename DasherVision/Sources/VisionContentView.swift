@@ -42,8 +42,9 @@ struct VisionContentView: View {
                     HStack(spacing: 16) {
                         toolbarButton("minus") { viewModel.decreaseSpeed() }
                         Text(String(format: "%.1f", viewModel.speed))
-                            .font(.system(size: 14, design: .monospaced))
+                            .font(.system(size: 16, weight: .medium, design: .monospaced))
                             .monospacedDigit()
+                            .foregroundColor(.white)
                         toolbarButton("plus") { viewModel.increaseSpeed() }
 
                         Spacer()
@@ -75,11 +76,12 @@ struct VisionContentView: View {
     private func toolbarButton(_ icon: String, isAccent: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(isAccent ? .white : .primary)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(RoundedRectangle(cornerRadius: 8).fill(isAccent ? Color.blue : Color.white.opacity(0.15)))
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(isAccent ? .white : .white)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(RoundedRectangle(cornerRadius: 10).fill(isAccent ? Color.blue : Color.white.opacity(0.35)))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.2), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

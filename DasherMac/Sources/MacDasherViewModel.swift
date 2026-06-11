@@ -32,12 +32,13 @@ class MacDasherViewModel: ObservableObject {
     let bridge: DasherBridge
     let directService = DirectModeService()
     let speech = SpeechService.shared
-    private var speechDebounceTask: Task<Void, Never>?
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
-        let userPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first
-        self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
+        let sharedURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
+        )
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         bridge.setScreenSize(width: 900, height: 600)
 
         bridge.onMessage = { [weak self] isWarning, text in
@@ -51,7 +52,6 @@ class MacDasherViewModel: ObservableObject {
                 self.directService.injectText(text)
             }
             self.outputText = self.bridge.getOutputText()
-            self.triggerSpeechIfNeeded()
         }
 
         bridge.onDelete = { [weak self] text in
@@ -60,6 +60,15 @@ class MacDasherViewModel: ObservableObject {
                 self.directService.injectDelete(count: text.count)
             }
             self.outputText = self.bridge.getOutputText()
+        }
+
+        bridge.onSpeak = { [weak self] text, interrupt in
+            Task { @MainActor in
+                if interrupt {
+                    self?.speech.stop()
+                }
+                self?.speech.speak(text)
+            }
         }
 
         let savedConfig = AccessConfiguration.current
@@ -162,17 +171,6 @@ class MacDasherViewModel: ObservableObject {
         ("2", Color(red: 1.0, green: 0.82, blue: 0.40)),
         ("3", Color(red: 0.95, green: 0.91, blue: 0.35)),
     ]
-    private func triggerSpeechIfNeeded() {
-        guard bridge.getBoolParameter(key: 24) else { return }
-        speechDebounceTask?.cancel()
-        speechDebounceTask = Task {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            guard !Task.isCancelled else { return }
-            let text = bridge.getOutputText()
-            guard !text.isEmpty else { return }
-            speech.speak(text)
-        }
-    }
 
     func stopSpeech() {
         speech.stop()

@@ -27,7 +27,6 @@ class DasherViewModel: ObservableObject {
     let tiltService = TiltInputService()
     #endif
     private var lastSpokenText: String = ""
-    private var speechDebounceTask: Task<Void, Never>?
 
     static let dwellDurationOptions: [(String, Double)] = [
         ("0.3s", 0.3),
@@ -39,12 +38,23 @@ class DasherViewModel: ObservableObject {
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
-        let userPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first
-        self.bridge = DasherBridge(dataDir: dataPath, userDir: userPath)
+        let sharedURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
+        )
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         bridge.setScreenSize(width: 800, height: 600)
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
+        }
+        bridge.onSpeak = { [weak self] text, interrupt in
+            Task { @MainActor in
+                self?.lastSpokenText = text
+                if interrupt {
+                    self?.speech.stop()
+                }
+                self?.speech.speak(text)
+            }
         }
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)
@@ -130,19 +140,6 @@ class DasherViewModel: ObservableObject {
         bridge.reset()
         outputText = text
         lastSpokenText = ""
-    }
-
-    func checkSpeech() {
-        let text = bridge.getOutputText()
-        guard text != lastSpokenText, !text.isEmpty else { return }
-        lastSpokenText = text
-        guard bridge.getBoolParameter(key: 24) else { return }
-        speechDebounceTask?.cancel()
-        speechDebounceTask = Task {
-            try? await Task.sleep(nanoseconds: 800_000_000)
-            guard !Task.isCancelled else { return }
-            speech.speak(text)
-        }
     }
 
     var shareText: String {

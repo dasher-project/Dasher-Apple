@@ -126,9 +126,5 @@ final class KeyboardCanvas: UIView {
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds)
         }
-
-        if let newText = vm.bridge.getNewOutput() {
-            vm.textDocumentProxy?.insertText(newText)
-        }
     }
 }

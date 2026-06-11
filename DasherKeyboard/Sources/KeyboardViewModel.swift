@@ -1,4 +1,5 @@
 import SwiftUI
+import DasherShared
 
 class KeyboardViewModel: ObservableObject {
     let bridge: DasherBridge
@@ -9,9 +10,22 @@ class KeyboardViewModel: ObservableObject {
         self.textDocumentProxy = textDocumentProxy
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
         assert(!dataPath.isEmpty, "Data folder not found in keyboard bundle")
-        self.bridge = DasherBridge(dataDir: dataPath)
+        let sharedURL = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
+        )
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         if let err = bridge.lastError {
             NSLog("[DasherKeyboard] bridge init error: \(err)")
+        }
+        bridge.onOutput = { [weak self] text in
+            self?.textDocumentProxy?.insertText(text)
+        }
+        bridge.onDelete = { [weak self] text in
+            guard let proxy = self?.textDocumentProxy else { return }
+            let deleteCount = min(text.count, proxy.documentContextBeforeInput?.count ?? 0)
+            for _ in 0..<deleteCount {
+                proxy.deleteBackward()
+            }
         }
     }
 
