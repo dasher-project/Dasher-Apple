@@ -258,7 +258,6 @@ targets:
         link: true
       - target: pugixml_visionos
         link: true
-      - target: DasherKeyboard
       - package: SwiftTTSWrapper
         product: SwiftTTSWrapper
     preBuildScripts:
