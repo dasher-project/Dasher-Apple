@@ -258,6 +258,8 @@ targets:
       - path: DasherShared
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
+      - path: DasherVision/Resources/Assets.xcassets
+        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
