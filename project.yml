@@ -158,7 +158,6 @@ targets:
       - path: DasherKeyboard
         excludes:
           - "**/.gitkeep"
-          - "DasherKeyboardVision.entitlements"
       - path: DasherIcon.icon
         buildPhase: resources
       - path: DasherEngine/Resources/Data
@@ -209,58 +208,6 @@ targets:
           - group.at.dasher.Dasher
         keychain-access-groups:
           - "$(AppIdentifierPrefix)at.dasher.Dasher"
-
-  DasherKeyboardVision:
-    type: app-extension
-    platform: visionOS
-    sources:
-      - path: DasherKeyboard
-        excludes:
-          - "**/.gitkeep"
-          - "DasherKeyboard.entitlements"
-      - path: DasherEngine/Resources/Data
-        buildPhase: resources
-        type: folder
-    dependencies:
-      - target: DasherCore_visionos
-        link: true
-      - target: pugixml_visionos
-        link: true
-      - package: DasherShared
-        product: DasherShared
-    preBuildScripts:
-      - name: Copy Locale Strings
-        basedOnDependencyAnalysis: false
-        script: |
-          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
-          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.vision.Keyboard
-        INFOPLIST_FILE: DasherKeyboard/Info.plist
-        MARKETING_VERSION: "1.0.0"
-        CURRENT_PROJECT_VERSION: "1"
-        CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: TRKU383G7Z
-        OTHER_LDFLAGS:
-          - "-lc++"
-          - "-lspeechmarkdown_rust"
-        HEADER_SEARCH_PATHS:
-          - "$(SRCROOT)/DasherCore/src"
-        LIBRARY_SEARCH_PATHS[sdk=xros*]:
-          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
-          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64"
-        LIBRARY_SEARCH_PATHS[sdk=xrsimulator*]:
-          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64-simulator"
-          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/xros-arm64-simulator"
-        SWIFT_OBJC_BRIDGING_HEADER: DasherKeyboard/Sources/DasherKeyboard-Bridging-Header.h
-    entitlements:
-      path: DasherKeyboard/DasherKeyboardVision.entitlements
-      properties:
-        com.apple.security.app-sandbox: true
-        com.apple.security.application-groups:
-          - group.at.dasher.Dasher
 
   DasherMac:
     type: application
@@ -331,8 +278,6 @@ targets:
         link: true
       - target: pugixml_visionos
         link: true
-      - target: DasherKeyboardVision
-        embed: true
       - package: SwiftTTSWrapper
         product: SwiftTTSWrapper
     preBuildScripts:
@@ -397,7 +342,6 @@ schemes:
       targets:
         DasherCore_visionos: all
         pugixml_visionos: all
-        DasherKeyboardVision: all
         DasherVision: all
     run:
       config: Debug
