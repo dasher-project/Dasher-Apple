@@ -4,6 +4,7 @@
       "filename" : "AppIcon.png",
       "idiom" : "universal",
       "platform" : "visionos",
+      "scale" : "2x",
       "size" : "1024x1024"
     }
   ],
