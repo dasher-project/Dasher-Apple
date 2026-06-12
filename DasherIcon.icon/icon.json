@@ -1,29 +1,43 @@
 {
-  "fill" : {
-    "automatic-gradient" : "display-p3:0.65088,0.81592,0.78418,1.00000"
-  },
+  "fill-specializations" : [
+    {
+      "value" : {
+        "automatic-gradient" : "display-p3:0.65088,0.81592,0.78418,1.00000"
+      }
+    },
+    {
+      "appearance" : "dark",
+      "value" : {
+        "automatic-gradient" : "display-p3:0.16660,0.34058,0.34647,1.00000"
+      }
+    }
+  ],
   "groups" : [
     {
       "layers" : [
         {
+          "blend-mode" : "darken",
+          "glass" : false,
           "image-name" : "Image 11.png",
           "name" : "Image 11",
           "position" : {
-            "scale" : 1,
+            "scale" : 1.6,
             "translation-in-points" : [
-              271.2890625,
-              -285.6015625
+              232.234375,
+              -273.671875
             ]
           }
         },
         {
+          "blend-mode" : "darken",
+          "glass" : false,
           "image-name" : "Image 10.png",
           "name" : "Image 10",
           "position" : {
-            "scale" : 1.2,
+            "scale" : 1.6,
             "translation-in-points" : [
-              -38,
-              44.5
+              -85.1953125,
+              96.5859375
             ]
           }
         },
@@ -39,6 +53,7 @@
           }
         },
         {
+          "blend-mode" : "normal",
           "image-name" : "Image 8.png",
           "name" : "Image 8",
           "position" : {

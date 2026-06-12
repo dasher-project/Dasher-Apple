@@ -10,6 +10,7 @@ options:
   fileTypes:
     "icon":
       file: true
+      fileType: folder.iconcomposer.icon
 
 packages:
   DasherShared:
@@ -98,6 +99,8 @@ targets:
       - path: DasherApp
         excludes:
           - "**/.gitkeep"
+      - path: DasherIcon.icon
+        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -121,7 +124,8 @@ targets:
         PRODUCT_NAME: "Dasher"
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher
         INFOPLIST_FILE: DasherApp/Info.plist
-        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: NO
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: YES
@@ -154,6 +158,8 @@ targets:
       - path: DasherKeyboard
         excludes:
           - "**/.gitkeep"
+      - path: DasherIcon.icon
+        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -174,6 +180,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.Keyboard
         INFOPLIST_FILE: DasherKeyboard/Info.plist
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
@@ -210,6 +218,8 @@ targets:
           - "**/.gitkeep"
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
+      - path: DasherIcon.icon
+        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -231,7 +241,8 @@ targets:
         PRODUCT_NAME: "Dasher"
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.macOS
         INFOPLIST_FILE: DasherMac/Info.plist
-        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: NO
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
@@ -259,8 +270,6 @@ targets:
         excludes:
           - "**/.gitkeep"
       - path: DasherShared
-      - path: Dasher.icon
-        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
@@ -282,8 +291,8 @@ targets:
         PRODUCT_NAME: "Dasher"
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.vision
         INFOPLIST_FILE: DasherVision/Info.plist
-        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: NO
-        ASSETCATALOG_COMPILER_APPICON_NAME: Dasher
+        ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"

@@ -5,7 +5,7 @@
 	<key>CFBundleIcons</key>
 	<dict>
 		<key>CFBundlePrimaryIcon</key>
-		<string>Dasher</string>
+		<string>AppIcon</string>
 	</dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
