@@ -7,6 +7,9 @@ options:
     visionOS: "1.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
+  fileTypes:
+    "icon":
+      file: true
 
 packages:
   DasherShared:
@@ -256,7 +259,7 @@ targets:
         excludes:
           - "**/.gitkeep"
       - path: DasherShared
-      - path: DasherVision/Resources/Assets.xcassets
+      - path: Dasher.icon
         buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
@@ -280,6 +283,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.vision
         INFOPLIST_FILE: DasherVision/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: Dasher
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
