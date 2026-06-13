@@ -1,22 +1,22 @@
-import SwiftUI
-import DasherShared
+import UIKit
 
-class KeyboardViewModel: ObservableObject {
+class KeyboardViewModel {
     let bridge: DasherBridge
-    weak var textDocumentProxy: UITextDocumentProxy?
+    private weak var textDocumentProxy: UITextDocumentProxy?
     var onAdvanceInputMode: (() -> Void)?
 
     init(textDocumentProxy: UITextDocumentProxy) {
-        self.textDocumentProxy = textDocumentProxy
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
         assert(!dataPath.isEmpty, "Data folder not found in keyboard bundle")
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
-        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
+        self.bridge = DasherBridge.getOrCreate(dataDir: dataPath, userDir: sharedURL?.path)
         if let err = bridge.lastError {
             NSLog("[DasherKeyboard] bridge init error: \(err)")
         }
+        bridge.configureForLowMemory()
+        self.textDocumentProxy = textDocumentProxy
         bridge.onOutput = { [weak self] text in
             self?.textDocumentProxy?.insertText(text)
         }
@@ -27,6 +27,10 @@ class KeyboardViewModel: ObservableObject {
                 proxy.deleteBackward()
             }
         }
+    }
+
+    func updateProxy(_ proxy: UITextDocumentProxy) {
+        textDocumentProxy = proxy
     }
 
     func setCanvasSize(_ size: CGSize) {

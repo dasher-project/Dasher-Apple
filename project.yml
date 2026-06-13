@@ -15,6 +15,8 @@ options:
 packages:
   DasherShared:
     path: .
+  DasherSpeech:
+    path: .
   SwiftTTSWrapper:
     url: https://github.com/aactools/swift-tts-wrapper
     from: "1.2.0"
@@ -113,6 +115,8 @@ targets:
         embed: true
       - package: DasherShared
         product: DasherShared
+      - package: DasherSpeech
+        product: DasherSpeech
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -168,8 +172,6 @@ targets:
         link: true
       - target: pugixml_ios
         link: true
-      - package: DasherShared
-        product: DasherShared
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -189,15 +191,8 @@ targets:
         DEVELOPMENT_TEAM: TRKU383G7Z
         OTHER_LDFLAGS:
           - "-lc++"
-          - "-lspeechmarkdown_rust"
         HEADER_SEARCH_PATHS:
           - "$(SRCROOT)/DasherCore/src"
-        LIBRARY_SEARCH_PATHS[sdk=iphoneos*]:
-          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
-          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64"
-        LIBRARY_SEARCH_PATHS[sdk=iphonesimulator*]:
-          - "$(BUILD_DIR)/../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
-          - "$(BUILD_DIR)/../../../../../SourcePackages/artifacts/speechmarkdown-rust/SpeechMarkdownRust/ios-arm64-simulator"
         SWIFT_OBJC_BRIDGING_HEADER: DasherKeyboard/Sources/DasherKeyboard-Bridging-Header.h
     entitlements:
       path: DasherKeyboard/DasherKeyboard.entitlements
@@ -230,6 +225,8 @@ targets:
         link: true
       - package: DasherShared
         product: DasherShared
+      - package: DasherSpeech
+        product: DasherSpeech
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -280,6 +277,8 @@ targets:
         link: true
       - package: SwiftTTSWrapper
         product: SwiftTTSWrapper
+      - package: DasherSpeech
+        product: DasherSpeech
     preBuildScripts:
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
@@ -316,6 +315,17 @@ targets:
         com.apple.security.app-sandbox: false
 
 schemes:
+  DasherKeyboard:
+    build:
+      targets:
+        DasherCore_ios: all
+        pugixml_ios: all
+        DasherKeyboard: all
+    run:
+      config: Debug
+      askForAppToLaunch: true
+    archive:
+      config: Release
   DasherApp:
     build:
       targets:

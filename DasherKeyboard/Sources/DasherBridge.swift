@@ -1,5 +1,22 @@
 import Foundation
-import DasherShared
+
+#if canImport(UIKit)
+import UIKit
+#endif
+
+protocol InputMethodBridge: AnyObject {
+    func getStringParameter(key: Int) -> String
+    func setStringParameter(key: Int, value: String)
+    func getBoolParameter(key: Int) -> Bool
+    func setBoolParameter(key: Int, value: Bool)
+    func getLongParameter(key: Int) -> Int
+    func setLongParameter(key: Int, value: Int)
+    func mouseMove(x: Float, y: Float)
+}
+
+enum SharedDefaults {
+    static let groupIdentifier = "group.at.dasher.Dasher"
+}
 
 #if canImport(UIKit)
 import UIKit
@@ -72,6 +89,17 @@ enum DasherSettingsSection: String, CaseIterable {
 // MARK: - Bridge
 
 class DasherBridge: InputMethodBridge {
+    static var shared: DasherBridge?
+
+    static func getOrCreate(dataDir: String, userDir: String? = nil) -> DasherBridge {
+        if let existing = shared {
+            return existing
+        }
+        let bridge = DasherBridge(dataDir: dataDir, userDir: userDir)
+        shared = bridge
+        return bridge
+    }
+
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
@@ -348,6 +376,22 @@ class DasherBridge: InputMethodBridge {
     func saveSettings() {
         guard let ctx = ctx else { return }
         dasher_save_settings(ctx)
+    }
+
+    func configureForLowMemory() {
+        guard let ctx = ctx else { return }
+        let maxOrderKey = dasher_find_parameter_key("LP_LM_MAX_ORDER")
+        if maxOrderKey >= 0 {
+            dasher_set_long_parameter(ctx, maxOrderKey, 4)
+        }
+        let nodeBudgetKey = dasher_find_parameter_key("LP_NODE_BUDGET")
+        if nodeBudgetKey >= 0 {
+            dasher_set_long_parameter(ctx, nodeBudgetKey, 500)
+        }
+        let adaptiveKey = dasher_find_parameter_key("BP_LM_ADAPTIVE")
+        if adaptiveKey >= 0 {
+            dasher_set_bool_parameter(ctx, adaptiveKey, 0)
+        }
     }
 
     // MARK: - Locale
