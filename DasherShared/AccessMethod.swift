@@ -49,7 +49,7 @@ public enum AccessMethod: String, CaseIterable, Identifiable, Codable {
 
     public var availablePlatforms: InputPlatform {
         switch self {
-        case .pointer: return .macOS
+        case .pointer: return [.iOS, .macOS]
         case .touch: return .iOS
         case .eyeGaze: return [.iOS, .macOS, .visionOS]
         case .tilt: return .iOS

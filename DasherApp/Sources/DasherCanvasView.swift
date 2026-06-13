@@ -31,6 +31,7 @@ final class DasherCanvas: UIView {
     private var lastHoverPoint: CGPoint = .zero
     private var isDwelling: Bool = false
     private var dwellProgress: CGFloat = 0
+    private var isHovering: Bool = false
 
     private let dwellRadius: CGFloat = 20
 
@@ -94,20 +95,38 @@ final class DasherCanvas: UIView {
         let point = gesture.location(in: self)
 
         switch gesture.state {
-        case .changed:
-            vm.handlePointerHover(at: point)
+        case .began:
+            isHovering = true
             lastHoverPoint = point
-
-            let distance = hypot(point.x - lastHoverPoint.x, point.y - lastHoverPoint.y)
-            if distance > dwellRadius {
-                startDwell(point: point)
-            } else if !isDwelling && vm.appLevelDwell {
+            vm.handlePointerHover(at: point)
+            if vm.isContinuousSelection {
+                vm.handleHoverDown(at: point)
+            } else if vm.appLevelDwell {
                 startDwell(point: point)
             }
 
+        case .changed:
+            let prevPoint = lastHoverPoint
+            vm.handlePointerHover(at: point)
+            lastHoverPoint = point
+
+            if !vm.isContinuousSelection && vm.appLevelDwell {
+                let distance = hypot(point.x - prevPoint.x, point.y - prevPoint.y)
+                if distance > dwellRadius {
+                    resetDwell(point: point)
+                } else if !isDwelling {
+                    startDwell(point: point)
+                }
+            }
+
         case .ended, .cancelled:
+            isHovering = false
             cancelDwell()
-            vm.handleTouchEnd()
+            if vm.isContinuousSelection {
+                vm.handleHoverUp()
+            } else {
+                vm.handleTouchEnd()
+            }
 
         default:
             break
@@ -194,8 +213,12 @@ final class DasherCanvas: UIView {
             }
         }
 
-        if vm.pointerHoverEnabled && vm.appLevelDwell && isDwelling && dwellProgress > 0 {
-            drawDwellIndicator(in: ctx)
+        if vm.pointerHoverEnabled && isHovering {
+            if vm.appLevelDwell && isDwelling && dwellProgress > 0 {
+                drawDwellIndicator(in: ctx)
+            } else if vm.isContinuousSelection {
+                drawHoverIndicator(in: ctx)
+            }
         }
     }
 
@@ -217,5 +240,15 @@ final class DasherCanvas: UIView {
         ctx.setLineCap(.round)
         ctx.addArc(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: false)
         ctx.strokePath()
+    }
+
+    private func drawHoverIndicator(in ctx: CGContext) {
+        let center = lastHoverPoint
+        let radius: CGFloat = 4
+
+        ctx.setFillColor(UIColor.white.withAlphaComponent(0.5).cgColor)
+        ctx.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius,
+                                   width: radius * 2, height: radius * 2))
+        ctx.fillPath()
     }
 }
