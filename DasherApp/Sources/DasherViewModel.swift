@@ -1,5 +1,6 @@
 import SwiftUI
 import DasherShared
+import DasherSpeech
 import UniformTypeIdentifiers
 
 @MainActor
@@ -76,6 +77,21 @@ class DasherViewModel: ObservableObject {
     func handlePointerHover(at point: CGPoint) {
         guard isPlaying else { return }
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
+    var isContinuousSelection: Bool {
+        AccessConfiguration.current.selection == .continuous
+    }
+
+    func handleHoverDown(at point: CGPoint) {
+        guard isPlaying else { return }
+        bridge.mouseDown()
+        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
+    func handleHoverUp() {
+        guard isPlaying else { return }
+        bridge.mouseUp()
     }
 
     func handleTouch(at point: CGPoint) {

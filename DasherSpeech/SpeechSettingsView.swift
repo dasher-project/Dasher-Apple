@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftTTSWrapper
+import DasherShared
 
 public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService

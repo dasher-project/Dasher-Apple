@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import DasherSpeech
 
 @MainActor
 class VisionViewModel: ObservableObject {

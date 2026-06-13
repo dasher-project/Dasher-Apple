@@ -1,4 +1,5 @@
 import SwiftUI
+import DasherSpeech
 
 struct VisionSettingsView: View {
     @ObservedObject var viewModel: VisionViewModel

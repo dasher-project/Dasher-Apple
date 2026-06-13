@@ -1,5 +1,6 @@
 import SwiftUI
 import DasherShared
+import DasherSpeech
 import UniformTypeIdentifiers
 
 @main

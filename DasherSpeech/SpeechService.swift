@@ -1,5 +1,6 @@
 import Foundation
 import SwiftTTSWrapper
+import DasherShared
 
 @MainActor
 @Observable
