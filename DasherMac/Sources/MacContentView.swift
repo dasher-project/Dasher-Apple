@@ -505,7 +505,7 @@ struct MacOutputTextView: View {
     private var maxPane: CGFloat { availableSpace * 0.6 }
 
     var body: some View {
-        GeometryReader { geo in
+        GeometryReader { _ in
             switch handleEdge {
             case .leading:
                 HStack(spacing: 0) {

@@ -142,7 +142,7 @@ final class DasherCanvas: UIView {
         dwellProgress = 0
 
         hoverTimer?.invalidate()
-        let _ = viewModel?.dwellDuration ?? 0.5
+        _ = viewModel?.dwellDuration ?? 0.5
         let tickInterval = 1.0 / 60.0
 
         hoverTimer = Timer.scheduledTimer(withTimeInterval: tickInterval, repeats: true) { [weak self] _ in

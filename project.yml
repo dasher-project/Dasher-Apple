@@ -118,6 +118,12 @@ targets:
       - package: DasherSpeech
         product: DasherSpeech
     preBuildScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          if command -v swiftlint &> /dev/null; then
+            swiftlint lint --quiet
+          fi
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -173,6 +179,12 @@ targets:
       - target: pugixml_ios
         link: true
     preBuildScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          if command -v swiftlint &> /dev/null; then
+            swiftlint lint --quiet
+          fi
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -228,6 +240,12 @@ targets:
       - package: DasherSpeech
         product: DasherSpeech
     preBuildScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          if command -v swiftlint &> /dev/null; then
+            swiftlint lint --quiet
+          fi
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -280,6 +298,12 @@ targets:
       - package: DasherSpeech
         product: DasherSpeech
     preBuildScripts:
+      - name: SwiftLint
+        basedOnDependencyAnalysis: false
+        script: |
+          if command -v swiftlint &> /dev/null; then
+            swiftlint lint --quiet
+          fi
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |

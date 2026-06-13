@@ -399,8 +399,8 @@ struct OutputTextView: View {
 // MARK: - Cursor Helpers
 
 private enum Cursor: String {
-    case resizeUpDown = "resizeUpDown"
-    case resizeLeftRight = "resizeLeftRight"
+    case resizeUpDown
+    case resizeLeftRight
 }
 
 private extension View {

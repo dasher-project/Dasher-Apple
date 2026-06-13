@@ -526,7 +526,7 @@ struct ContentView: View {
 
         return HStack(spacing: 1) {
             VStack(spacing: 1) {
-                Circle().fill(colors.count > 0 ? Color(cgColor: colors[0]) : Color.gray).frame(width: 7, height: 7)
+                Circle().fill(!colors.isEmpty ? Color(cgColor: colors[0]) : Color.gray).frame(width: 7, height: 7)
                 Circle().fill(colors.count > 2 ? Color(cgColor: colors[2]) : Color.gray).frame(width: 7, height: 7)
             }
             VStack(spacing: 1) {
