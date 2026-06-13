@@ -116,6 +116,7 @@ class DasherBridge: InputMethodBridge {
             lastError = String(cString: errorMsg)
         }
         if let ctx = ctx {
+            dasher_set_low_memory_mode(ctx, 1)
             let retained = Unmanaged.passUnretained(self).toOpaque()
             dasher_set_output_callback(ctx, { eventType, text, userData in
                 guard let text = text, let userData = userData else { return }
