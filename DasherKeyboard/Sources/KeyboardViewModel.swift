@@ -6,7 +6,9 @@ class KeyboardViewModel {
     var onAdvanceInputMode: (() -> Void)?
 
     init(textDocumentProxy: UITextDocumentProxy) {
-        let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
+        let dataPath = Bundle.main.path(forResource: "DasherKeyboardData", ofType: nil)
+            ?? Bundle.main.path(forResource: "Data", ofType: nil)
+            ?? ""
         assert(!dataPath.isEmpty, "Data folder not found in keyboard bundle")
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier

@@ -17,3 +17,5 @@ build/
 
 # Auto-copied from DasherCore submodule by build phase
 DasherEngine/Resources/Data/Strings/
+/DasherKeyboardData/*
+!/DasherKeyboardData/.gitignore
