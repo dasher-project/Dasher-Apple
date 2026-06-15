@@ -74,6 +74,15 @@ class MacDasherViewModel: ObservableObject {
 
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)
+
+        let bitrateKey = bridge.findParameterKey("LP_MAX_BITRATE")
+        bridge.onParameterChange = { [weak self] key in
+            guard key == bitrateKey else { return }
+            Task { @MainActor in
+                self?.speed = Double(self?.bridge.speedPercent ?? 100) / 100.0
+            }
+        }
+        speed = Double(bridge.speedPercent) / 100.0
     }
 
     private func updateDirectMode() {

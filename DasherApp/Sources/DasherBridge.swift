@@ -90,6 +90,7 @@ class DasherBridge: InputMethodBridge {
     var onDelete: ((String) -> Void)?
     var onMessage: ((Bool, String) -> Void)?
     var onSpeak: ((String, Bool) -> Void)?
+    var onParameterChange: ((Int) -> Void)?
 
     private(set) var lastError: String?
 
@@ -126,6 +127,12 @@ class DasherBridge: InputMethodBridge {
                 let str = String(cString: text)
                 instance.onSpeak?(str, interrupt != 0)
             }, retained3)
+            let retained4 = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_parameter_callback(ctx, { paramKey, userData in
+                guard let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                instance.onParameterChange?(Int(paramKey))
+            }, retained4)
         }
         resolveFontParamKey()
     }
@@ -246,6 +253,10 @@ class DasherBridge: InputMethodBridge {
     }
 
     // MARK: - Parameter schema
+
+    func findParameterKey(_ name: String) -> Int {
+        Int(dasher_find_parameter_key(name))
+    }
 
     static var parameterCount: Int {
         Int(dasher_get_parameter_count())
