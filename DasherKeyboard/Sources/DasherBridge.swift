@@ -107,6 +107,7 @@ class DasherBridge: InputMethodBridge {
 
     var onOutput: ((String) -> Void)?
     var onDelete: ((String) -> Void)?
+    var onClipboard: ((String) -> Void)?
 
     private(set) var lastError: String?
 
@@ -129,6 +130,13 @@ class DasherBridge: InputMethodBridge {
                     instance.onDelete?(str)
                 }
             }, retained)
+            let retained2 = Unmanaged.passUnretained(self).toOpaque()
+            dasher_set_clipboard_callback(ctx, { text, userData in
+                guard let text = text, let userData = userData else { return }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                let str = String(cString: text)
+                instance.onClipboard?(str)
+            }, retained2)
         }
         resolveFontParamKey()
     }

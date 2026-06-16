@@ -57,6 +57,11 @@ class DasherViewModel: ObservableObject {
                 self?.speech.speak(text)
             }
         }
+        bridge.onClipboard = { text in
+            Task { @MainActor in
+                UIPasteboard.general.string = text
+            }
+        }
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)
         #if os(iOS)

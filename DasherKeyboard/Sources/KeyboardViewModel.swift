@@ -29,6 +29,9 @@ class KeyboardViewModel {
                 proxy.deleteBackward()
             }
         }
+        bridge.onClipboard = { text in
+            UIPasteboard.general.string = text
+        }
     }
 
     func updateProxy(_ proxy: UITextDocumentProxy) {

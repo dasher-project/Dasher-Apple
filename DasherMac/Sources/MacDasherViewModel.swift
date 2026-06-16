@@ -71,6 +71,12 @@ class MacDasherViewModel: ObservableObject {
                 self?.speech.speak(text)
             }
         }
+        bridge.onClipboard = { text in
+            Task { @MainActor in
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(text, forType: .string)
+            }
+        }
 
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)

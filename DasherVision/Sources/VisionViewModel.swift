@@ -56,6 +56,11 @@ class VisionViewModel: ObservableObject {
                 self?.speech.speak(text)
             }
         }
+        bridge.onClipboard = { text in
+            Task { @MainActor in
+                UIPasteboard.general.string = text
+            }
+        }
     }
 
     func setCanvasSize(_ size: CGSize) {
