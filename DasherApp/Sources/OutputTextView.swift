@@ -260,6 +260,11 @@ struct OutputTextView: View {
     private var fullToolbar: some View {
         HStack(spacing: 8) {
             speechButton(showLabel: true)
+            if viewModel.speech.isSpeaking {
+                stopSpeechButton(showLabel: true)
+            }
+            toolbarDivider
+            turboToggleButton(showLabel: true)
             toolbarDivider
             toolbarButton(icon: "doc.on.doc", label: "Copy") { copyAllText() }
             toolbarButton(icon: "doc.on.clipboard", label: "Paste") { pasteText() }
@@ -274,6 +279,11 @@ struct OutputTextView: View {
     private var compactToolbar: some View {
         HStack(spacing: 6) {
             speechButton(showLabel: false)
+            if viewModel.speech.isSpeaking {
+                stopSpeechButton(showLabel: false)
+            }
+            toolbarDivider
+            turboToggleButton(showLabel: false)
             toolbarDivider
             iconOnlyButton(icon: "doc.on.doc") { copyAllText() }
             iconOnlyButton(icon: "doc.on.clipboard") { pasteText() }
@@ -288,6 +298,10 @@ struct OutputTextView: View {
     private var minimalToolbar: some View {
         HStack(spacing: 4) {
             speechButton(showLabel: false)
+            if viewModel.speech.isSpeaking {
+                stopSpeechButton(showLabel: false)
+            }
+            turboToggleButton(showLabel: false)
             Menu {
                 Button("Copy All", action: copyAllText)
                 Button("Paste", action: pasteText)
@@ -343,6 +357,60 @@ struct OutputTextView: View {
                 .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(Color("ButtonBackground")))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func stopSpeechButton(showLabel: Bool) -> some View {
+        Button(action: { viewModel.speech.stop() }) {
+            if showLabel {
+                HStack(spacing: 4) {
+                    Image(systemName: "stop.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundColor(.red)
+                    Text("Stop")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color("MutedText"))
+                }
+                .frame(height: 36)
+                .padding(.horizontal, 8)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+            } else {
+                Image(systemName: "stop.circle.fill")
+                    .font(.system(size: 15))
+                    .foregroundColor(.red)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color("ButtonBackground")))
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func turboToggleButton(showLabel: Bool) -> some View {
+        let turboKey = viewModel.bridge.findParameterKey("BP_TURBO_MODE")
+        let isOn = viewModel.bridge.getBoolParameter(key: turboKey)
+        return Button(action: {
+            viewModel.bridge.setBoolParameter(key: turboKey, value: !isOn)
+        }) {
+            if showLabel {
+                HStack(spacing: 4) {
+                    Image(systemName: "hare.fill")
+                        .font(.system(size: 14))
+                    Text("Turbo")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color("MutedText"))
+                }
+                .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                .frame(height: 36)
+                .padding(.horizontal, 8)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+            } else {
+                Image(systemName: "hare.fill")
+                    .font(.system(size: 15))
+                    .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Color("ButtonBackground")))
             }
         }
         .buttonStyle(.plain)

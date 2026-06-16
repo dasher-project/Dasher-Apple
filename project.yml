@@ -195,6 +195,8 @@ targets:
           # Essential alphabets only (root-level English/German variants)
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet.dtd" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
+          # Editing alphabet (in autoConverted subdirectory)
+          cp "${SRCROOT}/DasherCore/Data/alphabets/autoConverted/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
           # All colour/color palettes (small, ~270KB total)
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true
           cp -r "${SRCROOT}/DasherCore/Data/colors/"* "$DEST/colors/" 2>/dev/null || true

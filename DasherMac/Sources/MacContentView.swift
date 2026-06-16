@@ -427,11 +427,20 @@ struct MacContentView: View {
 
     private var speechPicker: some View {
         let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
-        return Menu {
-            Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
-            Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
-        } label: {
-            Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
+        return HStack(spacing: 4) {
+            Menu {
+                Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
+                Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
+            } label: {
+                Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
+            }
+            if viewModel.speech.isSpeaking {
+                Button(action: { viewModel.stopSpeech() }) {
+                    Image(systemName: "stop.circle.fill")
+                        .foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -756,6 +765,14 @@ final class MacDasherCanvas: NSView {
 
     override func mouseUp(with event: NSEvent) {
         viewModel?.handleTouchEnd()
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+        viewModel?.bridge.keyEvent(key: 101, pressed: true)
+    }
+
+    override func rightMouseUp(with event: NSEvent) {
+        viewModel?.bridge.keyEvent(key: 101, pressed: false)
     }
 
     override func draw(_ dirtyRect: NSRect) {
