@@ -9,6 +9,7 @@ struct ContentView: View {
     @State private var showShareSheet = false
     @State private var showOpenFile = false
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
+    @State private var showAlphabetPopover = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -430,10 +431,8 @@ struct ContentView: View {
 
     private var alphabetPicker: some View {
         let alphabets = viewModel.bridge.allAlphabets
-        return Menu {
-            ForEach(alphabets, id: \.name) { a in
-                Button(a.name) { viewModel.bridge.setAlphabetId(a.name) }
-            }
+        return Button {
+            showAlphabetPopover.toggle()
         } label: {
             HStack(spacing: 3) {
                 Text(viewModel.bridge.alphabetId)
@@ -444,6 +443,35 @@ struct ContentView: View {
                     .font(.system(size: 8, weight: .medium))
                     .foregroundColor(Color("MutedText"))
             }
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showAlphabetPopover, arrowEdge: .top) {
+            NavigationView {
+                List(alphabets, id: \.name) { a in
+                    Button {
+                        viewModel.bridge.setAlphabetId(a.name)
+                        showAlphabetPopover = false
+                    } label: {
+                        HStack {
+                            Text(a.name)
+                            Spacer()
+                            if viewModel.bridge.alphabetId == a.name {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                    }
+                    .foregroundColor(.primary)
+                }
+                .navigationTitle("Alphabet")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { showAlphabetPopover = false }
+                    }
+                }
+            }
+            .frame(minWidth: 280, idealWidth: 320, minHeight: 400, idealHeight: 500)
         }
     }
 

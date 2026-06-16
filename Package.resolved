@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AACTools/speechmarkdown-rust",
       "state" : {
-        "revision" : "0da9c928cbd82cfbc55e2949c05d5103b75a4269",
-        "version" : "0.4.7"
+        "revision" : "e4c257fab433d7bf4c19978ed1f2e20b858ee872",
+        "version" : "0.4.8"
       }
     },
     {
