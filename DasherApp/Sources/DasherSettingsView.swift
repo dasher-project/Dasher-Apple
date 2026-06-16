@@ -40,22 +40,22 @@ struct DasherSettingsView: View {
     ]
 
     private let filterToSubgroup: [String: Set<String>] = [
-        "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons"],
-        "Press Mode": ["CPressFilter"],
-        "Smoothing Mode": ["CSmoothingFilter", "CPressFilter"],
-        "Stylus Control": ["CStylusFilter"],
-        "Click Mode": ["CClickFilter"],
-        "Button Mode": ["CButtonMode", "CDasherButtons"],
-        "Direct Mode": ["CButtonMode", "CDasherButtons"],
-        "Menu Mode": ["CButtonMode", "CDasherButtons"],
-        "Alternating Direct Mode": ["CButtonMode", "CDasherButtons"],
-        "Compass Mode": ["CCompassMode"],
-        "One Button Mode": ["COneButtonFilter", "CStaticFilter"],
-        "One Button Dynamic Mode": ["COneButtonFilter"],
-        "Two Button Dynamic Mode": ["CTwoButtonDynamicFilter"],
-        "Two Push Dynamic Mode": ["CTwoPushDynamicFilter"],
-        "Button Dynamic Mode": ["CDynamicButtons"],
-        "Multi-Press Mode": ["CButtonMultiPress"],
+        "Normal Control": ["CDefaultFilter", "CDynamicFilter", "CDynamicButtons", "Control"],
+        "Press Mode": ["CPressFilter", "Control"],
+        "Smoothing Mode": ["CSmoothingFilter", "CPressFilter", "Control"],
+        "Stylus Control": ["CStylusFilter", "Control"],
+        "Click Mode": ["CClickFilter", "Control"],
+        "Button Mode": ["CButtonMode", "CDasherButtons", "Control"],
+        "Direct Mode": ["CButtonMode", "CDasherButtons", "Control"],
+        "Menu Mode": ["CButtonMode", "CDasherButtons", "Control"],
+        "Alternating Direct Mode": ["CButtonMode", "CDasherButtons", "Control"],
+        "Compass Mode": ["CCompassMode", "Control"],
+        "One Button Mode": ["COneButtonFilter", "CStaticFilter", "Control"],
+        "One Button Dynamic Mode": ["COneButtonFilter", "Control"],
+        "Two Button Dynamic Mode": ["CTwoButtonDynamicFilter", "Control"],
+        "Two Push Dynamic Mode": ["CTwoPushDynamicFilter", "Control"],
+        "Button Dynamic Mode": ["CDynamicButtons", "Control"],
+        "Multi-Press Mode": ["CButtonMultiPress", "Control"],
     ]
 
     var body: some View {
