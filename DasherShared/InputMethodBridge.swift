@@ -1,6 +1,7 @@
 import SwiftUI
 
 public protocol AccessSettingsBridge: AnyObject {
+    func findParameterKey(_ name: String) -> Int
     func getStringParameter(key: Int) -> String
     func setStringParameter(key: Int, value: String)
     func getBoolParameter(key: Int) -> Bool

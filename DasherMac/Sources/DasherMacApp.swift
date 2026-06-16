@@ -111,8 +111,8 @@ struct MacDasherSettingsView: View {
         ("ar", "العربية")
     ]
 
-    private static let spInputFilter = 101
-    private static let spGameTextFile = 100
+    private static let spInputFilter = "SP_INPUT_FILTER"
+    private static let spGameTextFile = "SP_GAME_TEXT_FILE"
     @State private var showGameTextFileImporter = false
 
     private static let dasherFonts = [
@@ -207,7 +207,7 @@ struct MacDasherSettingsView: View {
     }
 
     private var activeSubgroups: Set<String> {
-        let currentFilter = viewModel.bridge.getStringParameter(key: Self.spInputFilter)
+        let currentFilter = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey(Self.spInputFilter))
         return filterToSubgroup[currentFilter] ?? []
     }
 
@@ -385,8 +385,9 @@ struct MacDasherSettingsView: View {
     }
 
     private func gameModeSection(_ params: [DasherParameterInfo]) -> some View {
-        let otherParams = params.filter { $0.key != Self.spGameTextFile }
-        let currentFile = viewModel.bridge.getStringParameter(key: Self.spGameTextFile)
+        let gameTextKey = viewModel.bridge.findParameterKey(Self.spGameTextFile)
+        let otherParams = params.filter { $0.key != gameTextKey }
+        let currentFile = viewModel.bridge.getStringParameter(key: gameTextKey)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -412,7 +413,7 @@ struct MacDasherSettingsView: View {
                     .buttonStyle(.bordered)
                     .controlSize(.small)
                     Button {
-                        viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: "")
+                        viewModel.bridge.setStringParameter(key: gameTextKey, value: "")
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -434,7 +435,7 @@ struct MacDasherSettingsView: View {
                 if let url = urls.first {
                     let accessing = url.startAccessingSecurityScopedResource()
                     let path = url.path
-                    viewModel.bridge.setStringParameter(key: Self.spGameTextFile, value: path)
+                    viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey(Self.spGameTextFile), value: path)
                     if accessing { url.stopAccessingSecurityScopedResource() }
                 }
             case .failure:
@@ -537,7 +538,7 @@ struct MacDasherSettingsView: View {
                 },
                 set: { newValue in
                     viewModel.bridge.setStringParameter(key: param.key, value: newValue)
-                    if param.key == Self.spInputFilter { updateAccessSummary() }
+                    if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
                 }
             )
             Picker(param.name, selection: binding) {
@@ -552,7 +553,7 @@ struct MacDasherSettingsView: View {
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
                     set: { newValue in
                         viewModel.bridge.setLongParameter(key: param.key, value: newValue)
-                        if param.key == Self.spInputFilter {
+                        if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) {
                             updateAccessSummary()
                         }
                     }

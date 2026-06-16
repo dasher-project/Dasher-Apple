@@ -5,6 +5,7 @@ import UIKit
 #endif
 
 protocol InputMethodBridge: AnyObject {
+    func findParameterKey(_ name: String) -> Int
     func getStringParameter(key: Int) -> String
     func setStringParameter(key: Int, value: String)
     func getBoolParameter(key: Int) -> Bool
@@ -359,6 +360,10 @@ class DasherBridge: InputMethodBridge {
     func setLongParameter(key: Int, value: Int) {
         guard let ctx = ctx else { return }
         dasher_set_long_parameter(ctx, Int32(key), Int(value))
+    }
+
+    func findParameterKey(_ name: String) -> Int {
+        Int(dasher_find_parameter_key(name))
     }
 
     func getStringParameter(key: Int) -> String {

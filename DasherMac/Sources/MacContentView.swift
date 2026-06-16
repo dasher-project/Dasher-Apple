@@ -390,11 +390,11 @@ struct MacContentView: View {
     }
 
     private var fontPicker: some View {
-        let fontValues = viewModel.bridge.getStringValues(key: 99)
-        let currentFont = viewModel.bridge.getStringParameter(key: 99)
+        let fontValues = viewModel.bridge.getStringValues(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
+        let currentFont = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
         return Menu {
             ForEach(fontValues, id: \.self) { f in
-                Button(f) { viewModel.bridge.setStringParameter(key: 99, value: f) }
+                Button(f) { viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f) }
             }
         } label: {
             HStack(spacing: 3) {

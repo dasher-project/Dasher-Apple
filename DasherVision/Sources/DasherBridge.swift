@@ -473,6 +473,10 @@ class DasherBridge: InputMethodBridge {
     lazy var languageModelIdParamKey: Int = {
         Int(dasher_find_parameter_key("LP_LANGUAGE_MODEL_ID"))
     }()
+
+    func findParameterKey(_ name: String) -> Int {
+        Int(dasher_find_parameter_key(name))
+    }
 }
 
 // MARK: - Draw commands

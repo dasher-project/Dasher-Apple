@@ -38,30 +38,19 @@ public struct AccessConfiguration: Codable, Equatable {
     }
 
     public func apply(to bridge: AccessSettingsBridge) {
-        bridge.setStringParameter(key: ParameterKeys.spInputFilter, value: selection.filterName)
+        bridge.setStringParameter(key: bridge.findParameterKey("SP_INPUT_FILTER"), value: selection.filterName)
 
         if selection == .dwell {
-            bridge.setBoolParameter(key: ParameterKeys.bpStopOutside, value: true)
-            bridge.setBoolParameter(key: ParameterKeys.bpAutocalibrate, value: true)
+            bridge.setBoolParameter(key: bridge.findParameterKey("BP_STOP_OUTSIDE"), value: true)
+            bridge.setBoolParameter(key: bridge.findParameterKey("BP_AUTOCALIBRATE"), value: true)
         } else {
-            bridge.setBoolParameter(key: ParameterKeys.bpStopOutside, value: false)
+            bridge.setBoolParameter(key: bridge.findParameterKey("BP_STOP_OUTSIDE"), value: false)
         }
 
         if needsSwitchProfile, let profile = switchProfile {
             let buttonMap = profile.buttonMapString
-            bridge.setStringParameter(key: ParameterKeys.spButtonMappings, value: buttonMap)
-            bridge.setLongParameter(key: ParameterKeys.lpButtonScanTime, value: UInt32(profile.scanRateMs))
+            bridge.setStringParameter(key: bridge.findParameterKey("SP_BUTTON_MAPPINGS"), value: buttonMap)
+            bridge.setLongParameter(key: bridge.findParameterKey("LP_BUTTON_SCAN_TIME"), value: UInt32(profile.scanRateMs))
         }
     }
-}
-
-public enum ParameterKeys {
-    public static let spInputFilter = 101
-    public static let spInputDevice = 102
-    public static let spButtonMappings = 103
-    public static let bpStopOutside = 19
-    public static let bpAutocalibrate = 21
-    public static let lpButtonScanTime = 53
-    public static let lpMaxBitrate = 29
-    public static let bpAutoSpeedcontrol = 14
 }
