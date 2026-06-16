@@ -198,6 +198,7 @@ targets:
           # All colour/color palettes (small, ~270KB total)
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true
           cp -r "${SRCROOT}/DasherCore/Data/colors/"* "$DEST/colors/" 2>/dev/null || true
+          find "$DEST" -name "*.py" -delete
           # Settings
           cp -r "${SRCROOT}/DasherCore/Data/settings/"* "$DEST/settings/" 2>/dev/null || true
           # English training text only (311KB vs 65MB)
