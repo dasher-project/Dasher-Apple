@@ -463,8 +463,8 @@ struct ContentView: View {
 
     private var learningToggle: some View {
         let binding = Binding<Bool>(
-            get: { viewModel.bridge.getBoolParameter(key: 15) },
-            set: { viewModel.bridge.setBoolParameter(key: 15, value: $0) }
+            get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE")) },
+            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0) }
         )
 
         return HStack(spacing: 6) {
@@ -482,8 +482,8 @@ struct ContentView: View {
 
     private var autoSpeedToggle: some View {
         let binding = Binding<Bool>(
-            get: { viewModel.bridge.getBoolParameter(key: 14) },
-            set: { viewModel.bridge.setBoolParameter(key: 14, value: $0) }
+            get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
+            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
         )
 
         return HStack(spacing: 6) {
@@ -560,23 +560,23 @@ struct ContentView: View {
 
     private var fontSizeStepper: some View {
         let binding = Binding<Int>(
-            get: { viewModel.bridge.getLongParameter(key: 33) },
-            set: { viewModel.bridge.setLongParameter(key: 33, value: $0) }
+            get: { viewModel.bridge.getLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE")) },
+            set: { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: $0) }
         )
         return HStack(spacing: 0) {
             stepperBox(
                 label: "\(binding.wrappedValue)",
-                onDecrement: { viewModel.bridge.setLongParameter(key: 33, value: max(8, binding.wrappedValue - 1)) },
-                onIncrement: { viewModel.bridge.setLongParameter(key: 33, value: min(72, binding.wrappedValue + 1)) }
+                onDecrement: { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: max(8, binding.wrappedValue - 1)) },
+                onIncrement: { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: min(72, binding.wrappedValue + 1)) }
             )
         }
     }
 
     private var speechPicker: some View {
-        let isOn = viewModel.bridge.getBoolParameter(key: 24)
+        let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
         return Menu {
-            Button("Speech on") { viewModel.bridge.setBoolParameter(key: 24, value: true) }
-            Button("Speech off") { viewModel.bridge.setBoolParameter(key: 24, value: false) }
+            Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
+            Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
         } label: {
             HStack(spacing: 3) {
                 Text(isOn ? "Speech on" : "Speech off")
