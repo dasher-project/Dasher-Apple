@@ -342,7 +342,7 @@ struct OutputTextView: View {
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color("MutedText"))
                 }
-                .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
                 .frame(height: 36)
                 .padding(.horizontal, 8)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
@@ -354,7 +354,7 @@ struct OutputTextView: View {
                         .font(.system(size: 8))
                         .offset(x: 3, y: 1)
                 }
-                .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
                 .frame(width: 36, height: 36)
                 .background(Circle().fill(Color("ButtonBackground")))
             }
@@ -387,11 +387,12 @@ struct OutputTextView: View {
         .buttonStyle(.plain)
     }
 
+    @State private var turboActive = false
+
     private func turboToggleButton(showLabel: Bool) -> some View {
-        let turboKey = viewModel.bridge.findParameterKey("BP_TURBO_MODE")
-        let isOn = viewModel.bridge.getBoolParameter(key: turboKey)
         return Button(action: {
-            viewModel.bridge.setBoolParameter(key: turboKey, value: !isOn)
+            turboActive.toggle()
+            viewModel.bridge.keyEvent(key: 101, pressed: turboActive)
         }) {
             if showLabel {
                 HStack(spacing: 4) {
@@ -401,14 +402,14 @@ struct OutputTextView: View {
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color("MutedText"))
                 }
-                .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
                 .frame(height: 36)
                 .padding(.horizontal, 8)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
             } else {
                 Image(systemName: "hare.fill")
                     .font(.system(size: 15))
-                    .foregroundColor(isOn ? Color("AccentColor") : Color("BarText"))
+                    .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(Color("ButtonBackground")))
             }

@@ -205,6 +205,7 @@ targets:
           cp -r "${SRCROOT}/DasherCore/Data/settings/"* "$DEST/settings/" 2>/dev/null || true
           # English training text only (311KB vs 65MB)
           cp "${SRCROOT}/DasherCore/Data/training/training_english_GB.txt" "$DEST/training/" 2>/dev/null || true
+          cp "${SRCROOT}/DasherCore/Data/training/training_wa_en_Latn.txt" "$DEST/training/" 2>/dev/null || true
           cp "${SRCROOT}/DasherCore/Data/training/gamemode_"* "$DEST/training/" 2>/dev/null || true
           # Locale strings
           cp -f "${SRCROOT}/DasherCore/Strings/"*.json "$DEST/Strings/" 2>/dev/null || true
