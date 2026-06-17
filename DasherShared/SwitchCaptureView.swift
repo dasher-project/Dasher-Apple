@@ -8,8 +8,7 @@ public struct SwitchCaptureRow: View {
 
     public var body: some View {
         HStack {
-            Image(systemName: slot.isAssigned ? "circle.inset.filled" : "circle")
-                .foregroundColor(slot.isAssigned ? .green : .secondary)
+            LucideIcon(slot.isAssigned ? "circle-dot" : "circle", color: slot.isAssigned ? .green : .secondary)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(slot.label)

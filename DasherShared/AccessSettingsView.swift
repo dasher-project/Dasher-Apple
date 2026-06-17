@@ -65,7 +65,7 @@ public struct AccessSettingsView: View {
                 methodRow(method)
             }
         } header: {
-            Label("Steering Method", systemImage: "cursorarrow.motionlines")
+            LucideLabel("Steering Method", icon: "move")
         }
     }
 
@@ -75,7 +75,7 @@ public struct AccessSettingsView: View {
                 selectionRow(method)
             }
         } header: {
-            Label("Selection Method", systemImage: "hand.tap")
+            LucideLabel("Selection Method", icon: "hand")
         }
     }
 
@@ -118,7 +118,7 @@ public struct AccessSettingsView: View {
                 }
             }
         } header: {
-            Label("Switch Setup", systemImage: "switch.2")
+            LucideLabel("Switch Setup", icon: "power")
         }
     }
 
@@ -140,7 +140,7 @@ public struct AccessSettingsView: View {
                 NavigationLink {
                     TiltCalibrationView(tiltService: tiltService)
                 } label: {
-                    Label("Calibrate Tilt", systemImage: "sensor.tag.radiowaves.forward")
+                    LucideLabel("Calibrate Tilt", icon: "radio")
                 }
             } else {
                 Text("Enable tilt input first to access calibration.")
@@ -148,7 +148,7 @@ public struct AccessSettingsView: View {
             }
             #endif
         } header: {
-            Label("Tilt Settings", systemImage: "arrow.up.left.and.arrow.down.right")
+            LucideLabel("Tilt Settings", icon: "move-diagonal")
         }
     }
 
@@ -169,9 +169,8 @@ public struct AccessSettingsView: View {
             applyNow()
         } label: {
             HStack {
-                Image(systemName: method.iconName)
+                LucideIcon(method.iconName, size: 22, color: .accentColor)
                     .frame(width: 28)
-                    .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(method.displayName)
@@ -184,8 +183,7 @@ public struct AccessSettingsView: View {
                 Spacer()
 
                 if config.method == method {
-                    Image(systemName: "checkmark")
-                        .foregroundColor(.accentColor)
+                    LucideIcon(DasherIcon.check, color: .accentColor)
                 }
             }
         }
@@ -205,9 +203,8 @@ public struct AccessSettingsView: View {
             applyNow()
         } label: {
             HStack {
-                Image(systemName: method.iconName)
+                LucideIcon(method.iconName, size: 22, color: .accentColor)
                     .frame(width: 28)
-                    .foregroundColor(.accentColor)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(method.displayName)
@@ -220,8 +217,7 @@ public struct AccessSettingsView: View {
                 Spacer()
 
                 if config.selection == method {
-                    Image(systemName: "checkmark")
-                        .foregroundColor(.accentColor)
+                    LucideIcon(DasherIcon.check, color: .accentColor)
                 }
             }
         }

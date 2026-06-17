@@ -1,5 +1,6 @@
 import SwiftUI
 import DasherShared
+import LucideIcons
 import UniformTypeIdentifiers
 
 struct ContentView: View {
@@ -229,24 +230,18 @@ struct ContentView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: isWide ? 6 : 4) {
                     if isWide {
-                        toolbarButton(icon: "doc.badge.plus", label: "New") {
+                        toolbarButton(icon: DasherIcon.newDocument, label: "New") {
                             viewModel.newMessage()
                         }
-                        toolbarButton(icon: "folder", label: "Open") {
+                        toolbarButton(icon: DasherIcon.open, label: "Open") {
                             showOpenFile = true
                         }
-                        toolbarButton(icon: "square.and.arrow.down", label: "Save") {
+                        toolbarButton(icon: DasherIcon.share, label: "Save") {
                             showShareSheet = true
                         }
                         barDivider
                         toolbarButton(
-                            icon: viewModel.isPlaying ? "pause.fill" : "play.fill",
-                            label: viewModel.isPlaying ? "Pause" : "Play"
-                        ) {
-                            viewModel.togglePlay()
-                        }
-                        toolbarButton(
-                            icon: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller",
+                            icon: DasherIcon.gameMode,
                             label: viewModel.isGameModeActive ? "Game On" : "Game"
                         ) {
                             viewModel.toggleGameMode()
@@ -254,30 +249,27 @@ struct ContentView: View {
                         barDivider
                         layoutPicker
                         barDivider
-                        toolbarButton(icon: "slider.horizontal.3", label: "Prefs") {
+                        toolbarButton(icon: DasherIcon.settings, label: "Prefs") {
                             showSettings = true
                         }
                     } else {
-                        compactToolbarButton(icon: "doc.badge.plus") {
+                        compactToolbarButton(icon: DasherIcon.newDocument) {
                             viewModel.newMessage()
                         }
-                        compactToolbarButton(icon: "folder") {
+                        compactToolbarButton(icon: DasherIcon.open) {
                             showOpenFile = true
                         }
-                        compactToolbarButton(icon: "square.and.arrow.down") {
+                        compactToolbarButton(icon: DasherIcon.share) {
                             showShareSheet = true
                         }
                         barDivider
-                        compactToolbarButton(icon: viewModel.isPlaying ? "pause.fill" : "play.fill") {
-                            viewModel.togglePlay()
-                        }
-                        compactToolbarButton(icon: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller") {
+                        compactToolbarButton(icon: DasherIcon.gameMode) {
                             viewModel.toggleGameMode()
                         }
                         barDivider
                         layoutPickerCompact(portrait: isPortrait)
                         barDivider
-                        compactToolbarButton(icon: "slider.horizontal.3") {
+                        compactToolbarButton(icon: DasherIcon.settings) {
                             showSettings = true
                         }
                     }
@@ -292,9 +284,7 @@ struct ContentView: View {
     private func toolbarButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 16))
-                    .foregroundColor(Color("DeepNavy"))
+                LucideIcon(icon, size: 16, color: Color("DeepNavy"))
                 Text(label)
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Color("BarText"))
@@ -307,9 +297,7 @@ struct ContentView: View {
 
     private func compactToolbarButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 16))
-                .foregroundColor(Color("DeepNavy"))
+            LucideIcon(icon, size: 16, color: Color("DeepNavy"))
                 .frame(width: 38, height: 38)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
         }
@@ -324,17 +312,13 @@ struct ContentView: View {
             Button("Top") { currentLayoutPosition = "Top" }
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: layoutIcon)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color("DeepNavy"))
+                LucideIcon(layoutIcon, size: 14, color: Color("DeepNavy"))
 
                 Text(currentLayoutPosition)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(Color("BarText"))
 
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: Color("MutedText"))
             }
             .padding(.horizontal, 12)
             .frame(height: 52)
@@ -351,12 +335,8 @@ struct ContentView: View {
             Button("Top") { currentLayoutPosition = "Top" }
         } label: {
             HStack(spacing: 3) {
-                Image(systemName: layoutIcon)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color("DeepNavy"))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 7, weight: .bold))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(layoutIcon, size: 13, color: Color("DeepNavy"))
+                LucideIcon(DasherIcon.chevronDown, size: 7, color: Color("MutedText"))
             }
             .frame(width: 38, height: 38)
             .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
@@ -374,12 +354,8 @@ struct ContentView: View {
             Button("Top") { currentLayoutPosition = "Top" }
         } label: {
             HStack(spacing: 3) {
-                Image(systemName: layoutIcon)
-                    .font(.system(size: 13))
-                    .foregroundColor(Color("DeepNavy"))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 7, weight: .bold))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(layoutIcon, size: 13, color: Color("DeepNavy"))
+                LucideIcon(DasherIcon.chevronDown, size: 7, color: Color("MutedText"))
             }
             .frame(width: 38, height: 38)
             .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
@@ -389,11 +365,11 @@ struct ContentView: View {
 
     private var layoutIcon: String {
         switch currentLayoutPosition {
-        case "Right": return "sidebar.right"
-        case "Left": return "sidebar.left"
-        case "Bottom": return "rectangle.split.1x2"
-        case "Top": return "rectangle.split.1x2"
-        default: return "sidebar.right"
+        case "Right": return DasherIcon.paneRight
+        case "Left": return DasherIcon.paneLeft
+        case "Bottom": return DasherIcon.paneBottom
+        case "Top": return DasherIcon.paneTop
+        default: return DasherIcon.paneRight
         }
     }
 
@@ -439,9 +415,7 @@ struct ContentView: View {
                     .font(.system(size: 13))
                     .foregroundColor(Color("BarText"))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: Color("MutedText"))
             }
         }
         .buttonStyle(.plain)
@@ -456,8 +430,7 @@ struct ContentView: View {
                             Text(a.name)
                             Spacer()
                             if viewModel.bridge.alphabetId == a.name {
-                                Image(systemName: "checkmark")
-                                    .foregroundColor(.accentColor)
+                                LucideIcon(DasherIcon.check, size: 16, color: .accentColor)
                             }
                         }
                     }
@@ -532,15 +505,13 @@ struct ContentView: View {
         return Menu {
             ForEach(palettes, id: \.name) { p in
                 Button(action: { viewModel.bridge.setPalette(p.name) }) {
-                    Label(p.name, systemImage: "circle.fill")
+                    LucideLabel(p.name, icon: "circle", iconSize: 12)
                 }
             }
         } label: {
             HStack(spacing: 4) {
                 paletteSwatchIcon
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 7, weight: .medium))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(DasherIcon.chevronDown, size: 7, color: Color("MutedText"))
             }
         }
         .buttonStyle(.plain)
@@ -579,9 +550,7 @@ struct ContentView: View {
                     .font(.system(size: 13))
                     .foregroundColor(Color("BarText"))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: Color("MutedText"))
             }
         }
     }
@@ -610,9 +579,7 @@ struct ContentView: View {
                 Text(isOn ? "Speech on" : "Speech off")
                     .font(.system(size: 13))
                     .foregroundColor(Color("BarText"))
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(Color("MutedText"))
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: Color("MutedText"))
             }
         }
     }

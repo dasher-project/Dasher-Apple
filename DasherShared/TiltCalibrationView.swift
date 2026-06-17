@@ -54,9 +54,9 @@ public struct TiltCalibrationView: View {
                 .foregroundColor(.secondary)
 
             VStack(alignment: .leading, spacing: 8) {
-                Label("Hold the device upright, then tilt forward and back", systemImage: "arrow.up.and.down")
-                Label("Tilt left and right through the full range", systemImage: "arrow.left.and.right")
-                Label("Move slowly and smoothly through all positions", systemImage: "hand.draw")
+                LucideLabel("Hold the device upright, then tilt forward and back", icon: "move-vertical")
+                LucideLabel("Tilt left and right through the full range", icon: "move-horizontal")
+                LucideLabel("Move slowly and smoothly through all positions", icon: "hand")
             }
             .font(.subheadline)
 

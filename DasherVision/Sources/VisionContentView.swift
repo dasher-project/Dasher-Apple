@@ -1,4 +1,6 @@
 import SwiftUI
+import LucideIcons
+import DasherShared
 
 struct VisionContentView: View {
     @StateObject private var viewModel = VisionViewModel()
@@ -11,11 +13,11 @@ struct VisionContentView: View {
 
             VStack {
                 HStack {
-                    toolbarButton("doc.badge.plus") { viewModel.newMessage() }
-                    toolbarButton(viewModel.isPlaying ? "pause.fill" : "play.fill", isAccent: true) { viewModel.togglePlay() }
+                    toolbarButton(DasherIcon.newDocument) { viewModel.newMessage() }
+                    toolbarButton(viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play, isAccent: true) { viewModel.togglePlay() }
                     Spacer()
-                    toolbarButton("eye.fill", isAccent: viewModel.pointerHoverEnabled) { viewModel.pointerHoverEnabled.toggle() }
-                    toolbarButton("gearshape") { showSettings = true }
+                    toolbarButton(DasherIcon.eye, isAccent: viewModel.pointerHoverEnabled) { viewModel.pointerHoverEnabled.toggle() }
+                    toolbarButton(DasherIcon.settings) { showSettings = true }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -50,11 +52,11 @@ struct VisionContentView: View {
                         Spacer()
 
                         if !viewModel.outputText.isEmpty {
-                            toolbarButton("doc.on.doc") {
+                            toolbarButton(DasherIcon.copy) {
                                 viewModel.copyOutput()
                             }
                         }
-                        toolbarButton("delete.left") {
+                        toolbarButton("delete") {
                             viewModel.newMessage()
                         }
                     }
@@ -75,9 +77,7 @@ struct VisionContentView: View {
 
     private func toolbarButton(_ icon: String, isAccent: Bool = false, _ action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(isAccent ? .white : .white)
+            LucideIcon(icon, size: 18, color: .white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(RoundedRectangle(cornerRadius: 10).fill(isAccent ? Color.blue : Color.white.opacity(0.35)))

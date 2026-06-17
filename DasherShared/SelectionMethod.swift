@@ -43,15 +43,15 @@ public enum SelectionMethod: String, CaseIterable, Identifiable, Codable {
 
     public var iconName: String {
         switch self {
-        case .continuous: return "cursorarrow.motionlines"
-        case .pressToMove: return "hand.tap"
-        case .clickToZoom: return "magnifyingglass"
-        case .dwell: return "eye.circle"
-        case .oneSwitch: return "capsule"
-        case .twoSwitches: return "capsule.portrait"
-        case .twoPush: return "capsule.portrait.fill"
-        case .scanning: return "square.grid.2x2"
-        case .directBoxes: return "square.grid.3x3"
+        case .continuous: return DasherIcon.controlMode
+        case .pressToMove: return "pointer"
+        case .clickToZoom: return "zoom-in"
+        case .dwell: return DasherIcon.eye
+        case .oneSwitch: return "circle"
+        case .twoSwitches: return "circle-dot"
+        case .twoPush: return "circle-dot"
+        case .scanning: return "layout-grid"
+        case .directBoxes: return "grid-3x3"
         }
     }
 

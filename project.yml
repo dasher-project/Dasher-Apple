@@ -20,6 +20,9 @@ packages:
   SwiftTTSWrapper:
     url: https://github.com/aactools/swift-tts-wrapper
     from: "1.2.0"
+  LucideIcons:
+    url: https://github.com/JakubMazur/lucide-icons-swift
+    from: "1.20.0"
 
 settings:
   base:
@@ -117,6 +120,8 @@ targets:
         product: DasherShared
       - package: DasherSpeech
         product: DasherSpeech
+      - package: LucideIcons
+        product: LucideIcons
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false
@@ -258,6 +263,8 @@ targets:
         product: DasherShared
       - package: DasherSpeech
         product: DasherSpeech
+      - package: LucideIcons
+        product: LucideIcons
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false
@@ -316,6 +323,8 @@ targets:
         product: SwiftTTSWrapper
       - package: DasherSpeech
         product: DasherSpeech
+      - package: LucideIcons
+        product: LucideIcons
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false

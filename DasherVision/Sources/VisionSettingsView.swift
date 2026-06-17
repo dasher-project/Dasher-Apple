@@ -1,4 +1,6 @@
 import SwiftUI
+import LucideIcons
+import DasherShared
 import DasherSpeech
 
 struct VisionSettingsView: View {
@@ -38,8 +40,7 @@ struct VisionSettingsView: View {
                         HStack {
                             Text("Access")
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.secondary)
+                            LucideIcon(DasherIcon.chevronRight, color: .secondary)
                         }
                     }
 
@@ -72,7 +73,7 @@ struct VisionSettingsView: View {
                         }
                     }
                 } header: {
-                    Label("Pointer Input", systemImage: "eye")
+                    LucideLabel("Pointer Input", icon: DasherIcon.eye)
                 }
 
                 if viewModel.appLevelDwell {
@@ -89,7 +90,7 @@ struct VisionSettingsView: View {
                 Section {
                     SpeechSettingsView(service: SpeechService.shared)
                 } header: {
-                    Label("Speech", systemImage: "speaker.wave.2")
+                    LucideLabel("Speech", icon: DasherIcon.speak)
                 }
             }
             .navigationTitle("Settings")
