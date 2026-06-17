@@ -241,12 +241,6 @@ struct ContentView: View {
                         }
                         barDivider
                         toolbarButton(
-                            icon: viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play,
-                            label: viewModel.isPlaying ? "Pause" : "Play"
-                        ) {
-                            viewModel.togglePlay()
-                        }
-                        toolbarButton(
                             icon: DasherIcon.gameMode,
                             label: viewModel.isGameModeActive ? "Game On" : "Game"
                         ) {
@@ -269,9 +263,6 @@ struct ContentView: View {
                             showShareSheet = true
                         }
                         barDivider
-                        compactToolbarButton(icon: viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play) {
-                            viewModel.togglePlay()
-                        }
                         compactToolbarButton(icon: DasherIcon.gameMode) {
                             viewModel.toggleGameMode()
                         }
@@ -514,7 +505,7 @@ struct ContentView: View {
         return Menu {
             ForEach(palettes, id: \.name) { p in
                 Button(action: { viewModel.bridge.setPalette(p.name) }) {
-                    Label(p.name) { LucideIcon("circle", size: 12) }
+                    LucideLabel(p.name, icon: "circle", iconSize: 12)
                 }
             }
         } label: {

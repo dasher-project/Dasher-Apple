@@ -49,10 +49,6 @@ struct MacContentView: View {
                 Button(action: { viewModel.newMessage() }) {
                     LucideLabel("New", icon: DasherIcon.newDocument)
                 }
-                Button(action: { viewModel.togglePlay() }) {
-                    LucideLabel(viewModel.isPlaying ? "Pause" : "Play",
-                          icon: viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play)
-                }
 
                 if currentLayoutPosition != "Direct" {
                     Button(action: { viewModel.toggleGameMode() }) {
@@ -378,7 +374,7 @@ struct MacContentView: View {
         return Menu {
             ForEach(palettes, id: \.name) { p in
                 Button(action: { viewModel.bridge.setPalette(p.name) }) {
-                    Label(p.name) { LucideIcon("circle", size: 12) }
+                    LucideLabel(p.name, icon: "circle", iconSize: 12)
                 }
             }
         } label: {

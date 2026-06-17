@@ -67,16 +67,19 @@ struct DasherSettingsView: View {
                         Button {
                             withAnimation { selectedSection = section }
                         } label: {
-                            Text(section.rawValue)
-                                .font(.subheadline.weight(selectedSection == section ? .semibold : .regular))
-                                .foregroundColor(selectedSection == section ? .white : .primary)
-                                .padding(.vertical, 7)
-                                .padding(.horizontal, 10)
-                                .frame(maxWidth: .infinity)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .fill(selectedSection == section ? Color.accentColor : Color.clear)
-                                )
+                            VStack(spacing: 3) {
+                                LucideIcon(section.icon, size: 16)
+                                Text(section.rawValue)
+                                    .font(.system(size: 10, weight: selectedSection == section ? .semibold : .regular))
+                            }
+                            .foregroundColor(selectedSection == section ? Color("DeepNavy") : Color("MutedText"))
+                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .frame(maxWidth: .infinity)
+                            .background(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(selectedSection == section ? Color("DasherTeal") : Color.clear)
+                            )
                         }
                         .buttonStyle(.plain)
                     }
