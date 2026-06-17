@@ -10,11 +10,14 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.5"),
+        .package(url: "https://github.com/JakubMazur/lucide-icons-swift", from: "1.20.0"),
     ],
     targets: [
         .target(
             name: "DasherShared",
-            dependencies: [],
+            dependencies: [
+                .product(name: "LucideIcons", package: "lucide-icons-swift"),
+            ],
             path: "DasherShared"
         ),
         .target(

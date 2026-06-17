@@ -37,13 +37,13 @@ public enum AccessMethod: String, CaseIterable, Identifiable, Codable {
 
     public var iconName: String {
         switch self {
-        case .pointer: return "cursorarrow"
-        case .touch: return "hand.draw"
-        case .eyeGaze: return "eye"
-        case .tilt: return "arrow.up.left.and.arrow.down.right"
-        case .joystick: return "gamecontroller"
-        case .handTracking: return "hand.raised"
-        case .switchesOnly: return "switch.2"
+        case .pointer: return DasherIcon.controlMode
+        case .touch: return "hand"
+        case .eyeGaze: return DasherIcon.eye
+        case .tilt: return "move"
+        case .joystick: return DasherIcon.gameMode
+        case .handTracking: return "hand"
+        case .switchesOnly: return "toggle-right"
         }
     }
 

@@ -1,6 +1,7 @@
 import SwiftUI
 import DasherShared
 import DasherSpeech
+import LucideIcons
 
 struct DasherSettingsView: View {
     @ObservedObject var viewModel: DasherViewModel
@@ -199,7 +200,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label("Customization", systemImage: "paintpalette")
+            LucideLabel("Customization", icon: DasherIcon.palette)
         }
     }
 
@@ -217,7 +218,7 @@ struct DasherSettingsView: View {
                 )
             } label: {
                 HStack {
-                    Label("Access", systemImage: "cursorarrow.motionlines")
+                    LucideLabel("Access", icon: "move")
                     Spacer()
                     Text(currentAccessSummary)
                         .foregroundColor(.secondary)
@@ -303,7 +304,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label("Language", systemImage: "textformat")
+            LucideLabel("Language", icon: DasherIcon.alphabet)
         }
     }
 
@@ -327,7 +328,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label("Output", systemImage: "text.bubble")
+            LucideLabel("Output", icon: "message-square")
         }
     }
 
@@ -337,7 +338,7 @@ struct DasherSettingsView: View {
         Section {
             SpeechSettingsView(service: SpeechService.shared)
         } header: {
-            Label("Speech", systemImage: "speaker.wave.2")
+            LucideLabel("Speech", icon: DasherIcon.speak)
         }
     }
 
@@ -347,7 +348,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label(selectedSection.rawValue, systemImage: icon)
+            LucideLabel(selectedSection.rawValue, icon: icon)
         }
     }
 
@@ -378,8 +379,7 @@ struct DasherSettingsView: View {
                     Button {
                         viewModel.bridge.setStringParameter(key: gameTextKey, value: "")
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                        LucideIcon(DasherIcon.close, size: 16, color: .secondary)
                     }
                     .buttonStyle(.plain)
                 }
@@ -388,7 +388,7 @@ struct DasherSettingsView: View {
                 parameterRow(param)
             }
         } header: {
-            Label("Game Mode", systemImage: "gamecontroller")
+            LucideLabel("Game Mode", icon: DasherIcon.gameMode)
         }
         .fileImporter(
             isPresented: $showGameTextFileImporter,

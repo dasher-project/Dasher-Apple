@@ -1,4 +1,6 @@
 import SwiftUI
+import DasherShared
+import LucideIcons
 
 struct OutputTextView: View {
     @ObservedObject var viewModel: DasherViewModel
@@ -266,10 +268,10 @@ struct OutputTextView: View {
             toolbarDivider
             turboToggleButton(showLabel: true)
             toolbarDivider
-            toolbarButton(icon: "doc.on.doc", label: "Copy") { copyAllText() }
-            toolbarButton(icon: "doc.on.clipboard", label: "Paste") { pasteText() }
+            toolbarButton(icon: DasherIcon.copy, label: "Copy") { copyAllText() }
+            toolbarButton(icon: DasherIcon.paste, label: "Paste") { pasteText() }
             toolbarDivider
-            toolbarButton(icon: "xmark.circle", label: "Clear") { viewModel.newMessage() }
+            toolbarButton(icon: DasherIcon.close, label: "Clear") { viewModel.newMessage() }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
@@ -285,10 +287,10 @@ struct OutputTextView: View {
             toolbarDivider
             turboToggleButton(showLabel: false)
             toolbarDivider
-            iconOnlyButton(icon: "doc.on.doc") { copyAllText() }
-            iconOnlyButton(icon: "doc.on.clipboard") { pasteText() }
+            iconOnlyButton(icon: DasherIcon.copy) { copyAllText() }
+            iconOnlyButton(icon: DasherIcon.paste) { pasteText() }
             toolbarDivider
-            iconOnlyButton(icon: "xmark.circle") { viewModel.newMessage() }
+            iconOnlyButton(icon: DasherIcon.close) { viewModel.newMessage() }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
@@ -308,9 +310,7 @@ struct OutputTextView: View {
                 Divider()
                 Button("Clear", role: .destructive) { viewModel.newMessage() }
             } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 15))
-                    .foregroundColor(Color("BarText"))
+                LucideIcon(DasherIcon.more, size: 15, color: Color("BarText"))
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(Color("ButtonBackground")))
             }
@@ -332,10 +332,8 @@ struct OutputTextView: View {
             if showLabel {
                 HStack(spacing: 4) {
                     ZStack(alignment: .bottomTrailing) {
-                        Image(systemName: "doc.text")
-                            .font(.system(size: 14))
-                        Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
-                            .font(.system(size: 8))
+                        LucideIcon("file-text", size: 14)
+                        LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 8)
                             .offset(x: 3, y: 1)
                     }
                     Text("Speech")
@@ -348,10 +346,8 @@ struct OutputTextView: View {
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
             } else {
                 ZStack(alignment: .bottomTrailing) {
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 15))
-                    Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
-                        .font(.system(size: 8))
+                    LucideIcon("file-text", size: 15)
+                    LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 8)
                         .offset(x: 3, y: 1)
                 }
                 .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
@@ -366,9 +362,7 @@ struct OutputTextView: View {
         Button(action: { viewModel.speech.stop() }) {
             if showLabel {
                 HStack(spacing: 4) {
-                    Image(systemName: "stop.circle.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(.red)
+                    LucideIcon(DasherIcon.stopSpeak, size: 14, color: .red)
                     Text("Stop")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color("MutedText"))
@@ -377,9 +371,7 @@ struct OutputTextView: View {
                 .padding(.horizontal, 8)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
             } else {
-                Image(systemName: "stop.circle.fill")
-                    .font(.system(size: 15))
-                    .foregroundColor(.red)
+                LucideIcon(DasherIcon.stopSpeak, size: 15, color: .red)
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(Color("ButtonBackground")))
             }
@@ -396,8 +388,7 @@ struct OutputTextView: View {
         }) {
             if showLabel {
                 HStack(spacing: 4) {
-                    Image(systemName: "hare.fill")
-                        .font(.system(size: 14))
+                    LucideIcon(DasherIcon.turbo, size: 14)
                     Text("Turbo")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color("MutedText"))
@@ -407,9 +398,7 @@ struct OutputTextView: View {
                 .padding(.horizontal, 8)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
             } else {
-                Image(systemName: "hare.fill")
-                    .font(.system(size: 15))
-                    .foregroundColor(turboActive ? Color("AccentColor") : Color("BarText"))
+                LucideIcon(DasherIcon.turbo, size: 15, color: turboActive ? Color("AccentColor") : Color("BarText"))
                     .frame(width: 36, height: 36)
                     .background(Circle().fill(Color("ButtonBackground")))
             }
@@ -420,9 +409,7 @@ struct OutputTextView: View {
     private func toolbarButton(icon: String, label: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             VStack(spacing: 3) {
-                Image(systemName: icon)
-                    .font(.system(size: 14))
-                    .foregroundColor(Color("BarText"))
+                LucideIcon(icon, size: 14, color: Color("BarText"))
                 Text(label)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(Color("MutedText"))
@@ -435,9 +422,7 @@ struct OutputTextView: View {
 
     private func iconOnlyButton(icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundColor(Color("BarText"))
+            LucideIcon(icon, size: 14, color: Color("BarText"))
                 .frame(width: 34, height: 34)
                 .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
         }

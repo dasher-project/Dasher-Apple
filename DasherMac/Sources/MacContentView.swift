@@ -1,5 +1,6 @@
 import SwiftUI
 import DasherShared
+import LucideIcons
 import UniformTypeIdentifiers
 
 struct MacContentView: View {
@@ -46,24 +47,24 @@ struct MacContentView: View {
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: { viewModel.newMessage() }) {
-                    Label("New", systemImage: "doc.badge.plus")
+                    LucideLabel("New", icon: DasherIcon.newDocument)
                 }
                 Button(action: { viewModel.togglePlay() }) {
-                    Label(viewModel.isPlaying ? "Pause" : "Play",
-                          systemImage: viewModel.isPlaying ? "pause.fill" : "play.fill")
+                    LucideLabel(viewModel.isPlaying ? "Pause" : "Play",
+                          icon: viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play)
                 }
 
                 if currentLayoutPosition != "Direct" {
                     Button(action: { viewModel.toggleGameMode() }) {
-                        Label(viewModel.isGameModeActive ? "Game On" : "Game Mode",
-                              systemImage: viewModel.isGameModeActive ? "gamecontroller.fill" : "gamecontroller")
+                        LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
+                              icon: DasherIcon.gameMode)
                     }
                 }
 
                 layoutPickerMenu
 
                 Button(action: { showSettings = true }) {
-                    Label("Settings", systemImage: "slider.horizontal.3")
+                    LucideLabel("Settings", icon: DasherIcon.settings)
                 }
             }
         }
@@ -78,18 +79,18 @@ struct MacContentView: View {
             Divider()
             Button("Direct Mode") { currentLayoutPosition = "Direct" }
         } label: {
-            Label(currentLayoutPosition, systemImage: layoutIcon)
+            LucideLabel(currentLayoutPosition, icon: layoutIcon)
         }
     }
 
     private var layoutIcon: String {
         switch currentLayoutPosition {
-        case "Right": return "sidebar.right"
-        case "Left": return "sidebar.left"
-        case "Bottom": return "rectangle.split.1x2"
-        case "Top": return "rectangle.split.1x2"
-        case "Direct": return "keyboard"
-        default: return "sidebar.right"
+        case "Right": return DasherIcon.paneRight
+        case "Left": return DasherIcon.paneLeft
+        case "Bottom": return DasherIcon.paneBottom
+        case "Top": return DasherIcon.paneTop
+        case "Direct": return DasherIcon.keyboard
+        default: return DasherIcon.paneRight
         }
     }
 
@@ -245,9 +246,7 @@ struct MacContentView: View {
             Divider()
 
             HStack(spacing: 12) {
-                Image(systemName: "textbox")
-                    .font(.system(size: 11))
-                    .foregroundColor(.secondary)
+                LucideIcon(DasherIcon.textSize, size: 11, color: .secondary)
                 Slider(value: $viewModel.directOpacity, in: 0.2...1.0, step: 0.05)
                     .frame(width: 120)
                 Text("\(Int(viewModel.directOpacity * 100))%")
@@ -322,9 +321,7 @@ struct MacContentView: View {
                 Text(viewModel.bridge.alphabetId)
                     .font(.system(size: 13))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(.secondary)
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: .secondary)
             }
         }
     }
@@ -381,11 +378,11 @@ struct MacContentView: View {
         return Menu {
             ForEach(palettes, id: \.name) { p in
                 Button(action: { viewModel.bridge.setPalette(p.name) }) {
-                    Label(p.name, systemImage: "circle.fill")
+                    Label(p.name) { LucideIcon("circle", size: 12) }
                 }
             }
         } label: {
-            Image(systemName: "paintpalette")
+            LucideIcon(DasherIcon.palette)
         }
     }
 
@@ -401,9 +398,7 @@ struct MacContentView: View {
                 Text(currentFont)
                     .font(.system(size: 13))
                     .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(.secondary)
+                LucideIcon(DasherIcon.chevronDown, size: 8, color: .secondary)
             }
         }
     }
@@ -432,12 +427,11 @@ struct MacContentView: View {
                 Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
                 Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
             } label: {
-                Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
+                LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute)
             }
             if viewModel.speech.isSpeaking {
                 Button(action: { viewModel.stopSpeech() }) {
-                    Image(systemName: "stop.circle.fill")
-                        .foregroundColor(.red)
+                    LucideIcon(DasherIcon.stopSpeak, color: .red)
                 }
                 .buttonStyle(.plain)
             }
@@ -448,9 +442,7 @@ struct MacContentView: View {
 
     private var accessibilityPrompt: some View {
         VStack(spacing: 16) {
-            Image(systemName: "lock.shield")
-                .font(.system(size: 40))
-                .foregroundColor(.secondary)
+            LucideIcon("shield-check", size: 40, color: .secondary)
             Text("Accessibility Permission Required")
                 .font(.headline)
             Text("Dasher needs accessibility access to send text to other applications.")
@@ -607,22 +599,19 @@ struct MacOutputTextView: View {
                     viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
                 }) {
                     let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
-                    Image(systemName: isOn ? "speaker.wave.2.fill" : "speaker.slash")
-                        .font(.system(size: 12))
+                    LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 12)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
                 Button(action: { copyAllText() }) {
-                    Image(systemName: "doc.on.doc")
-                        .font(.system(size: 12))
+                    LucideIcon(DasherIcon.copy, size: 12)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
                 Button(action: { viewModel.newMessage() }) {
-                    Image(systemName: "xmark.circle")
-                        .font(.system(size: 12))
+                    LucideIcon(DasherIcon.close, size: 12)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)

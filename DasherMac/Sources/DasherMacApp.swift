@@ -1,6 +1,7 @@
 import SwiftUI
 import DasherShared
 import DasherSpeech
+import LucideIcons
 import UniformTypeIdentifiers
 
 @main
@@ -294,8 +295,7 @@ struct MacDasherSettingsView: View {
                     Spacer()
                     Text(accessSummary)
                         .foregroundColor(.secondary)
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.secondary)
+                    LucideIcon(DasherIcon.chevronRight, color: .secondary)
                 }
             }
             .buttonStyle(.plain)
@@ -415,8 +415,7 @@ struct MacDasherSettingsView: View {
                     Button {
                         viewModel.bridge.setStringParameter(key: gameTextKey, value: "")
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                        LucideIcon(DasherIcon.close, color: .secondary)
                     }
                     .buttonStyle(.plain)
                 }

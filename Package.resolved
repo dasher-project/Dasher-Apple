@@ -1,6 +1,15 @@
 {
   "pins" : [
     {
+      "identity" : "lucide-icons-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/JakubMazur/lucide-icons-swift",
+      "state" : {
+        "revision" : "2b7d27acc14e6bf1c50f7f3923013503374c1e7d",
+        "version" : "1.20.0"
+      }
+    },
+    {
       "identity" : "sherpa-onnx-spm",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/willwade/sherpa-onnx-spm.git",

@@ -15,8 +15,7 @@ public struct MessageBanner: View {
 
     public var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: isWarning ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                .foregroundColor(isWarning ? .orange : .accentColor)
+            LucideIcon(isWarning ? "triangle-alert" : "info", color: isWarning ? .orange : .accentColor)
 
             Text(text)
                 .font(.subheadline)
@@ -31,9 +30,7 @@ public struct MessageBanner: View {
                     onDismiss()
                 }
             } label: {
-                Image(systemName: "xmark")
-                    .foregroundColor(.secondary)
-                    .font(.caption)
+                LucideIcon(DasherIcon.close, size: 14, color: .secondary)
             }
             .buttonStyle(.plain)
         }
