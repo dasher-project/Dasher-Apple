@@ -8,10 +8,26 @@ import UniformTypeIdentifiers
 struct DasherMacApp: App {
     @StateObject private var viewModel = MacDasherViewModel()
     @State private var showSettings = false
+    @State private var showAnalyticsPrompt = false
+
+    init() {
+        AnalyticsService.shared.initialize()
+    }
 
     var body: some Scene {
         WindowGroup {
             MacContentView(viewModel: viewModel)
+                .sheet(isPresented: $showAnalyticsPrompt) {
+                    AnalyticsOptInView()
+                }
+                .onAppear {
+                    if !AnalyticsService.shared.hasPrompted {
+                        showAnalyticsPrompt = true
+                    }
+                    AnalyticsService.shared.capture("app_launched", properties: [
+                        "locale": Locale.current.identifier,
+                    ])
+                }
                 .sheet(isPresented: $showSettings) {
                     MacDasherSettingsView(viewModel: viewModel)
                 }
