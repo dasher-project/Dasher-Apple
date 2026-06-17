@@ -3,7 +3,7 @@
 Thank you for your interest in improving Dasher for Apple platforms! This guide
 covers the specifics of this repository. For project-wide conventions (code of
 conduct, security, RFCs), see the
-[organisation CONTRIBUTING](https://github.com/dasher-project/.github/blob/main/.github/CONTRIBUTING.md).
+[organisation CONTRIBUTING](https://github.com/dasher-project/.github/blob/main/CONTRIBUTING.md).
 
 ## Quick start
 
@@ -49,6 +49,7 @@ against DasherCore directly, then bump the submodule pin here once merged.
 
 - [ ] SwiftLint passes (zero warnings)
 - [ ] Builds on all relevant target platforms
+- [ ] Commits are signed off (DCO) — `git commit -s`
 - [ ] If you changed a user-visible capability, update the
       [feature status matrix](https://dasher.at/status/) (`website` repo:
       `src/data/feature-status.json`) — the PR template has a checkbox for this
