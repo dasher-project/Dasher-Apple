@@ -23,6 +23,9 @@ packages:
   LucideIcons:
     url: https://github.com/JakubMazur/lucide-icons-swift
     from: "1.20.0"
+  PostHog:
+    url: https://github.com/PostHog/posthog-ios
+    from: "3.0.0"
 
 settings:
   base:
@@ -122,6 +125,8 @@ targets:
         product: DasherSpeech
       - package: LucideIcons
         product: LucideIcons
+      - package: PostHog
+        product: PostHog
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false
@@ -265,6 +270,8 @@ targets:
         product: DasherSpeech
       - package: LucideIcons
         product: LucideIcons
+      - package: PostHog
+        product: PostHog
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false
@@ -325,6 +332,8 @@ targets:
         product: DasherSpeech
       - package: LucideIcons
         product: LucideIcons
+      - package: PostHog
+        product: PostHog
     preBuildScripts:
       - name: SwiftLint
         basedOnDependencyAnalysis: false

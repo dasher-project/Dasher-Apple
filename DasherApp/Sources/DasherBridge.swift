@@ -68,6 +68,7 @@ enum DasherSettingsSection: String, CaseIterable {
     case output = "Output"
     case speech = "Speech"
     case gameMode = "Game Mode"
+    case privacy = "Privacy"
 
     var icon: String {
         switch self {
@@ -77,6 +78,7 @@ enum DasherSettingsSection: String, CaseIterable {
         case .output: return DasherIcon.textSize
         case .speech: return DasherIcon.speak
         case .gameMode: return DasherIcon.gameMode
+        case .privacy: return "shield-check"
         }
     }
 

@@ -66,6 +66,7 @@ struct DasherSettingsView: View {
                     ForEach(DasherSettingsSection.allCases, id: \.self) { section in
                         Button {
                             withAnimation { selectedSection = section }
+                            AnalyticsService.shared.capture("settings_viewed", properties: ["tab_name": section.rawValue])
                         } label: {
                             VStack(spacing: 3) {
                                 LucideIcon(section.icon, size: 16)
@@ -90,7 +91,11 @@ struct DasherSettingsView: View {
                 Divider()
 
                 List {
-                    sectionContent(for: selectedSection)
+                    if selectedSection == .privacy {
+                        AnalyticsPrivacySection()
+                    } else {
+                        sectionContent(for: selectedSection)
+                    }
                 }
                 .listStyle(.grouped)
             }
@@ -155,6 +160,8 @@ struct DasherSettingsView: View {
             speechSection
         case .gameMode:
             gameModeSection(params)
+        case .privacy:
+            EmptyView()
         }
     }
 

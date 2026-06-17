@@ -424,6 +424,7 @@ struct ContentView: View {
                 List(alphabets, id: \.name) { a in
                     Button {
                         viewModel.bridge.setAlphabetId(a.name)
+                        AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": a.name])
                         showAlphabetPopover = false
                     } label: {
                         HStack {

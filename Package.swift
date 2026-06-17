@@ -11,12 +11,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.5"),
         .package(url: "https://github.com/JakubMazur/lucide-icons-swift", from: "1.20.0"),
+        .package(url: "https://github.com/PostHog/posthog-ios", from: "3.0.0"),
     ],
     targets: [
         .target(
             name: "DasherShared",
             dependencies: [
                 .product(name: "LucideIcons", package: "lucide-icons-swift"),
+                .product(name: "PostHog", package: "posthog-ios"),
             ],
             path: "DasherShared"
         ),
