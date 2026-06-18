@@ -23,7 +23,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/willwade/sherpa-onnx-spm.git",
       "state" : {
-        "revision" : "61baa44e215f7a62463781938155c178d22418bd",
+        "revision" : "c6ea2fc7524f41cb52114cf0ea808a6b5c4d4b62",
         "version" : "1.13.15"
       }
     },

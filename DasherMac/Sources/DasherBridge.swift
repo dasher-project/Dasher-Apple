@@ -98,7 +98,7 @@ enum DasherSettingsSection: String, CaseIterable {
 // MARK: - Bridge
 
 @MainActor
-class DasherBridge: InputMethodBridge {
+class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
