@@ -1,8 +1,14 @@
 import Foundation
+import os.log
 
 #if canImport(UIKit)
 import UIKit
 #endif
+
+/// Console.app breadcrumb logger for the keyboard extension. Filter the
+/// device console by subsystem `at.dasher.Dasher.keyboard` to see how far
+/// init gets before any jetsam kill.
+let keyboardLog = OSLog(subsystem: "at.dasher.Dasher.keyboard", category: "bridge")
 
 protocol InputMethodBridge: AnyObject {
     func findParameterKey(_ name: String) -> Int
@@ -112,13 +118,18 @@ class DasherBridge: InputMethodBridge {
     private(set) var lastError: String?
 
     init(dataDir: String, userDir: String? = nil) {
+        os_log("DasherBridge.init: dataDir=%{public}@ userDir=%{public}@", log: keyboardLog, dataDir, userDir ?? "(none)")
         var errorMsg: UnsafeMutablePointer<CChar>?
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
             lastError = String(cString: errorMsg)
+            os_log("DasherBridge.init: dasher_create FAILED: %{public}@", log: keyboardLog, lastError ?? "(no msg)")
+        } else {
+            os_log("DasherBridge.init: dasher_create OK", log: keyboardLog)
         }
         if let ctx = ctx {
             dasher_set_low_memory_mode(ctx, 1)
+            os_log("DasherBridge.init: low-memory mode set", log: keyboardLog)
             let retained = Unmanaged.passUnretained(self).toOpaque()
             dasher_set_output_callback(ctx, { eventType, text, userData in
                 guard let text = text, let userData = userData else { return }
@@ -166,7 +177,9 @@ class DasherBridge: InputMethodBridge {
 
     func setScreenSize(width: Int, height: Int) {
         guard let ctx = ctx else { return }
+        os_log("setScreenSize %dx%d (Realize will run now)", log: keyboardLog, width, height)
         dasher_set_screen_size(ctx, Int32(width), Int32(height))
+        os_log("setScreenSize: Realize complete", log: keyboardLog)
     }
 
     func mouseMove(x: Float, y: Float) {
@@ -400,7 +413,10 @@ class DasherBridge: InputMethodBridge {
         }
         let nodeBudgetKey = dasher_find_parameter_key("LP_NODE_BUDGET")
         if nodeBudgetKey >= 0 {
-            dasher_set_long_parameter(ctx, nodeBudgetKey, 500)
+            // 200 nodes is enough to render the root + alphabet children so
+            // the user sees actual letters, while still fitting comfortably
+            // under the keyboard memory cap.
+            dasher_set_long_parameter(ctx, nodeBudgetKey, 200)
         }
         let adaptiveKey = dasher_find_parameter_key("BP_LM_ADAPTIVE")
         if adaptiveKey >= 0 {
