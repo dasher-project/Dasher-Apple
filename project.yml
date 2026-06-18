@@ -308,6 +308,13 @@ targets:
       path: DasherMac/DasherMac.entitlements
       properties:
         com.apple.security.app-sandbox: true
+        com.apple.security.network.client: true
+        com.apple.security.application-groups:
+          - group.at.dasher.Dasher
+        com.apple.security.files.user-selected.read-only: true
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Preferences/uk.ac.cam.phy.inference.dasher.plist
+          - /Library/Application Support/Dasher/
     scheme:
       testTargets: []
       gatherCoverageData: false

@@ -35,14 +35,25 @@ class MacDasherViewModel: ObservableObject {
     let directService = DirectModeService()
     let speech = SpeechService.shared
 
+    var v5MigrationScan = V5MigrationResult()
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
-        self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
-        bridge.setScreenSize(width: 900, height: 600)
+        let userDir = sharedURL?.path ?? dataPath
+        self.bridge = DasherBridge(dataDir: dataPath, userDir: userDir)
 
+        // Store bridge reference for migration
+        MigrationBridgeHolder.shared.bridge = bridge
+        MigrationBridgeHolder.shared.userDir = userDir
+
+        // Scan for v5 data (don't import yet — wait for user choice)
+        if !V5MigrationService.hasBeenOffered {
+            v5MigrationScan = V5MigrationService.scan()
+        }
+
+        // Wire callbacks before engine starts
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
@@ -92,6 +103,22 @@ class MacDasherViewModel: ObservableObject {
         speed = Double(bridge.speedPercent) / 100.0
     }
 
+    private var engineStarted = false
+
+    /// Migration deferred parameters to apply after engine starts.
+    var v5DeferredParams: [(key: Int, value: String)] = []
+
+    /// Starts the Dasher engine. Call this after any v5 migration has completed.
+    func startEngine(width: Int = 900, height: Int = 600) {
+        engineStarted = true
+        bridge.setScreenSize(width: width, height: height)
+        // Apply deferred migration parameters now that engine is realized
+        if !v5DeferredParams.isEmpty {
+            V5MigrationService.applyDeferredParameters(v5DeferredParams, bridge: bridge)
+            v5DeferredParams = []
+        }
+    }
+
     private func updateDirectMode() {
         if directMode {
             directService.startPolling()
@@ -103,6 +130,7 @@ class MacDasherViewModel: ObservableObject {
     }
 
     func setCanvasSize(_ size: CGSize) {
+        guard engineStarted else { return }
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
     }
 

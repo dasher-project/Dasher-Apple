@@ -9,6 +9,8 @@ struct DasherMacApp: App {
     @StateObject private var viewModel = MacDasherViewModel()
     @State private var showSettings = false
     @State private var showAnalyticsPrompt = false
+    @State private var showV5Migration = false
+    @State private var engineStarted = false
 
     init() {
         AnalyticsService.shared.initialize()
@@ -17,16 +19,43 @@ struct DasherMacApp: App {
     var body: some Scene {
         WindowGroup {
             MacContentView(viewModel: viewModel)
-                .sheet(isPresented: $showAnalyticsPrompt) {
-                    AnalyticsOptInView()
-                }
                 .onAppear {
+                    // v5 migration prompt (shown before engine starts)
+                    if viewModel.v5MigrationScan.hasData && !V5MigrationService.hasBeenOffered {
+                        showV5Migration = true
+                    } else {
+                        startEngineIfNeeded()
+                    }
+
+                    // Analytics prompt (after migration)
                     if !AnalyticsService.shared.hasPrompted {
                         showAnalyticsPrompt = true
                     }
                     AnalyticsService.shared.capture("app_launched", properties: [
                         "locale": Locale.current.identifier,
                     ])
+                }
+                .sheet(isPresented: $showV5Migration) {
+                    V5MigrationPrompt(
+                        scanResult: viewModel.v5MigrationScan,
+                        onImport: {
+                            let result = V5MigrationService.importSettings(
+                                bridge: viewModel.bridge,
+                                userDir: MigrationBridgeHolder.shared.userDir
+                            )
+                            viewModel.v5DeferredParams = result.deferredParameters
+                            showV5Migration = false
+                            startEngineIfNeeded()
+                        },
+                        onSkip: {
+                            V5MigrationService.markOffered()
+                            showV5Migration = false
+                            startEngineIfNeeded()
+                        }
+                    )
+                }
+                .sheet(isPresented: $showAnalyticsPrompt) {
+                    AnalyticsOptInView()
                 }
                 .sheet(isPresented: $showSettings) {
                     MacDasherSettingsView(viewModel: viewModel)
@@ -94,6 +123,12 @@ struct DasherMacApp: App {
                 .keyboardShortcut("-", modifiers: [.command])
             }
         }
+    }
+
+    private func startEngineIfNeeded() {
+        guard !engineStarted else { return }
+        engineStarted = true
+        viewModel.startEngine()
     }
 
     private func saveFile() {
@@ -196,8 +231,12 @@ struct MacDasherSettingsView: View {
 
             ScrollView {
                 if selectedSection == .privacy {
-                    AnalyticsPrivacySection()
-                        .padding(16)
+                    VStack(spacing: 24) {
+                        AnalyticsPrivacySection()
+                        Divider()
+                        V5MigrationSettingsSection()
+                    }
+                    .padding(16)
                 } else {
                     sectionContent(for: selectedSection)
                         .padding(16)
