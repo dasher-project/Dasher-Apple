@@ -1,4 +1,5 @@
 import UIKit
+import os.log
 
 class KeyboardViewController: UIInputViewController {
     private var canvas: KeyboardCanvas?
@@ -87,6 +88,15 @@ class KeyboardViewController: UIInputViewController {
             resetBtn.widthAnchor.constraint(equalToConstant: 32),
             resetBtn.heightAnchor.constraint(equalToConstant: 28),
         ])
+
+        // Critical for keyboard extensions: declare the desired keyboard
+        // height via an explicit Auto Layout constraint. Without this, iOS
+        // computes the extension's required height as just the toolbar (44pt)
+        // and collapses the canvas to 0. Use a high but not required priority
+        // so iOS can adjust on devices where 320 wouldn't fit.
+        let keyboardHeight = view.heightAnchor.constraint(equalToConstant: 320)
+        keyboardHeight.priority = .defaultHigh
+        keyboardHeight.isActive = true
     }
 
     private func makeButton(systemName: String, action: Selector) -> UIButton {
@@ -119,6 +129,14 @@ class KeyboardViewController: UIInputViewController {
         speedLabel?.text = "\(viewModel?.bridge.speedPercent ?? 100)%"
     }
 
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        // The bridge is a singleton so its model state survives across open/close
+        // cycles. Reset to the root so each keyboard session starts fresh.
+        viewModel?.bridge.reset()
+        canvas?.requestRedraw()
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         viewModel?.setCanvasSize(canvas?.bounds.size ?? view.bounds.size)
@@ -126,6 +144,28 @@ class KeyboardViewController: UIInputViewController {
 
     override func textDidChange(_ textInput: UITextInput?) {
         viewModel?.updateProxy(textDocumentProxy)
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        os_log("viewWillDisappear — iOS is dismissing the keyboard", log: keyboardLog)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        os_log("viewDidDisappear", log: keyboardLog)
+    }
+
+    deinit {
+        os_log("KeyboardViewController deinit", log: keyboardLog)
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        os_log("didReceiveMemoryWarning", log: keyboardLog)
+        // Intentionally do NOT call bridge.reset() here - that would rebuild
+        // the node tree and spike memory further. Just log it for now; we
+        // need to know how often this fires to pick the right response.
     }
 
     required init?(coder: NSCoder) {
