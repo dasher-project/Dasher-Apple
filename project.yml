@@ -201,21 +201,20 @@ targets:
           # Trim data bundle to ~2MB for keyboard memory constraints
           DEST="${SRCROOT}/DasherKeyboardData"
           find "$DEST" -mindepth 1 ! -name '.gitignore' -exec rm -rf {} + 2>/dev/null || true
-          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/colors" "$DEST/settings" "$DEST/training" "$DEST/Strings"
+          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/colors" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
           # Essential alphabets only (root-level English/German variants)
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet.dtd" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
-          # Editing alphabet (in autoConverted subdirectory)
-          cp "${SRCROOT}/DasherCore/Data/alphabets/autoConverted/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
           # All colour/color palettes (small, ~270KB total)
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true
           cp -r "${SRCROOT}/DasherCore/Data/colors/"* "$DEST/colors/" 2>/dev/null || true
           find "$DEST" -name "*.py" -delete
+          # Control mode (editing commands: stop, move, delete, speak, copy)
+          cp "${SRCROOT}/DasherCore/Data/control/"* "$DEST/control/" 2>/dev/null || true
           # Settings
           cp -r "${SRCROOT}/DasherCore/Data/settings/"* "$DEST/settings/" 2>/dev/null || true
           # English training text only (311KB vs 65MB)
           cp "${SRCROOT}/DasherCore/Data/training/training_english_GB.txt" "$DEST/training/" 2>/dev/null || true
-          cp "${SRCROOT}/DasherCore/Data/training/training_wa_en_Latn.txt" "$DEST/training/" 2>/dev/null || true
           cp "${SRCROOT}/DasherCore/Data/training/gamemode_"* "$DEST/training/" 2>/dev/null || true
           # Locale strings
           cp -f "${SRCROOT}/DasherCore/Strings/"*.json "$DEST/Strings/" 2>/dev/null || true
@@ -309,6 +308,9 @@ targets:
       path: DasherMac/DasherMac.entitlements
       properties:
         com.apple.security.app-sandbox: true
+    scheme:
+      testTargets: []
+      gatherCoverageData: false
 
   DasherVision:
     type: application

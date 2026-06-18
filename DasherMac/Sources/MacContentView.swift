@@ -50,6 +50,8 @@ struct MacContentView: View {
                     LucideLabel("New", icon: DasherIcon.newDocument)
                 }
 
+                layoutPickerMenu
+
                 if currentLayoutPosition != "Direct" {
                     Button(action: { viewModel.toggleGameMode() }) {
                         LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
@@ -57,7 +59,10 @@ struct MacContentView: View {
                     }
                 }
 
-                layoutPickerMenu
+                Button(action: { viewModel.toggleControlMode() }) {
+                    LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
+                          icon: DasherIcon.controlMode)
+                }
 
                 Button(action: { showSettings = true }) {
                     LucideLabel("Settings", icon: DasherIcon.settings)
@@ -235,7 +240,10 @@ struct MacContentView: View {
                 ZStack(alignment: .topTrailing) {
                     MacCanvasView(viewModel: viewModel)
                         .background(Color.clear)
-                    targetAppIndicator.padding(8)
+                    VStack(spacing: 4) {
+                        targetAppIndicator.padding(8)
+                        directModeMiniBar.padding(.trailing, 8)
+                    }
                 }
             }
 
@@ -274,7 +282,43 @@ struct MacContentView: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(RoundedRectangle(cornerRadius: 4).fill(Color.black.opacity(0.6)))
+        .background(Capsule().fill(.black.opacity(0.6)))
+    }
+
+    private var directModeMiniBar: some View {
+        HStack(spacing: 2) {
+            Button {
+                viewModel.toggleControlMode()
+            } label: {
+                LucideIcon(DasherIcon.controlMode, size: 18, color: viewModel.isControlModeActive ? Color("DasherTeal") : Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showSettings = true
+            } label: {
+                LucideIcon(DasherIcon.settings, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                currentLayoutPosition = "Right"
+            } label: {
+                LucideIcon(DasherIcon.keyboard, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(.ultraThinMaterial)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.white.opacity(0.15), lineWidth: 1))
+        )
+        .shadow(color: .black.opacity(0.25), radius: 3, x: 0, y: 2)
     }
 
     // MARK: - Bottom Bar

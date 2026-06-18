@@ -240,6 +240,8 @@ struct ContentView: View {
                             showShareSheet = true
                         }
                         barDivider
+                        layoutPicker
+                        barDivider
                         toolbarButton(
                             icon: DasherIcon.gameMode,
                             label: viewModel.isGameModeActive ? "Game On" : "Game"
@@ -247,7 +249,12 @@ struct ContentView: View {
                             viewModel.toggleGameMode()
                         }
                         barDivider
-                        layoutPicker
+                        toolbarButton(
+                            icon: DasherIcon.controlMode,
+                            label: viewModel.isControlModeActive ? "Leave" : "Control"
+                        ) {
+                            viewModel.toggleControlMode()
+                        }
                         barDivider
                         toolbarButton(icon: DasherIcon.settings, label: "Prefs") {
                             showSettings = true
@@ -263,11 +270,15 @@ struct ContentView: View {
                             showShareSheet = true
                         }
                         barDivider
+                        layoutPickerCompact(portrait: isPortrait)
+                        barDivider
                         compactToolbarButton(icon: DasherIcon.gameMode) {
                             viewModel.toggleGameMode()
                         }
                         barDivider
-                        layoutPickerCompact(portrait: isPortrait)
+                        compactToolbarButton(icon: DasherIcon.controlMode) {
+                            viewModel.toggleControlMode()
+                        }
                         barDivider
                         compactToolbarButton(icon: DasherIcon.settings) {
                             showSettings = true
