@@ -72,6 +72,19 @@ enum DasherSettingsSection: String, CaseIterable {
     case output = "Output"
     case speech = "Speech"
     case gameMode = "Game Mode"
+    case privacy = "Privacy"
+
+    var icon: String {
+        switch self {
+        case .input: return DasherIcon.controlMode
+        case .language: return DasherIcon.alphabet
+        case .customization: return DasherIcon.palette
+        case .output: return DasherIcon.textSize
+        case .speech: return DasherIcon.speak
+        case .gameMode: return DasherIcon.gameMode
+        case .privacy: return "shield-check"
+        }
+    }
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
         if param.group == "Game Mode" { return .gameMode }

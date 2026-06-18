@@ -308,6 +308,9 @@ targets:
       path: DasherMac/DasherMac.entitlements
       properties:
         com.apple.security.app-sandbox: true
+    scheme:
+      testTargets: []
+      gatherCoverageData: false
 
   DasherVision:
     type: application
