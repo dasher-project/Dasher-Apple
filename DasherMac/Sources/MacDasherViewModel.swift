@@ -8,6 +8,7 @@ class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
+    @Published var isControlModeActive: Bool = false
     @Published var gameTargetText: String = ""
     @Published var gameCorrectCount: Int = 0
     @Published var gameTargetLength: Int = 0
@@ -132,6 +133,12 @@ class MacDasherViewModel: ObservableObject {
                 outputText = ""
             }
         }
+    }
+
+    func toggleControlMode() {
+        isControlModeActive.toggle()
+        let key = bridge.findParameterKey("BP_CONTROL_MODE")
+        bridge.setBoolParameter(key: key, value: isControlModeActive)
     }
 
     func syncGameModeState() {

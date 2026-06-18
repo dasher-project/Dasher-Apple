@@ -50,6 +50,8 @@ struct MacContentView: View {
                     LucideLabel("New", icon: DasherIcon.newDocument)
                 }
 
+                layoutPickerMenu
+
                 if currentLayoutPosition != "Direct" {
                     Button(action: { viewModel.toggleGameMode() }) {
                         LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
@@ -57,7 +59,10 @@ struct MacContentView: View {
                     }
                 }
 
-                layoutPickerMenu
+                Button(action: { viewModel.toggleControlMode() }) {
+                    LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
+                          icon: DasherIcon.controlMode)
+                }
 
                 Button(action: { showSettings = true }) {
                     LucideLabel("Settings", icon: DasherIcon.settings)
