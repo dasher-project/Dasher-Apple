@@ -315,6 +315,12 @@ class DasherBridge: InputMethodBridge {
         return String(cString: cStr)
     }
 
+
+    func setAppearance(dark: Bool) {
+        guard let ctx = ctx else { return }
+        _ = dasher_set_appearance(ctx, dark ? 2 : 1)
+    }
+
     // MARK: - Alphabets
 
     var alphabetCount: Int {
