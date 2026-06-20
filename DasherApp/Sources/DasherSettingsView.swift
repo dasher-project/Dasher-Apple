@@ -169,7 +169,6 @@ struct DasherSettingsView: View {
 
     private func customizationSection(_ params: [DasherParameterInfo]) -> some View {
         Section {
-            // Appearance mode: System / Light / Dark
             Picker("Appearance", selection: Binding<Int>(
                 get: { viewModel.bridge.getAppearanceMode() },
                 set: { viewModel.bridge.setAppearanceMode($0) }
@@ -182,39 +181,19 @@ struct DasherSettingsView: View {
 
             let palettes = viewModel.bridge.allPalettes
             if !palettes.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Colour Theme")
-                        .font(.subheadline)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(0..<palettes.count, id: \.self) { i in
-                                let palette = palettes[i]
-                                let isSelected = viewModel.bridge.currentPalette == palette.name
-                                Button(action: { viewModel.bridge.setUserPalette(palette.name) }) {
-                                    VStack(spacing: 4) {
-                                        HStack(spacing: 2) {
-                                            ForEach(0..<min(palette.previewColors.count, 4), id: \.self) { ci in
-                                                RoundedRectangle(cornerRadius: 2)
-                                                    .fill(Color(cgColor: palette.previewColors[ci]))
-                                                    .frame(width: 16, height: 24)
-                                            }
-                                        }
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 4)
-                                                .stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
-                                        )
-                                        Text(palette.name)
-                                            .font(.system(size: 9))
-                                            .lineLimit(1)
-                                            .foregroundColor(isSelected ? .primary : .secondary)
-                                    }
-                                    .frame(width: 72)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
+                palettePickerRow(
+                    label: "Light Palette",
+                    palettes: palettes,
+                    selectedName: viewModel.bridge.getLightPalette()
+                ) { name in
+                    viewModel.bridge.setLightPalette(name)
+                }
+                palettePickerRow(
+                    label: "Dark Palette",
+                    palettes: palettes,
+                    selectedName: viewModel.bridge.getDarkPalette()
+                ) { name in
+                    viewModel.bridge.setDarkPalette(name)
                 }
             }
             ForEach(params.filter { $0.name != "Color Palette" }) { param in
@@ -222,6 +201,49 @@ struct DasherSettingsView: View {
             }
         } header: {
             LucideLabel("Customization", icon: DasherIcon.palette)
+        }
+    }
+
+    @ViewBuilder
+    private func palettePickerRow(
+        label: String,
+        palettes: [DasherPalette],
+        selectedName: String,
+        onSelect: @escaping (String) -> Void
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.subheadline)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(0..<palettes.count, id: \.self) { i in
+                        let palette = palettes[i]
+                        let isSelected = selectedName == palette.name
+                        Button(action: { onSelect(palette.name) }) {
+                            VStack(spacing: 4) {
+                                HStack(spacing: 2) {
+                                    ForEach(0..<min(palette.previewColors.count, 4), id: \.self) { ci in
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(Color(cgColor: palette.previewColors[ci]))
+                                            .frame(width: 16, height: 24)
+                                    }
+                                }
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .stroke(isSelected ? Color.accentColor : Color.gray.opacity(0.3), lineWidth: isSelected ? 2 : 1)
+                                )
+                                Text(palette.name)
+                                    .font(.system(size: 9))
+                                    .lineLimit(1)
+                                    .foregroundColor(isSelected ? .primary : .secondary)
+                            }
+                            .frame(width: 72)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.vertical, 2)
+            }
         }
     }
 
