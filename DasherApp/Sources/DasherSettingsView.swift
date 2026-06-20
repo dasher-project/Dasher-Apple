@@ -169,6 +169,17 @@ struct DasherSettingsView: View {
 
     private func customizationSection(_ params: [DasherParameterInfo]) -> some View {
         Section {
+            // Appearance mode: System / Light / Dark
+            Picker("Appearance", selection: Binding<Int>(
+                get: { viewModel.bridge.getAppearanceMode() },
+                set: { viewModel.bridge.setAppearanceMode($0) }
+            )) {
+                Text("System").tag(0)
+                Text("Light").tag(1)
+                Text("Dark").tag(2)
+            }
+            .pickerStyle(.segmented)
+
             let palettes = viewModel.bridge.allPalettes
             if !palettes.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
@@ -179,7 +190,7 @@ struct DasherSettingsView: View {
                             ForEach(0..<palettes.count, id: \.self) { i in
                                 let palette = palettes[i]
                                 let isSelected = viewModel.bridge.currentPalette == palette.name
-                                Button(action: { viewModel.bridge.setPalette(palette.name) }) {
+                                Button(action: { viewModel.bridge.setUserPalette(palette.name) }) {
                                     VStack(spacing: 4) {
                                         HStack(spacing: 2) {
                                             ForEach(0..<min(palette.previewColors.count, 4), id: \.self) { ci in

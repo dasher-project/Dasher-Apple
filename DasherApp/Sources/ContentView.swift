@@ -11,6 +11,7 @@ struct ContentView: View {
     @State private var showOpenFile = false
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
     @State private var showAlphabetPopover = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         GeometryReader { geometry in
@@ -66,6 +67,10 @@ struct ContentView: View {
                 )
                 .padding(.top, 8)
             }
+        }
+        .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
+        .onChange(of: colorScheme) { _, newScheme in
+            viewModel.bridge.setSystemAppearance(dark: newScheme == .dark)
         }
     }
 
