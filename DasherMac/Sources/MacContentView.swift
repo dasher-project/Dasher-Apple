@@ -70,12 +70,12 @@ struct MacContentView: View {
                 }
             }
         }
-    }
-
         .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
         .onChange(of: colorScheme) { _, newScheme in
             viewModel.bridge.setSystemAppearance(dark: newScheme == .dark)
         }
+    }
+
     private var layoutPickerMenu: some View {
         Menu {
             Button("Right side") { currentLayoutPosition = "Right" }

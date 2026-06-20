@@ -73,6 +73,7 @@ struct VisionContentView: View {
         .sheet(isPresented: $showSettings) {
             VisionSettingsView(viewModel: viewModel)
         }
+        .onAppear { viewModel.bridge.setSystemAppearance(dark: true) }
     }
 
     private func toolbarButton(_ icon: String, isAccent: Bool = false, _ action: @escaping () -> Void) -> some View {
