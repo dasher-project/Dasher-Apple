@@ -350,6 +350,42 @@ class DasherBridge: InputMethodBridge {
         return String(cString: cStr)
     }
 
+
+    // MARK: - Appearance / dark mode (RFC 0007)
+
+    func setSystemAppearance(dark: Bool) {
+        guard let ctx = ctx else { return }
+        dasher_set_system_appearance(ctx, dark ? 2 : 1)
+    }
+    func setAppearanceMode(_ mode: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_appearance_mode(ctx, Int32(mode))
+    }
+    func getAppearanceMode() -> Int {
+        guard let ctx = ctx else { return 0 }
+        return Int(dasher_get_appearance_mode(ctx))
+    }
+    func setUserPalette(_ name: String) {
+        guard let ctx = ctx else { return }
+        dasher_set_user_palette(ctx, name)
+    }
+    func setLightPalette(_ name: String) {
+        guard let ctx = ctx else { return }
+        dasher_set_light_palette(ctx, name)
+    }
+    func setDarkPalette(_ name: String) {
+        guard let ctx = ctx else { return }
+        dasher_set_dark_palette(ctx, name)
+    }
+    func getLightPalette() -> String {
+        guard let ctx = ctx, let cStr = dasher_get_light_palette(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+    func getDarkPalette() -> String {
+        guard let ctx = ctx, let cStr = dasher_get_dark_palette(ctx) else { return "" }
+        return String(cString: cStr)
+    }
+
     // MARK: - Alphabets
 
     var alphabetCount: Int {

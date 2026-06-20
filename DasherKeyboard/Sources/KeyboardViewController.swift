@@ -118,6 +118,7 @@ class KeyboardViewController: UIInputViewController {
     }
 
     @objc private func resetTapped() {
+        viewModel?.bridge.setSystemAppearance(dark: traitCollection.userInterfaceStyle == .dark)
         viewModel?.bridge.reset()
     }
 
@@ -133,8 +134,14 @@ class KeyboardViewController: UIInputViewController {
         super.viewWillAppear(animated)
         // The bridge is a singleton so its model state survives across open/close
         // cycles. Reset to the root so each keyboard session starts fresh.
+        viewModel?.bridge.setSystemAppearance(dark: traitCollection.userInterfaceStyle == .dark)
         viewModel?.bridge.reset()
         canvas?.requestRedraw()
+    }
+
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        viewModel?.bridge.setSystemAppearance(dark: traitCollection.userInterfaceStyle == .dark)
     }
 
     override func viewDidLayoutSubviews() {

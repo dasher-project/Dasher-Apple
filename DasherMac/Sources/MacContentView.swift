@@ -8,6 +8,7 @@ struct MacContentView: View {
     @State private var showSettings = false
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,6 +69,10 @@ struct MacContentView: View {
                     LucideLabel("Settings", icon: DasherIcon.settings)
                 }
             }
+        }
+        .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
+        .onChange(of: colorScheme) { _, newScheme in
+            viewModel.bridge.setSystemAppearance(dark: newScheme == .dark)
         }
     }
 
