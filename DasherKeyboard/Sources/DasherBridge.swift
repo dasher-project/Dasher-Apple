@@ -358,6 +358,8 @@ class DasherBridge: InputMethodBridge {
     }
     func setUserPalette(_ name: String) {
         guard let ctx = ctx else { return }
+        dasher_set_user_palette(ctx, name)
+    }
     func setLightPalette(_ name: String) {
         guard let ctx = ctx else { return }
         dasher_set_light_palette(ctx, name)
@@ -365,8 +367,6 @@ class DasherBridge: InputMethodBridge {
     func setDarkPalette(_ name: String) {
         guard let ctx = ctx else { return }
         dasher_set_dark_palette(ctx, name)
-    }
-        dasher_set_user_palette(ctx, name)
     }
     func getLightPalette() -> String {
         guard let ctx = ctx, let cStr = dasher_get_light_palette(ctx) else { return "" }
