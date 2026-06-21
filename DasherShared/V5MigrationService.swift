@@ -58,17 +58,25 @@ public struct V5MigrationService {
         "\(realHomeDir)/Library/Application Support/Dasher"
     }()
 
-    // MARK: - UserDefaults keys
+    // MARK: - UserDefaults keys (version-gated)
 
-    private static let offeredKey = "dasher.v5_migration_offered"
-    private static let completedKey = "dasher.v5_migration_completed"
+    // Stores the app version at the time migration was offered/completed.
+    // If the app version changes (update installed), the version comparison
+    // fails and the migration is re-offered — so users who ran a broken
+    // migration on an earlier build get another chance.
+    private static let offeredVersionKey = "dasher.v5_migration_offered_version"
+    private static let completedVersionKey = "dasher.v5_migration_completed_version"
+
+    private static var currentAppVersion: String {
+        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "0"
+    }
 
     public static var hasBeenOffered: Bool {
-        UserDefaults.standard.bool(forKey: offeredKey)
+        UserDefaults.standard.string(forKey: offeredVersionKey) == currentAppVersion
     }
 
     public static var hasBeenCompleted: Bool {
-        UserDefaults.standard.bool(forKey: completedKey)
+        UserDefaults.standard.string(forKey: completedVersionKey) == currentAppVersion
     }
 
     // MARK: - Detection
@@ -126,16 +134,16 @@ public struct V5MigrationService {
         // 2. Copy custom user files
         copyUserDataFiles(to: userDir, result: &result)
 
-        // 3. Mark as complete
-        UserDefaults.standard.set(true, forKey: offeredKey)
-        UserDefaults.standard.set(true, forKey: completedKey)
+        // 3. Mark as complete (version-gated)
+        UserDefaults.standard.set(currentAppVersion, forKey: offeredVersionKey)
+        UserDefaults.standard.set(currentAppVersion, forKey: completedVersionKey)
 
         return result
     }
 
     /// Marks migration as offered without importing (user clicked "Not now").
     public static func markOffered() {
-        UserDefaults.standard.set(true, forKey: offeredKey)
+        UserDefaults.standard.set(currentAppVersion, forKey: offeredVersionKey)
     }
 
     // MARK: - Plist import
@@ -349,27 +357,41 @@ public struct V5MigrationService {
 
         guard let entries = try? fm.contentsOfDirectory(atPath: v5UserDataDir) else { return }
 
-        // Ensure dest exists
+        // Ensure dest + subdirs exist
+        let subdirs = ["alphabets", "colours", "control", "training"]
         try? fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
+        for sub in subdirs {
+            try? fm.createDirectory(atPath: "\(destDir)/\(sub)", withIntermediateDirectories: true)
+        }
 
         for entry in entries {
-            let shouldCopy: Bool
-            if entry.hasPrefix("alphabet.") && entry.hasSuffix(".xml") { shouldCopy = true }
-            else if entry.hasPrefix("colour.") && entry.hasSuffix(".xml") { shouldCopy = true }
-            else if entry.hasPrefix("color.") && entry.hasSuffix(".xml") { shouldCopy = true }
-            else if entry.hasPrefix("control.") && entry.hasSuffix(".xml") { shouldCopy = true }
-            else if entry.hasPrefix("training_") && entry.hasSuffix(".txt") { shouldCopy = true }
-            else { shouldCopy = false }
+            // Route to the correct v6 subdirectory (matching DasherCore's ScanFiles layout).
+            let subdir: String
+            let overwrite: Bool
 
-            guard shouldCopy else { continue }
+            if entry.hasPrefix("alphabet.") && entry.hasSuffix(".xml") {
+                subdir = "alphabets"; overwrite = false
+            } else if (entry.hasPrefix("colour.") || entry.hasPrefix("color.")) && entry.hasSuffix(".xml") {
+                subdir = "colours"; overwrite = false
+            } else if entry.hasPrefix("control.") && entry.hasSuffix(".xml") {
+                // control.xml overwrites the bundled default — user's custom tree wins
+                subdir = "control"; overwrite = true
+            } else if entry.hasPrefix("training_") && entry.hasSuffix(".txt") {
+                subdir = "training"; overwrite = false
+            } else {
+                continue
+            }
 
             let srcPath = "\(v5UserDataDir)/\(entry)"
-            let destPath = "\(destDir)/\(entry)"
+            let destPath = "\(destDir)/\(subdir)/\(entry)"
 
-            if fm.fileExists(atPath: destPath) {
-                result.skippedFiles.append((entry, "File already exists in v6 user directory"))
+            if fm.fileExists(atPath: destPath) && !overwrite {
+                result.skippedFiles.append((entry, "File already exists in v6 \(subdir)/"))
             } else {
                 do {
+                    if fm.fileExists(atPath: destPath) {
+                        try fm.removeItem(atPath: destPath)
+                    }
                     try fm.copyItem(atPath: srcPath, toPath: destPath)
                     result.importedFiles.append(entry)
                 } catch {
@@ -398,8 +420,8 @@ public struct V5MigrationService {
 
     /// Resets migration state so it can be re-offered. For testing/debugging.
     public static func resetMigrationState() {
-        UserDefaults.standard.removeObject(forKey: offeredKey)
-        UserDefaults.standard.removeObject(forKey: completedKey)
+        UserDefaults.standard.removeObject(forKey: offeredVersionKey)
+        UserDefaults.standard.removeObject(forKey: completedVersionKey)
     }
 }
 
