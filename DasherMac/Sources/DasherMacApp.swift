@@ -397,12 +397,16 @@ struct MacDasherSettingsView: View {
             }
 
             let alphabets = viewModel.bridge.allAlphabets
-            if !alphabets.isEmpty {
+            let currentId = viewModel.bridge.alphabetId
+            let pickerAlphabets = currentId.isEmpty || alphabets.contains(where: { $0.name == currentId })
+                ? alphabets
+                : alphabets + [DasherAlphabet(name: currentId)]
+            if !pickerAlphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
                     get: { viewModel.bridge.alphabetId },
                     set: { viewModel.bridge.setAlphabetId($0) }
                 )) {
-                    ForEach(alphabets, id: \.name) { a in
+                    ForEach(pickerAlphabets, id: \.name) { a in
                         Text(a.name).tag(a.name)
                     }
                 }
@@ -435,6 +439,20 @@ struct MacDasherSettingsView: View {
                     get: { Double(viewModel.bridge.speedPercent) },
                     set: { viewModel.bridge.setSpeedPercent(Int($0)) }
                 ), in: 20...400)
+            }
+            Picker("Output Font", selection: Binding(
+                get: { OutputFontSettings.fontName },
+                set: { OutputFontSettings.fontName = $0 }
+            )) {
+                ForEach(OutputFontSettings.availableFonts, id: \.self) { Text($0).tag($0) }
+            }
+            HStack {
+                Text("Output Font Size")
+                Spacer()
+                Stepper("\(Int(OutputFontSettings.fontSize))", value: Binding(
+                    get: { OutputFontSettings.fontSize },
+                    set: { OutputFontSettings.fontSize = $0 }
+                ), in: 10...48)
             }
             ForEach(params) { param in
                 parameterRow(param)

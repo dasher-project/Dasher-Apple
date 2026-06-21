@@ -367,6 +367,28 @@ struct DasherSettingsView: View {
                     set: { viewModel.bridge.setSpeedPercent(Int($0)) }
                 ), in: 20...400)
             }
+            // Output text font
+            Picker("Output Font", selection: Binding(
+                get: { OutputFontSettings.fontName },
+                set: {
+                    OutputFontSettings.fontName = $0
+                    NotificationCenter.default.post(name: .outputFontChanged, object: nil)
+                }
+            )) {
+                ForEach(OutputFontSettings.availableFonts, id: \.self) { Text($0).tag($0) }
+            }
+            // Output text font size
+            HStack {
+                Text("Output Font Size")
+                Spacer()
+                Stepper("\(Int(OutputFontSettings.fontSize))", value: Binding(
+                    get: { OutputFontSettings.fontSize },
+                    set: {
+                        OutputFontSettings.fontSize = $0
+                        NotificationCenter.default.post(name: .outputFontChanged, object: nil)
+                    }
+                ), in: 10...48)
+            }
             ForEach(params) { param in
                 parameterRow(param)
             }

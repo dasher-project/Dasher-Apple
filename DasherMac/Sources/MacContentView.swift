@@ -338,8 +338,6 @@ struct MacContentView: View {
             barDivider
             learningToggle
             barDivider
-            fontPicker
-            barDivider
             speechPicker
             Spacer(minLength: 0)
         }
@@ -432,15 +430,19 @@ struct MacContentView: View {
     }
 
     private var fontPicker: some View {
-        let fontValues = viewModel.bridge.getStringValues(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
+        let fonts = [
+            "System", "Georgia", "Helvetica Neue", "Menlo",
+            "Courier New", "Avenir Next", "Futura", "Palatino",
+            "Trebuchet MS", "Verdana",
+        ]
         let currentFont = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
         return Menu {
-            ForEach(fontValues, id: \.self) { f in
+            ForEach(fonts, id: \.self) { f in
                 Button(f) { viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f) }
             }
         } label: {
             HStack(spacing: 3) {
-                Text(currentFont)
+                Text(currentFont.isEmpty ? "System" : currentFont)
                     .font(.system(size: 13))
                     .lineLimit(1)
                 LucideIcon(DasherIcon.chevronDown, size: 8, color: .secondary)
@@ -677,7 +679,7 @@ struct MacOutputTextView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     Text(viewModel.outputText)
-                        .font(.system(size: 18))
+                        .font(OutputFontSettings.font)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 12)
@@ -761,6 +763,7 @@ struct MacCanvasView: NSViewRepresentable {
 final class MacDasherCanvas: NSView {
     var viewModel: MacDasherViewModel?
     private var timer: Timer?
+    private var mouseIsDown = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -773,6 +776,12 @@ final class MacDasherCanvas: NSView {
     override func layout() {
         super.layout()
         viewModel?.setCanvasSize(bounds.size)
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for ta in trackingAreas { removeTrackingArea(ta) }
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInActiveApp], owner: self, userInfo: nil))
     }
 
     override func viewDidMoveToWindow() {
@@ -788,6 +797,7 @@ final class MacDasherCanvas: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        mouseIsDown = true
         let point = convert(event.locationInWindow, from: nil)
         viewModel?.handleTouch(at: CGPoint(x: point.x, y: bounds.height - point.y))
     }
@@ -798,7 +808,19 @@ final class MacDasherCanvas: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
+        mouseIsDown = false
         viewModel?.handleTouchEnd()
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        // Stop Dasher when the pointer leaves the canvas while dragging.
+        // Implements BP_STOP_OUTSIDE at the frontend level — without this,
+        // mouseDragged stops firing when the cursor exits the view, leaving
+        // DasherCore stuck at the last in-bounds position (keeps zooming).
+        if mouseIsDown {
+            viewModel?.handleTouchEnd()
+            mouseIsDown = false
+        }
     }
 
     override func rightMouseDown(with event: NSEvent) {

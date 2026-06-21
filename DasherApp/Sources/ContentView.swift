@@ -402,8 +402,6 @@ struct ContentView: View {
                 barDivider
                 learningToggle
                 barDivider
-                fontPicker
-                barDivider
                 speechPicker
 
                 Spacer(minLength: 0)
