@@ -122,7 +122,7 @@ struct OutputTextView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     Text(viewModel.outputText)
-                        .font(.system(size: 18))
+                        .font(OutputFontSettings.font)
                         .foregroundColor(.primary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -679,7 +679,7 @@ struct MacOutputTextView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     Text(viewModel.outputText)
-                        .font(.system(size: 18))
+                        .font(OutputFontSettings.font)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 12)

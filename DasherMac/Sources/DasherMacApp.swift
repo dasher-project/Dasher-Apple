@@ -440,6 +440,20 @@ struct MacDasherSettingsView: View {
                     set: { viewModel.bridge.setSpeedPercent(Int($0)) }
                 ), in: 20...400)
             }
+            Picker("Output Font", selection: Binding(
+                get: { OutputFontSettings.fontName },
+                set: { OutputFontSettings.fontName = $0 }
+            )) {
+                ForEach(OutputFontSettings.availableFonts, id: \.self) { Text($0).tag($0) }
+            }
+            HStack {
+                Text("Output Font Size")
+                Spacer()
+                Stepper("\(Int(OutputFontSettings.fontSize))", value: Binding(
+                    get: { OutputFontSettings.fontSize },
+                    set: { OutputFontSettings.fontSize = $0 }
+                ), in: 10...48)
+            }
             ForEach(params) { param in
                 parameterRow(param)
             }
