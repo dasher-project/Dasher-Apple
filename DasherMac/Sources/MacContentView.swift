@@ -338,8 +338,6 @@ struct MacContentView: View {
             barDivider
             learningToggle
             barDivider
-            fontPicker
-            barDivider
             speechPicker
             Spacer(minLength: 0)
         }
