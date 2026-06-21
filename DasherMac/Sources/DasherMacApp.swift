@@ -397,12 +397,16 @@ struct MacDasherSettingsView: View {
             }
 
             let alphabets = viewModel.bridge.allAlphabets
-            if !alphabets.isEmpty {
+            let currentId = viewModel.bridge.alphabetId
+            let pickerAlphabets = currentId.isEmpty || alphabets.contains(where: { $0.name == currentId })
+                ? alphabets
+                : alphabets + [DasherAlphabet(name: currentId)]
+            if !pickerAlphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
                     get: { viewModel.bridge.alphabetId },
                     set: { viewModel.bridge.setAlphabetId($0) }
                 )) {
-                    ForEach(alphabets, id: \.name) { a in
+                    ForEach(pickerAlphabets, id: \.name) { a in
                         Text(a.name).tag(a.name)
                     }
                 }
