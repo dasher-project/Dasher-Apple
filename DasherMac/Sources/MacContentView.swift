@@ -432,15 +432,19 @@ struct MacContentView: View {
     }
 
     private var fontPicker: some View {
-        let fontValues = viewModel.bridge.getStringValues(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
+        let fonts = [
+            "System", "Georgia", "Helvetica Neue", "Menlo",
+            "Courier New", "Avenir Next", "Futura", "Palatino",
+            "Trebuchet MS", "Verdana",
+        ]
         let currentFont = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
         return Menu {
-            ForEach(fontValues, id: \.self) { f in
+            ForEach(fonts, id: \.self) { f in
                 Button(f) { viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f) }
             }
         } label: {
             HStack(spacing: 3) {
-                Text(currentFont)
+                Text(currentFont.isEmpty ? "System" : currentFont)
                     .font(.system(size: 13))
                     .lineLimit(1)
                 LucideIcon(DasherIcon.chevronDown, size: 8, color: .secondary)
