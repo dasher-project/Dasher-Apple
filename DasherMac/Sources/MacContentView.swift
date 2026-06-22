@@ -657,6 +657,12 @@ struct MacOutputTextView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
+                Button(action: { pasteText() }) {
+                    LucideIcon(DasherIcon.paste, size: 12)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
                 Button(action: { viewModel.newMessage() }) {
                     LucideIcon(DasherIcon.close, size: 12)
                 }
@@ -698,6 +704,12 @@ struct MacOutputTextView: View {
     private func copyAllText() {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(viewModel.outputText, forType: .string)
+    }
+
+    private func pasteText() {
+        if let clipboardString = NSPasteboard.general.string(forType: .string) {
+            viewModel.outputText += clipboardString
+        }
     }
 
     private var macGameTargetBar: some View {

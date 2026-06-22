@@ -444,8 +444,7 @@ struct OutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
-            viewModel.bridge.reset()
-            viewModel.outputText = clipboardString
+            viewModel.outputText += clipboardString
         }
     }
 }
