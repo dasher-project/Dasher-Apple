@@ -8,6 +8,7 @@ struct MacContentView: View {
     @State private var showSettings = false
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
+    @State private var turboActive = false
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -651,6 +652,15 @@ struct MacOutputTextView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
+                Button(action: {
+                    turboActive.toggle()
+                    viewModel.bridge.keyEvent(key: 101, pressed: turboActive)
+                }) {
+                    LucideIcon(DasherIcon.turbo, size: 12, color: turboActive ? .accentColor : .secondary)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+
                 Button(action: { copyAllText() }) {
                     LucideIcon(DasherIcon.copy, size: 12)
                 }
@@ -836,11 +846,27 @@ final class MacDasherCanvas: NSView {
     }
 
     override func rightMouseDown(with event: NSEvent) {
+        turboActive = true
         viewModel?.bridge.keyEvent(key: 101, pressed: true)
     }
 
     override func rightMouseUp(with event: NSEvent) {
+        if !turboActive { return }
+        turboActive = false
         viewModel?.bridge.keyEvent(key: 101, pressed: false)
+    }
+
+    override func flagsChanged(with event: NSEvent) {
+        super.flagsChanged(with: event)
+        // Shift key = momentary turbo (hold to boost, release to normal)
+        let shiftDown = event.modifierFlags.contains(.shift)
+        if shiftDown && !turboActive {
+            turboActive = true
+            viewModel?.bridge.keyEvent(key: 101, pressed: true)
+        } else if !shiftDown && turboActive {
+            turboActive = false
+            viewModel?.bridge.keyEvent(key: 101, pressed: false)
+        }
     }
 
     override func draw(_ dirtyRect: NSRect) {
