@@ -76,6 +76,38 @@ jobs:
             -exportPath build/export \
             -exportOptionsPlist /tmp/exportOptions.plist
 
+      - name: Re-sign with Developer ID + inject icon
+        run: |
+          APP="build/export/Dasher.app"
+
+          # Generate .icns from the icon assets
+          ICONSET="/tmp/DasherIcon.iconset"
+          mkdir -p "$ICONSET"
+          for img in DasherIcon.icon/Assets/*.png; do
+            name=$(basename "$img")
+            sips -z 1024 1024 "$img" --out "$ICONSET/icon_512x512@2x.png" > /dev/null 2>&1 || true
+            sips -z 512 512 "$img" --out "$ICONSET/icon_512x512.png" > /dev/null 2>&1 || true
+            sips -z 256 256 "$img" --out "$ICONSET/icon_256x256.png" > /dev/null 2>&1 || true
+            sips -z 128 128 "$img" --out "$ICONSET/icon_128x128.png" > /dev/null 2>&1 || true
+          done
+          iconutil -c icns "$ICONSET" -o /tmp/Dasher.icns 2>/dev/null || true
+
+          # Inject icon if generated
+          if [ -f /tmp/Dasher.icns ]; then
+            cp /tmp/Dasher.icns "$APP/Contents/Resources/Dasher.icns"
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile Dasher.icns" "$APP/Contents/Info.plist" 2>/dev/null || \
+            /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string Dasher.icns" "$APP/Contents/Info.plist"
+          fi
+
+          # Re-sign the entire app with Developer ID + Hardened Runtime (required for notarization)
+          codesign --force --deep --sign "Developer ID Application: Will Wade (TRKU383G7Z)" \
+            --entitlements DasherMac/DasherMac.entitlements \
+            --options runtime \
+            "$APP"
+
+          # Verify
+          codesign -dv "$APP" 2>&1 | head -5
+
       - name: Notarize and staple app
         env:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
