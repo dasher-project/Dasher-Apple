@@ -10,7 +10,6 @@ struct MacContentView: View {
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
     @State private var turboActive = false
     @Environment(\.colorScheme) private var colorScheme
-    @State private var turboActive = false
 
     var body: some View {
         VStack(spacing: 0) {
