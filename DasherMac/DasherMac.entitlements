@@ -12,5 +12,10 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+	<array>
+		<string>/Library/Preferences/uk.ac.cam.phy.inference.dasher.plist</string>
+		<string>/Library/Application Support/Dasher/</string>
+	</array>
 </dict>
 </plist>
