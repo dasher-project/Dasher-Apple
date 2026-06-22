@@ -25,12 +25,15 @@ jobs:
           MAC_DEVELOPER_ID_P12: ${{ secrets.MAC_DEVELOPER_ID_P12 }}
           MAC_DEVELOPER_ID_PASSWORD: ${{ secrets.MAC_DEVELOPER_ID_PASSWORD }}
         run: |
+          KEYCHAIN=/tmp/build.keychain-db
           echo "$MAC_DEVELOPER_ID_P12" | base64 --decode > /tmp/dev-id.p12
-          security create-keychain -p temp123 /tmp/build.keychain
-          security default-keychain -s /tmp/build.keychain
-          security unlock-keychain -p temp123 /tmp/build.keychain
-          security import /tmp/dev-id.p12 -k /tmp/build.keychain -P "$MAC_DEVELOPER_ID_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple: -s -k temp123 /tmp/build.keychain
+          security create-keychain -p temp123 $KEYCHAIN
+          security set-keychain-preferences -u $KEYCHAIN
+          security unlock-keychain -p temp123 $KEYCHAIN
+          security import /tmp/dev-id.p12 -k $KEYCHAIN -P "$MAC_DEVELOPER_ID_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security -T /usr/bin/xcodebuild
+          security set-key-partition-list -S apple-tool:,apple:,codesign:,xcodebuild: -s -k temp123 $KEYCHAIN
+          # Add to search list so export step can find the identity
+          security list-keychains -d user -s $KEYCHAIN $(security list-keychains -d user | tr -d '"')
           rm /tmp/dev-id.p12
 
       - name: Write ASC API key for notarization

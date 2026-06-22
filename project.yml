@@ -256,7 +256,6 @@ targets:
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
       - path: DasherIcon.icon
-        buildPhase: resources
       - path: DasherEngine/Resources/Data
         buildPhase: resources
         type: folder
