@@ -35,11 +35,6 @@ settings:
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: NO
-  configs:
-    Debug:
-      CODE_SIGN_IDENTITY: "Apple Development"
-    Release:
-      CODE_SIGN_IDENTITY: "Apple Distribution"
 
 targetTemplates:
   DasherCoreTemplate:
