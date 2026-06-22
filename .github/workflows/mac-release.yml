@@ -89,7 +89,14 @@ jobs:
 
       - name: Staple app
         run: |
-          xcrun stapler staple build/export/Dasher.app
+          # Stapler can fail intermittently due to propagation delay after notarization.
+          # Retry up to 5 times. If it still fails, the notarization is still valid —
+          # macOS verifies online on first launch. Stapling only enables offline verification.
+          for i in 1 2 3 4 5; do
+            xcrun stapler staple build/export/Dasher.app && break
+            echo "Staple attempt $i failed, waiting 30s..."
+            sleep 30
+          done
 
       - name: Create DMG
         run: |
