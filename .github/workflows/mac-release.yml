@@ -47,12 +47,15 @@ jobs:
             -scheme DasherMac \
             -configuration Release \
             -archivePath build/Dasher.xcarchive \
-            CODE_SIGN_IDENTITY="Developer ID Application: Will Wade (TRKU383G7Z)" \
-            DEVELOPMENT_TEAM=${{ secrets.MAC_TEAM_ID }}
+            DEVELOPMENT_TEAM=${{ secrets.MAC_TEAM_ID }} \
+            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_IDENTITY="-"
 
       - name: Export
+        env:
+          MAC_TEAM_ID: ${{ secrets.MAC_TEAM_ID }}
         run: |
-          cat > /tmp/exportOptions.plist << 'EOF'
+          cat > /tmp/exportOptions.plist << EOF
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -60,7 +63,9 @@ jobs:
               <key>method</key>
               <string>developer-id</string>
               <key>teamID</key>
-              <string>${{ secrets.MAC_TEAM_ID }}</string>
+              <string>${MAC_TEAM_ID}</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
           </dict>
           </plist>
           EOF
