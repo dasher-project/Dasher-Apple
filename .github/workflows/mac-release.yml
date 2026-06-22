@@ -74,11 +74,12 @@ jobs:
             -exportPath build/export \
             -exportOptionsPlist /tmp/exportOptions.plist
 
-      - name: Notarize app
+      - name: Notarize and staple app
         env:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER: ${{ secrets.ASC_API_KEY_ISSUER }}
         run: |
+          # Submit the .app for notarization. --wait blocks until processing completes.
           ditto -c -k --keepParent build/export/Dasher.app /tmp/Dasher.zip
           xcrun notarytool submit \
             /tmp/Dasher.zip \
@@ -86,17 +87,9 @@ jobs:
             --issuer "$ASC_API_KEY_ISSUER" \
             --key ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 \
             --wait
-
-      - name: Staple app
-        run: |
-          # Stapler can fail intermittently due to propagation delay after notarization.
-          # Retry up to 5 times. If it still fails, the notarization is still valid —
-          # macOS verifies online on first launch. Stapling only enables offline verification.
-          for i in 1 2 3 4 5; do
-            xcrun stapler staple build/export/Dasher.app && break
-            echo "Staple attempt $i failed, waiting 30s..."
-            sleep 30
-          done
+          # Stapling is best-effort — if it fails, the notarization is still valid,
+          # macOS just verifies online on first launch instead of via the stapled ticket.
+          xcrun stapler staple build/export/Dasher.app || echo "WARN: Stapling failed — notarization still valid, will verify online"
 
       - name: Create DMG
         run: |
