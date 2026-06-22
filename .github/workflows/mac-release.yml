@@ -74,28 +74,29 @@ jobs:
             -exportPath build/export \
             -exportOptionsPlist /tmp/exportOptions.plist
 
+      - name: Notarize app
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER: ${{ secrets.ASC_API_KEY_ISSUER }}
+        run: |
+          ditto -c -k --keepParent build/export/Dasher.app /tmp/Dasher.zip
+          xcrun notarytool submit \
+            /tmp/Dasher.zip \
+            --key-id "$ASC_API_KEY_ID" \
+            --issuer "$ASC_API_KEY_ISSUER" \
+            --key ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 \
+            --wait
+
+      - name: Staple app
+        run: |
+          xcrun stapler staple build/export/Dasher.app
+
       - name: Create DMG
         run: |
           hdiutil create -volname "Dasher" \
             -srcfolder build/export/Dasher.app \
             -ov -format UDZO \
             build/Dasher-${{ github.ref_name }}.dmg
-
-      - name: Notarize
-        env:
-          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
-          ASC_API_KEY_ISSUER: ${{ secrets.ASC_API_KEY_ISSUER }}
-        run: |
-          xcrun notarytool submit \
-            build/Dasher-${{ github.ref_name }}.dmg \
-            --key-id "$ASC_API_KEY_ID" \
-            --issuer "$ASC_API_KEY_ISSUER" \
-            --key ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 \
-            --wait
-
-      - name: Staple
-        run: |
-          xcrun stapler staple build/Dasher-${{ github.ref_name }}.dmg
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
