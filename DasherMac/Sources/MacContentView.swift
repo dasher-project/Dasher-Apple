@@ -10,6 +10,7 @@ struct MacContentView: View {
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
     @State private var turboActive = false
     @Environment(\.colorScheme) private var colorScheme
+    @State private var turboActive = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -846,27 +847,18 @@ final class MacDasherCanvas: NSView {
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        turboActive = true
         viewModel?.bridge.keyEvent(key: 101, pressed: true)
     }
 
     override func rightMouseUp(with event: NSEvent) {
-        if !turboActive { return }
-        turboActive = false
         viewModel?.bridge.keyEvent(key: 101, pressed: false)
     }
 
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        // Shift key = momentary turbo (hold to boost, release to normal)
+        // Shift key = momentary turbo
         let shiftDown = event.modifierFlags.contains(.shift)
-        if shiftDown && !turboActive {
-            turboActive = true
-            viewModel?.bridge.keyEvent(key: 101, pressed: true)
-        } else if !shiftDown && turboActive {
-            turboActive = false
-            viewModel?.bridge.keyEvent(key: 101, pressed: false)
-        }
+        viewModel?.bridge.keyEvent(key: 101, pressed: shiftDown ? 1 : 0)
     }
 
     override func draw(_ dirtyRect: NSRect) {
