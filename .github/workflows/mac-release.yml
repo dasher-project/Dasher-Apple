@@ -1,0 +1,105 @@
+name: macOS Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Import Developer ID certificate
+        env:
+          MAC_DEVELOPER_ID_P12: ${{ secrets.MAC_DEVELOPER_ID_P12 }}
+          MAC_DEVELOPER_ID_PASSWORD: ${{ secrets.MAC_DEVELOPER_ID_PASSWORD }}
+        run: |
+          echo "$MAC_DEVELOPER_ID_P12" | base64 --decode > /tmp/dev-id.p12
+          security create-keychain -p temp123 /tmp/build.keychain
+          security default-keychain -s /tmp/build.keychain
+          security unlock-keychain -p temp123 /tmp/build.keychain
+          security import /tmp/dev-id.p12 -k /tmp/build.keychain -P "$MAC_DEVELOPER_ID_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -s -k temp123 /tmp/build.keychain
+          rm /tmp/dev-id.p12
+
+      - name: Write ASC API key for notarization
+        env:
+          ASC_API_KEY_PRIVATE_KEY: ${{ secrets.ASC_API_KEY_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/private_keys
+          echo "$ASC_API_KEY_PRIVATE_KEY" > ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+      - name: Archive
+        run: |
+          xcodebuild archive \
+            -project Dasher.xcodeproj \
+            -scheme DasherMac \
+            -configuration Release \
+            -archivePath build/Dasher.xcarchive \
+            CODE_SIGN_IDENTITY="Developer ID Application: Will Wade (TRKU383G7Z)" \
+            DEVELOPMENT_TEAM=${{ secrets.MAC_TEAM_ID }}
+
+      - name: Export
+        run: |
+          cat > /tmp/exportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>developer-id</string>
+              <key>teamID</key>
+              <string>${{ secrets.MAC_TEAM_ID }}</string>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath build/Dasher.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist /tmp/exportOptions.plist
+
+      - name: Create DMG
+        run: |
+          hdiutil create -volname "Dasher" \
+            -srcfolder build/export/Dasher.app \
+            -ov -format UDZO \
+            build/Dasher-${{ github.ref_name }}.dmg
+
+      - name: Notarize
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER: ${{ secrets.ASC_API_KEY_ISSUER }}
+        run: |
+          xcrun notarytool submit \
+            build/Dasher-${{ github.ref_name }}.dmg \
+            --key-id "$ASC_API_KEY_ID" \
+            --issuer "$ASC_API_KEY_ISSUER" \
+            --key ~/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8 \
+            --wait
+
+      - name: Staple
+        run: |
+          xcrun stapler staple build/Dasher-${{ github.ref_name }}.dmg
+
+      - name: Upload to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/Dasher-${{ github.ref_name }}.dmg
+          generate_release_notes: true
+
+      - name: Cleanup keychain
+        if: always()
+        run: |
+          security delete-keychain /tmp/build.keychain || true
+          rm -rf ~/private_keys
