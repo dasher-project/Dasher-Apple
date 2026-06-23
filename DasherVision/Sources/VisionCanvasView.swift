@@ -24,6 +24,7 @@ final class VisionCanvas: UIView {
     private var isDwelling: Bool = false
     private var dwellProgress: CGFloat = 0
     private let dwellRadius: CGFloat = 20
+    private var gazeMouseIsDown = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -53,47 +54,65 @@ final class VisionCanvas: UIView {
     }
 
     // MARK: - Touch input (pinch gesture on visionOS)
-    // On visionOS: pinch to start (touchesBegan), hold and look around to steer
-    // Dasher (touchesMoved — continuous gaze coordinates while pinching),
-    // release pinch to pause (touchesEnded).
+    // When pointer hover is OFF: pinch to start, look while pinching, release to stop.
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
         cancelDwell()
         guard let touch = touches.first else { return }
-        viewModel?.handleTouch(at: touch.location(in: self))
+        vm.handleTouch(at: touch.location(in: self))
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
         guard let touch = touches.first else { return }
-        viewModel?.handleTouchMove(at: touch.location(in: self))
+        vm.handleTouchMove(at: touch.location(in: self))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        viewModel?.handleTouchEnd()
+        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
+        vm.handleTouchEnd()
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        viewModel?.handleTouchEnd()
+        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
+        vm.handleTouchEnd()
     }
 
-    // MARK: - Eye gaze input (native on visionOS — eyes = pointer)
+    // MARK: - Eye gaze input (native on visionOS — eyes drive Dasher directly)
 
     @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
         guard let vm = viewModel, vm.pointerHoverEnabled else { return }
         let point = gesture.location(in: self)
 
         switch gesture.state {
-        case .changed:
-            vm.handlePointerHover(at: point)
+        case .began:
+            // Gaze entered canvas → start Dasher zooming
+            gazeMouseIsDown = true
+            vm.bridge.mouseDown()
+            vm.bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+            cancelDwell()
 
+        case .changed:
+            // Continuous gaze → steer Dasher
+            if !gazeMouseIsDown {
+                gazeMouseIsDown = true
+                vm.bridge.mouseDown()
+            }
+            vm.bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+
+            // Dwell-to-select (for selecting nodes, not for zooming)
             let distance = hypot(point.x - lastHoverPoint.x, point.y - lastHoverPoint.y)
             if distance > dwellRadius {
-                startDwell(point: point)
-            } else if !isDwelling && vm.appLevelDwell {
-                startDwell(point: point)
+                if vm.appLevelDwell { startDwell(point: point) }
             }
 
         case .ended, .cancelled:
+            // Gaze left canvas → pause Dasher
+            if gazeMouseIsDown {
+                gazeMouseIsDown = false
+                vm.bridge.mouseUp()
+            }
             cancelDwell()
 
         default:

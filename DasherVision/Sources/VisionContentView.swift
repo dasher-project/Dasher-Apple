@@ -63,11 +63,11 @@ struct VisionContentView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 12)
                 }
-                .background(.regularMaterial)
+                .background(Color.black.opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 .overlay(
                     RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                        .stroke(Color.white.opacity(0.25), lineWidth: 1)
                 )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
@@ -86,16 +86,15 @@ struct VisionContentView: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(isAccent ? Color.accentColor : Color.white.opacity(0.15))
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(isAccent ? Color.accentColor : Color.black.opacity(0.6))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.white.opacity(0.4), lineWidth: isAccent ? 2 : 1)
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
         .hoverEffect(.highlight)
-        .help(isAccent ? "Active" : "")
     }
 }
