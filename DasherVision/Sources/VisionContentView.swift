@@ -11,6 +11,23 @@ struct VisionContentView: View {
             VisionCanvasView(viewModel: viewModel)
                 .ignoresSafeArea()
 
+            // Transparent overlay for continuous eye-gaze tracking.
+            // .onContinuousHover is the visionOS-native way to get
+            // continuous gaze coordinates — more reliable than UIHoverGestureRecognizer.
+            Color.clear
+                .contentShape(Rectangle())
+                .onContinuousHover { phase in
+                    guard viewModel.pointerHoverEnabled else { return }
+                    switch phase {
+                    case .active(let location):
+                        viewModel.handleGazeHover(at: location)
+                    case .ended:
+                        viewModel.handleGazeHoverEnded()
+                    }
+                }
+                .allowsHitTesting(true)
+                .ignoresSafeArea()
+
             VStack {
                 HStack {
                     toolbarButton(DasherIcon.newDocument) { viewModel.newMessage() }

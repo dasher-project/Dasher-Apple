@@ -16,6 +16,7 @@ class VisionViewModel: ObservableObject {
     @Published var pointerHoverEnabled: Bool = true
     @Published var appLevelDwell: Bool = false
     @Published var dwellDuration: Double = 0.5
+    private var gazeActive = false
 
     let bridge: DasherBridge
     let speech = SpeechService.shared
@@ -70,6 +71,23 @@ class VisionViewModel: ObservableObject {
 
     func handlePointerHover(at point: CGPoint) {
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
+    /// Called by SwiftUI .onContinuousHover when eye gaze is active on the canvas.
+    func handleGazeHover(at point: CGPoint) {
+        if !gazeActive {
+            gazeActive = true
+            bridge.mouseDown()
+        }
+        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
+    /// Called when gaze leaves the canvas.
+    func handleGazeHoverEnded() {
+        if gazeActive {
+            gazeActive = false
+            bridge.mouseUp()
+        }
     }
 
     func handleTouch(at point: CGPoint) {

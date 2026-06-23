@@ -24,15 +24,13 @@ final class VisionCanvas: UIView {
     private var isDwelling: Bool = false
     private var dwellProgress: CGFloat = 0
     private let dwellRadius: CGFloat = 20
-    private var gazeMouseIsDown = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
         isMultipleTouchEnabled = false
         backgroundColor = .black
-
-        let hover = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
-        addGestureRecognizer(hover)
+        // UIKit hover disabled — gaze tracking now handled by SwiftUI
+        // .onContinuousHover overlay in VisionContentView for reliability.
     }
 
     required init?(coder: NSCoder) { super.init(coder: coder) }
@@ -53,8 +51,8 @@ final class VisionCanvas: UIView {
         setNeedsDisplay()
     }
 
-    // MARK: - Touch input (pinch gesture on visionOS)
-    // When pointer hover is OFF: pinch to start, look while pinching, release to stop.
+    // MARK: - Touch input (pinch — used when eye gaze is OFF)
+    // Pinch to start, look around while pinching, release to stop.
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
@@ -77,47 +75,6 @@ final class VisionCanvas: UIView {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
         vm.handleTouchEnd()
-    }
-
-    // MARK: - Eye gaze input (native on visionOS — eyes drive Dasher directly)
-
-    @objc private func handleHover(_ gesture: UIHoverGestureRecognizer) {
-        guard let vm = viewModel, vm.pointerHoverEnabled else { return }
-        let point = gesture.location(in: self)
-
-        switch gesture.state {
-        case .began:
-            // Gaze entered canvas → start Dasher zooming
-            gazeMouseIsDown = true
-            vm.bridge.mouseDown()
-            vm.bridge.mouseMove(x: Float(point.x), y: Float(point.y))
-            cancelDwell()
-
-        case .changed:
-            // Continuous gaze → steer Dasher
-            if !gazeMouseIsDown {
-                gazeMouseIsDown = true
-                vm.bridge.mouseDown()
-            }
-            vm.bridge.mouseMove(x: Float(point.x), y: Float(point.y))
-
-            // Dwell-to-select (for selecting nodes, not for zooming)
-            let distance = hypot(point.x - lastHoverPoint.x, point.y - lastHoverPoint.y)
-            if distance > dwellRadius {
-                if vm.appLevelDwell { startDwell(point: point) }
-            }
-
-        case .ended, .cancelled:
-            // Gaze left canvas → pause Dasher
-            if gazeMouseIsDown {
-                gazeMouseIsDown = false
-                vm.bridge.mouseUp()
-            }
-            cancelDwell()
-
-        default:
-            break
-        }
     }
 
     // MARK: - Dwell-to-select
