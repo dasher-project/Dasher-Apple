@@ -35,6 +35,7 @@ class VisionViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
+        configureForEyeGaze()
         let savedConfig = AccessConfiguration.current
         savedConfig.apply(to: bridge)
         bridge.onOutput = { [weak self] _ in
@@ -140,5 +141,37 @@ class VisionViewModel: ObservableObject {
 
     func copyOutput() {
         UIPasteboard.general.string = outputText
+    }
+
+    // MARK: - Eye gaze defaults
+
+    private func configureForEyeGaze() {
+        // Pinch = start Dasher (mouseDown), release = pause
+        setParam("BP_START_MOUSE", true)
+        setParam("LP_START_MODE", 1) // 1 = start on mouse down
+        // Pause when gaze leaves the canvas — prevents uncontrolled zooming
+        setParam("BP_STOP_OUTSIDE", true)
+        // Eye gaze drifts; auto-calibrate keeps the target centred
+        setParam("BP_AUTOCALIBRATE", true)
+        // Adapt speed to user's pace
+        setParam("BP_AUTO_SPEEDCONTROL", true)
+        // Eye gaze reaches extreme angles; remap helps navigation
+        setParam("BP_REMAP_XTREME", true)
+        // Non-linear Y smooths jerky vertical gaze
+        setParam("BP_NONLINEAR_Y", true)
+        // No turbo on visionOS — no keyboard/right-mouse to trigger
+        setParam("BP_TURBO_MODE", false)
+        // Slightly slower than default — eye gaze needs more precision
+        bridge.setSpeedPercent(100) // 100% = moderate; auto-speed will adapt
+    }
+
+    private func setParam(_ name: String, _ value: Bool) {
+        let key = bridge.findParameterKey(name)
+        if key >= 0 { bridge.setBoolParameter(key: key, value: value) }
+    }
+
+    private func setParam(_ name: String, _ value: Int) {
+        let key = bridge.findParameterKey(name)
+        if key >= 0 { bridge.setLongParameter(key: key, value: value) }
     }
 }

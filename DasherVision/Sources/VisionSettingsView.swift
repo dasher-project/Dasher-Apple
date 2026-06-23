@@ -24,13 +24,38 @@ struct VisionSettingsView: View {
                 }
 
                 Section("Language") {
-                    HStack {
-                        Text("Alphabet")
-                        Spacer()
-                        Text(viewModel.bridge.alphabetId)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
+                    let alphabets = viewModel.bridge.allAlphabets
+                    let currentId = viewModel.bridge.alphabetId
+                    let pickerAlphabets = currentId.isEmpty || alphabets.contains(where: { $0.name == currentId })
+                        ? alphabets
+                        : alphabets + [DasherAlphabet(name: currentId)]
+                    if !pickerAlphabets.isEmpty {
+                        Picker("Alphabet", selection: Binding(
+                            get: { viewModel.bridge.alphabetId },
+                            set: { viewModel.bridge.setAlphabetId($0) }
+                        )) {
+                            ForEach(pickerAlphabets, id: \.name) { a in
+                                Text(a.name).tag(a.name)
+                            }
+                        }
                     }
+                }
+
+                Section {
+                    Toggle("Pause When Looking Away", isOn: Binding(
+                        get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE")) },
+                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE"), value: $0) }
+                    ))
+                    Toggle("Auto-Centre Target", isOn: Binding(
+                        get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE")) },
+                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE"), value: $0) }
+                    ))
+                    Toggle("Adapt Speed Automatically", isOn: Binding(
+                        get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
+                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
+                    ))
+                } header: {
+                    Text("Eye Gaze")
                 }
 
                 Section {
