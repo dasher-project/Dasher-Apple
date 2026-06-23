@@ -84,6 +84,16 @@ struct VisionContentView: View {
             }
         }
         .preferredColorScheme(.dark)
+        .contentShape(Rectangle())
+        .onContinuousHover { phase in
+            guard viewModel.pointerHoverEnabled else { return }
+            switch phase {
+            case .active(let location):
+                viewModel.handleGazeHover(at: location)
+            case .ended:
+                viewModel.handleGazeHoverEnded()
+            }
+        }
         .sheet(isPresented: $showSettings) {
             VisionSettingsView(viewModel: viewModel)
         }
