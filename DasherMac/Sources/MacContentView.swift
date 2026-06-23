@@ -8,7 +8,6 @@ struct MacContentView: View {
     @State private var showSettings = false
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
-    @State private var turboActive = false
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -543,6 +542,7 @@ struct MacOutputTextView: View {
     @Binding var paneSize: CGFloat
     let handleEdge: HandleEdge
     let availableSpace: CGFloat
+    @State private var turboActive = false
 
     enum HandleEdge {
         case leading, trailing, top, bottom
@@ -857,7 +857,7 @@ final class MacDasherCanvas: NSView {
         super.flagsChanged(with: event)
         // Shift key = momentary turbo
         let shiftDown = event.modifierFlags.contains(.shift)
-        viewModel?.bridge.keyEvent(key: 101, pressed: shiftDown ? 1 : 0)
+        viewModel?.bridge.keyEvent(key: 101, pressed: shiftDown)
     }
 
     override func draw(_ dirtyRect: NSRect) {
