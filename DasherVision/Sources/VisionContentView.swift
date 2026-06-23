@@ -63,8 +63,12 @@ struct VisionContentView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 12)
                 }
-                .background(.ultraThinMaterial)
+                .background(.regularMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                )
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
             }
@@ -81,9 +85,17 @@ struct VisionContentView: View {
             LucideIcon(icon, size: 18, color: .white)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
-                .background(RoundedRectangle(cornerRadius: 10).fill(isAccent ? Color.blue : Color.white.opacity(0.35)))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.white.opacity(0.2), lineWidth: 1))
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isAccent ? Color.accentColor : Color.white.opacity(0.15))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.white.opacity(0.4), lineWidth: isAccent ? 2 : 1)
+                )
         }
         .buttonStyle(.plain)
+        .hoverEffect(.highlight)
+        .help(isAccent ? "Active" : "")
     }
 }
