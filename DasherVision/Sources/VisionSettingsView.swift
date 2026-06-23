@@ -101,15 +101,12 @@ struct VisionSettingsView: View {
                     LucideLabel("Pointer Input", icon: DasherIcon.eye)
                 }
 
-                if viewModel.appLevelDwell {
-                    Section("Dwell Duration") {
-                        Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
-                            ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
-                                Text(option.0).tag(option.1)
-                            }
-                        }
-                        .pickerStyle(.segmented)
+                Section {
+                    Button("Reset All Settings to Defaults", role: .destructive) {
+                        viewModel.resetToDefaults()
                     }
+                } header: {
+                    Text("Diagnostics")
                 }
 
                 Section {

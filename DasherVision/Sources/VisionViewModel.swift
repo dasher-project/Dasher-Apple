@@ -1,6 +1,9 @@
 import SwiftUI
 import UIKit
 import DasherSpeech
+import os.log
+
+private let visionLog = OSLog(subsystem: "at.dasher.Dasher.vision", category: "gaze")
 
 @MainActor
 class VisionViewModel: ObservableObject {
@@ -78,6 +81,7 @@ class VisionViewModel: ObservableObject {
         if !gazeActive {
             gazeActive = true
             bridge.mouseDown()
+            os_log("GAZE: mouseDown at %{public}f, %{public}f", log: visionLog, point.x, point.y)
         }
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
@@ -87,7 +91,32 @@ class VisionViewModel: ObservableObject {
         if gazeActive {
             gazeActive = false
             bridge.mouseUp()
+            os_log("GAZE: mouseUp (gaze left)", log: visionLog)
         }
+    }
+
+    /// Reset all engine params to visionOS defaults. Useful when old persisted
+    /// settings are causing unexpected behaviour.
+    func resetToDefaults() {
+        // Clear persisted settings
+        let userDir = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
+        )?.path ?? ""
+        try? FileManager.default.removeItem(atPath: userDir + "/dasher_settings.xml")
+        try? FileManager.default.removeItem(atPath: userDir + "/appearance_settings.xml")
+
+        // Re-apply visionOS defaults
+        configureForEyeGaze()
+
+        // Reset view state
+        isPlaying = true
+        speed = 1.0
+        pointerHoverEnabled = true
+        appLevelDwell = false
+        outputText = ""
+        bridge.reset()
+
+        os_log("RESET: All settings cleared and visionOS defaults applied", log: visionLog)
     }
 
     func handleTouch(at point: CGPoint) {
