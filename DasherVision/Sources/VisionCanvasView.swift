@@ -53,11 +53,19 @@ final class VisionCanvas: UIView {
     }
 
     // MARK: - Touch input (pinch gesture on visionOS)
+    // On visionOS: pinch to start (touchesBegan), hold and look around to steer
+    // Dasher (touchesMoved — continuous gaze coordinates while pinching),
+    // release pinch to pause (touchesEnded).
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         cancelDwell()
         guard let touch = touches.first else { return }
         viewModel?.handleTouch(at: touch.location(in: self))
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        viewModel?.handleTouchMove(at: touch.location(in: self))
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {

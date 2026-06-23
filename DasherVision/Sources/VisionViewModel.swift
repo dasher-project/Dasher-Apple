@@ -76,6 +76,10 @@ class VisionViewModel: ObservableObject {
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
+    func handleTouchMove(at point: CGPoint) {
+        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
     func handleTouchEnd() {
         bridge.mouseUp()
     }
