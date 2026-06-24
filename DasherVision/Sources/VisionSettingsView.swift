@@ -69,50 +69,28 @@ struct VisionSettingsView: View {
                         }
                     }
 
-                    Toggle(isOn: $viewModel.pointerHoverEnabled) {
+                    Toggle(isOn: $viewModel.appLevelDwell) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Pointer Hover Input")
-                            Text("Uses your natural eye gaze as pointer input. Look to navigate, pinch to select.")
+                            Text("App-Level Dwell to Select")
+                            Text("Auto-select after fixating your gaze while pinching. Only enable if OS dwell is off.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                     }
 
-                    if viewModel.pointerHoverEnabled {
-                        // How gaze translates into Dasher input.
-                        // Continuous = look to zoom, look away to pause (no pinch).
-                        // Dwell = hold gaze to dwell-select (taps); paired with the
-                        // "App-Level Dwell" toggle below.
-                        Picker("Selection Method", selection: Binding(
-                            get: { viewModel.selectionMethod },
-                            set: { viewModel.setSelectionMethod($0) }
-                        )) {
-                            Text("Continuous (look to zoom)").tag(SelectionMethod.continuous)
-                            Text("Dwell (hold to select)").tag(SelectionMethod.dwell)
-                        }
-
-                        if viewModel.selectionMethod == .dwell {
-                            Toggle(isOn: $viewModel.appLevelDwell) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("App-Level Dwell to Select")
-                                    Text("Auto-select after fixating. Only enable if OS dwell is off.")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-
-                            if viewModel.appLevelDwell {
-                                Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
-                                    ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
-                                        Text(option.0).tag(option.1)
-                                    }
-                                }
-                                .pickerStyle(.segmented)
+                    if viewModel.appLevelDwell {
+                        Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
+                            ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
+                                Text(option.0).tag(option.1)
                             }
                         }
+                        .pickerStyle(.segmented)
                     }
                 } header: {
-                    LucideLabel("Pointer Input", icon: DasherIcon.eye)
+                    LucideLabel("Input", icon: DasherIcon.eye)
+                } footer: {
+                    Text("On visionOS, pinch and hold on the canvas to start writing, look around while pinching to steer, and release to pause. The input model is pinch-and-look.")
+                        .font(.caption)
                 }
 
                 Section {
@@ -123,7 +101,7 @@ struct VisionSettingsView: View {
                 } header: {
                     Text("Diagnostics")
                 } footer: {
-                    Text("The debug overlay draws a green panel top-left of the canvas showing live hover/touch event counts and the last reported (x, y). If the numbers don't change when you look around, hover events aren't reaching Dasher — that's the bug to fix next.")
+                    Text("The debug overlay draws a green panel top-left of the canvas showing live touch event counts and the last reported (x, y). When you pinch and hold, you should see touch.began then touch.moved with changing coordinates as you look around.")
                         .font(.caption)
                 }
 

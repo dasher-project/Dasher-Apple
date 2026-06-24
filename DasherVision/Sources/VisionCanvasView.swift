@@ -72,7 +72,13 @@ final class VisionCanvas: UIView {
         setNeedsDisplay()
     }
 
-    // MARK: - Touch input (pinch — fallback when eye gaze is OFF)
+    // MARK: - Touch input (pinch — the visionOS input model)
+    // visionOS delivers continuous gaze coordinates through pinch-and-hold:
+    // pinch to start (touchesBegan → mouseDown), look around while pinching
+    // (touchesMoved → mouseMove, continuous), release to pause (touchesEnded
+    // → mouseUp). This is the only reliable gaze-coordinate path on visionOS
+    // — hover APIs deliver zero events (confirmed by log analysis).
+    // Touch is therefore ALWAYS enabled; it is not gated on pointerHoverEnabled.
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         touchBeganCount += 1
@@ -80,7 +86,6 @@ final class VisionCanvas: UIView {
         lastEventTime = CACurrentMediaTime()
         guard let vm = viewModel else { return }
         cancelDwell()
-        guard !vm.pointerHoverEnabled else { return }
         guard let touch = touches.first else { return }
         vm.handleTouch(at: touch.location(in: self))
         setNeedsDisplay()
@@ -90,7 +95,7 @@ final class VisionCanvas: UIView {
         touchMovedCount += 1
         lastState = "touch.moved"
         lastEventTime = CACurrentMediaTime()
-        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
+        guard let vm = viewModel else { return }
         guard let touch = touches.first else { return }
         let p = touch.location(in: self)
         lastReportedPoint = p
@@ -101,7 +106,7 @@ final class VisionCanvas: UIView {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         lastState = "touch.ended"
         lastEventTime = CACurrentMediaTime()
-        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
+        guard let vm = viewModel else { return }
         vm.handleTouchEnd()
         setNeedsDisplay()
     }
@@ -109,7 +114,7 @@ final class VisionCanvas: UIView {
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
         lastState = "touch.cancelled"
         lastEventTime = CACurrentMediaTime()
-        guard let vm = viewModel, !vm.pointerHoverEnabled else { return }
+        guard let vm = viewModel else { return }
         vm.handleTouchEnd()
         setNeedsDisplay()
     }

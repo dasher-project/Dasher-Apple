@@ -5,13 +5,13 @@ import DasherShared
 struct VisionContentView: View {
     @StateObject private var viewModel = VisionViewModel()
     @State private var showSettings = false
+    @AppStorage("vision_has_seen_pinch_hint") private var hasSeenPinchHint = false
 
     var body: some View {
         ZStack {
-            // Canvas owns its own UIHoverGestureRecognizer — that is the
-            // visionOS eye-gaze API and matches the proven iOS pattern.
-            // No SwiftUI .onContinuousHover here (the previous session's
-            // duplicate handlers caused double mouseDown events).
+            // Canvas owns its own UIHoverGestureRecognizer (dormant on
+            // current visionOS — hover APIs deliver zero events) AND handles
+            // pinch via touchesBegan/Moved/Ended. Pinch-and-look is the model.
             VisionCanvasView(viewModel: viewModel)
                 .ignoresSafeArea()
 
@@ -20,7 +20,6 @@ struct VisionContentView: View {
                     toolbarButton(DasherIcon.newDocument) { viewModel.newMessage() }
                     toolbarButton(viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play, isAccent: true) { viewModel.togglePlay() }
                     Spacer()
-                    toolbarButton(DasherIcon.eye, isAccent: viewModel.pointerHoverEnabled) { viewModel.pointerHoverEnabled.toggle() }
                     toolbarButton(DasherIcon.settings) { showSettings = true }
                 }
                 .padding(.horizontal, 24)
@@ -76,12 +75,55 @@ struct VisionContentView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 16)
             }
+
+            // First-launch hint — the interaction model isn't discoverable
+            // otherwise. Dismissed permanently via @AppStorage.
+            if !hasSeenPinchHint {
+                pinchHintOverlay
+            }
         }
         .preferredColorScheme(.dark)
         .sheet(isPresented: $showSettings) {
             VisionSettingsView(viewModel: viewModel)
         }
         .onAppear { viewModel.bridge.setSystemAppearance(dark: true) }
+    }
+
+    private var pinchHintOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.75).ignoresSafeArea()
+            VStack(spacing: 20) {
+                LucideIcon(DasherIcon.eye, size: 40, color: .white)
+                Text("Pinch and Look to Write")
+                    .font(.title2.bold())
+                    .foregroundColor(.white)
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Pinch and hold anywhere on the canvas to start", systemImage: "hand.point.up.left.fill")
+                    Label("Move your eyes while pinching to steer", systemImage: "arrow.up.left.and.arrow.down.right")
+                    Label("Release the pinch to pause", systemImage: "hand.raised.fill")
+                }
+                .font(.body)
+                .foregroundColor(.white.opacity(0.85))
+                .frame(maxWidth: 420, alignment: .leading)
+                Text("Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.6))
+                    .frame(maxWidth: 420)
+                    .multilineTextAlignment(.center)
+                Button {
+                    hasSeenPinchHint = true
+                } label: {
+                    Text("Got it")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 40)
+                        .padding(.vertical, 12)
+                        .background(Capsule().fill(Color.accentColor))
+                }
+                .hoverEffect(.highlight)
+            }
+            .padding(40)
+        }
     }
 
     private func toolbarButton(_ icon: String, isAccent: Bool = false, _ action: @escaping () -> Void) -> some View {
