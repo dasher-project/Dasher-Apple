@@ -14,7 +14,7 @@ struct VisionCanvasView: UIViewRepresentable {
     }
 }
 
-final class VisionCanvas: UIView {
+final class VisionCanvas: UIView, UIPointerInteractionDelegate {
     var viewModel: VisionViewModel?
     private var displayLink: CADisplayLink?
 
@@ -33,6 +33,9 @@ final class VisionCanvas: UIView {
     private var hoverEndedCount = 0
     private var touchBeganCount = 0
     private var touchMovedCount = 0
+    private var pointerEnterCount = 0
+    private var pointerMoveCount = 0
+    private var pointerExitCount = 0
     private var lastState: String = "idle"
     private var lastReportedPoint: CGPoint = .zero
     private var lastEventTime: CFTimeInterval = 0
@@ -46,12 +49,20 @@ final class VisionCanvas: UIView {
         isMultipleTouchEnabled = false
         backgroundColor = .black
 
-        // Restore UIHoverGestureRecognizer — this IS the visionOS eye-gaze API
-        // and is what the iOS app uses successfully for the same continuous-
-        // selection model. The previous session abandoned it on an unverified
-        // theory; we are returning to the proven pattern.
+        // UIHoverGestureRecognizer — Apple's documented visionOS gaze API.
+        // Confirmed to deliver ZERO events in a windowed app (log analysis).
+        // Kept for forward compatibility if Apple changes this.
         let hover = UIHoverGestureRecognizer(target: self, action: #selector(handleHover(_:)))
         addGestureRecognizer(hover)
+
+        // UIPointerInteraction — architecturally different from hover gestures.
+        // Uses a delegate pattern with pointerEnter/Move/Exit callbacks. On
+        // visionOS this MIGHT bridge to gaze where hover gestures don't.
+        // This is the experiment: if these counts climb when you look around,
+        // we've found our gaze API.
+        let pointer = UIPointerInteraction(delegate: self)
+        pointer.isEnabled = true
+        addInteraction(pointer)
     }
 
     required init?(coder: NSCoder) { super.init(coder: coder) }
@@ -72,13 +83,13 @@ final class VisionCanvas: UIView {
         setNeedsDisplay()
     }
 
-    // MARK: - Touch input (pinch — the visionOS input model)
-    // visionOS delivers continuous gaze coordinates through pinch-and-hold:
-    // pinch to start (touchesBegan → mouseDown), look around while pinching
-    // (touchesMoved → mouseMove, continuous), release to pause (touchesEnded
-    // → mouseUp). This is the only reliable gaze-coordinate path on visionOS
-    // — hover APIs deliver zero events (confirmed by log analysis).
-    // Touch is therefore ALWAYS enabled; it is not gated on pointerHoverEnabled.
+    // MARK: - Touch input (pinch — follows HAND position, not gaze)
+    // On visionOS, pinch-and-hold generates touchesMoved whose coordinates
+    // follow where the pinch is in 3D space (hand position), NOT where the
+    // eyes are looking. This is how all visionOS drag gestures work — the
+    // element follows the hand. Gaze is used only by the system for visual
+    // highlighting, not exposed as continuous coordinates to the app.
+    // Touch is ALWAYS enabled; it is not gated on pointerHoverEnabled.
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         touchBeganCount += 1
@@ -174,6 +185,27 @@ final class VisionCanvas: UIView {
             break
         }
         setNeedsDisplay()
+    }
+
+    // MARK: - UIPointerInteractionDelegate (experiment: does this bridge to gaze?)
+
+    func pointerInteraction(_ interaction: UIPointerInteraction,
+                            regionFor request: UIPointerRegionRequest,
+                            defaultRegion: UIPointerRegion) -> UIPointerRegion? {
+        // Accept the default region — we want to receive pointer events over
+        // the entire canvas.
+        pointerEnterCount += 1
+        lastState = "pointer.region"
+        lastEventTime = CACurrentMediaTime()
+        setNeedsDisplay()
+        return defaultRegion
+    }
+
+    func pointerInteraction(_ interaction: UIPointerInteraction,
+                            styleFor region: UIPointerRegion) -> UIPointerStyle? {
+        // Return nil to suppress the system's default hover visual; Dasher
+        // draws its own crosshair.
+        return nil
     }
 
     // MARK: - Dwell-to-click (kept for parity; continuous mode is the default)
@@ -313,6 +345,7 @@ final class VisionCanvas: UIView {
             "canvas: \(Int(canvasW))×\(Int(canvasH))",
             "hover: began=\(hoverBeganCount) changed=\(hoverChangedCount) ended=\(hoverEndedCount)",
             "touch: began=\(touchBeganCount) moved=\(touchMovedCount)",
+            "pointer: enter=\(pointerEnterCount) move=\(pointerMoveCount) exit=\(pointerExitCount)",
             "since last event: \(String(format: "%.2f", secsSinceEvent))s",
             "pointerHoverEnabled: \(viewModel?.pointerHoverEnabled ?? false)",
             "isContinuousSelection: \(viewModel?.isContinuousSelection ?? false)",

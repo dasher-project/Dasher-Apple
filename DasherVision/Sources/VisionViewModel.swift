@@ -31,6 +31,7 @@ class VisionViewModel: ObservableObject {
     let bridge: DasherBridge
     let speech = SpeechService.shared
     private var lastSpokenText: String = ""
+    private var touchMoveLogCounter: Int = 0
 
     static let dwellDurationOptions: [(String, Double)] = [
         ("0.3s", 0.3),
@@ -142,14 +143,22 @@ class VisionViewModel: ObservableObject {
     func handleTouch(at point: CGPoint) {
         bridge.mouseDown()
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+        os_log("TOUCH: began (mouseDown) at %{public}f, %{public}f", log: visionLog, point.x, point.y)
     }
 
     func handleTouchMove(at point: CGPoint) {
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+        // Log every ~30th move to avoid log spam but still confirm flow
+        touchMoveLogCounter += 1
+        if touchMoveLogCounter % 30 == 0 {
+            os_log("TOUCH: moved (mouseMove) at %{public}f, %{public}f [count=%{public}d]", log: visionLog, point.x, point.y, touchMoveLogCounter)
+        }
     }
 
     func handleTouchEnd() {
         bridge.mouseUp()
+        os_log("TOUCH: ended (mouseUp) [moves=%{public}d]", log: visionLog, touchMoveLogCounter)
+        touchMoveLogCounter = 0
     }
 
     func togglePlay() {
