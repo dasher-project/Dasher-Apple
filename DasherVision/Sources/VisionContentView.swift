@@ -8,18 +8,12 @@ struct VisionContentView: View {
 
     var body: some View {
         ZStack {
+            // Canvas owns its own UIHoverGestureRecognizer — that is the
+            // visionOS eye-gaze API and matches the proven iOS pattern.
+            // No SwiftUI .onContinuousHover here (the previous session's
+            // duplicate handlers caused double mouseDown events).
             VisionCanvasView(viewModel: viewModel)
                 .ignoresSafeArea()
-                .contentShape(Rectangle())
-                .onContinuousHover { phase in
-                    guard viewModel.pointerHoverEnabled else { return }
-                    switch phase {
-                    case .active(let location):
-                        viewModel.handleGazeHover(at: location)
-                    case .ended:
-                        viewModel.handleGazeHoverEnded()
-                    }
-                }
 
             VStack {
                 HStack {
@@ -84,16 +78,6 @@ struct VisionContentView: View {
             }
         }
         .preferredColorScheme(.dark)
-        .contentShape(Rectangle())
-        .onContinuousHover { phase in
-            guard viewModel.pointerHoverEnabled else { return }
-            switch phase {
-            case .active(let location):
-                viewModel.handleGazeHover(at: location)
-            case .ended:
-                viewModel.handleGazeHoverEnded()
-            }
-        }
         .sheet(isPresented: $showSettings) {
             VisionSettingsView(viewModel: viewModel)
         }

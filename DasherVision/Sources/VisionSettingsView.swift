@@ -79,22 +79,36 @@ struct VisionSettingsView: View {
                     }
 
                     if viewModel.pointerHoverEnabled {
-                        Toggle(isOn: $viewModel.appLevelDwell) {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("App-Level Dwell to Select")
-                                Text("Auto-select after fixating. Only enable if OS dwell is off.")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
+                        // How gaze translates into Dasher input.
+                        // Continuous = look to zoom, look away to pause (no pinch).
+                        // Dwell = hold gaze to dwell-select (taps); paired with the
+                        // "App-Level Dwell" toggle below.
+                        Picker("Selection Method", selection: Binding(
+                            get: { viewModel.selectionMethod },
+                            set: { viewModel.setSelectionMethod($0) }
+                        )) {
+                            Text("Continuous (look to zoom)").tag(SelectionMethod.continuous)
+                            Text("Dwell (hold to select)").tag(SelectionMethod.dwell)
                         }
 
-                        if viewModel.appLevelDwell {
-                            Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
-                                ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
-                                    Text(option.0).tag(option.1)
+                        if viewModel.selectionMethod == .dwell {
+                            Toggle(isOn: $viewModel.appLevelDwell) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("App-Level Dwell to Select")
+                                    Text("Auto-select after fixating. Only enable if OS dwell is off.")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
                                 }
                             }
-                            .pickerStyle(.segmented)
+
+                            if viewModel.appLevelDwell {
+                                Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
+                                    ForEach(VisionViewModel.dwellDurationOptions, id: \.1) { option in
+                                        Text(option.0).tag(option.1)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                            }
                         }
                     }
                 } header: {
@@ -102,11 +116,15 @@ struct VisionSettingsView: View {
                 }
 
                 Section {
+                    Toggle("Show Input Debug Overlay", isOn: $viewModel.debugInputOverlay)
                     Button("Reset All Settings to Defaults", role: .destructive) {
                         viewModel.resetToDefaults()
                     }
                 } header: {
                     Text("Diagnostics")
+                } footer: {
+                    Text("The debug overlay draws a green panel top-left of the canvas showing live hover/touch event counts and the last reported (x, y). If the numbers don't change when you look around, hover events aren't reaching Dasher — that's the bug to fix next.")
+                        .font(.caption)
                 }
 
                 Section {

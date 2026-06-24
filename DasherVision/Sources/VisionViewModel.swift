@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import DasherShared
 import DasherSpeech
 import os.log
 
@@ -19,7 +20,13 @@ class VisionViewModel: ObservableObject {
     @Published var pointerHoverEnabled: Bool = true
     @Published var appLevelDwell: Bool = false
     @Published var dwellDuration: Double = 0.5
-    private var gazeActive = false
+    /// Selection method mirrored from AccessConfiguration so the Settings UI
+    /// can change it and the canvas can read `isContinuousSelection`.
+    /// Defaults to `.continuous` on visionOS (see AccessConfiguration.defaultConfiguration).
+    @Published var selectionMethod: SelectionMethod = AccessConfiguration.current.selection
+    /// On-canvas debug overlay showing live hover/touch telemetry.
+    /// Default ON while we diagnose the eye-gaze issue — flip from Settings.
+    @Published var debugInputOverlay: Bool = true
 
     let bridge: DasherBridge
     let speech = SpeechService.shared
@@ -76,23 +83,34 @@ class VisionViewModel: ObservableObject {
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 
-    /// Called by SwiftUI .onContinuousHover when eye gaze is active on the canvas.
-    func handleGazeHover(at point: CGPoint) {
-        if !gazeActive {
-            gazeActive = true
-            bridge.mouseDown()
-            os_log("GAZE: mouseDown at %{public}f, %{public}f", log: visionLog, point.x, point.y)
-        }
-        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    /// Continuous-selection model (ported from DasherApp/Sources/DasherViewModel.swift).
+    /// When selection == .continuous, looking at the canvas engages the zoom
+    /// and looking away pauses it — no pinch required.
+    var isContinuousSelection: Bool {
+        selectionMethod == .continuous
     }
 
-    /// Called when gaze leaves the canvas.
-    func handleGazeHoverEnded() {
-        if gazeActive {
-            gazeActive = false
-            bridge.mouseUp()
-            os_log("GAZE: mouseUp (gaze left)", log: visionLog)
-        }
+    /// Called by UIHoverGestureRecognizer .began when continuous selection is on.
+    func handleHoverDown(at point: CGPoint) {
+        bridge.mouseDown()
+        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+        os_log("GAZE: hoverDown (mouseDown) at %{public}f, %{public}f", log: visionLog, point.x, point.y)
+    }
+
+    /// Called by UIHoverGestureRecognizer .ended/.cancelled when continuous selection is on.
+    func handleHoverUp() {
+        bridge.mouseUp()
+        os_log("GAZE: hoverUp (mouseUp)", log: visionLog)
+    }
+
+    /// Persist the current selection method to AccessConfiguration so it survives
+    /// relaunches and so `AccessConfiguration.current.selection` stays in sync.
+    func setSelectionMethod(_ method: SelectionMethod) {
+        selectionMethod = method
+        var config = AccessConfiguration.current
+        config.selection = method
+        AccessConfiguration.current = config
+        config.apply(to: bridge)
     }
 
     /// Reset all engine params to visionOS defaults. Useful when old persisted
@@ -113,6 +131,8 @@ class VisionViewModel: ObservableObject {
         speed = 1.0
         pointerHoverEnabled = true
         appLevelDwell = false
+        selectionMethod = .continuous
+        debugInputOverlay = true
         outputText = ""
         bridge.reset()
 
