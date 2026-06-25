@@ -424,6 +424,18 @@ struct MacDasherSettingsView: View {
             }) { param in
                 parameterRow(param)
             }
+
+            Divider()
+                .padding(.vertical, 4)
+
+            TrainingTextManagementSection(
+                trainingFileName: viewModel.bridge.trainingFileName,
+                userTrainingFileSize: viewModel.bridge.userTrainingFileSize,
+                userTrainingSizeDescription: viewModel.bridge.userTrainingSizeDescription,
+                onImport: { viewModel.bridge.importTrainingText($0) },
+                onExport: { viewModel.bridge.exportTrainingText() },
+                onReset: { viewModel.bridge.resetTrainingData() }
+            )
         }
     }
 

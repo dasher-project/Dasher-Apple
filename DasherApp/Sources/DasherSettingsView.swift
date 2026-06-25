@@ -310,7 +310,8 @@ struct DasherSettingsView: View {
     // MARK: - Language
 
     private func languageSection(_ params: [DasherParameterInfo]) -> some View {
-        Section {
+        Group {
+            Section {
             Picker("App Language", selection: $selectedLocale) {
                 ForEach(availableLocales, id: \.code) { loc in
                     Text(loc.name).tag(loc.code)
@@ -348,6 +349,16 @@ struct DasherSettingsView: View {
             }
         } header: {
             LucideLabel("Language", icon: DasherIcon.alphabet)
+        }
+
+        TrainingTextManagementSection(
+            trainingFileName: viewModel.bridge.trainingFileName,
+            userTrainingFileSize: viewModel.bridge.userTrainingFileSize,
+            userTrainingSizeDescription: viewModel.bridge.userTrainingSizeDescription,
+            onImport: { viewModel.bridge.importTrainingText($0) },
+            onExport: { viewModel.bridge.exportTrainingText() },
+            onReset: { viewModel.bridge.resetTrainingData() }
+        )
         }
     }
 
