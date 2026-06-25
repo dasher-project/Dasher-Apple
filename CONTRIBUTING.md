@@ -45,6 +45,24 @@ DasherCore is a git submodule pointing to
 **Do not modify it inside this repo.** If you need an engine change, open a PR
 against DasherCore directly, then bump the submodule pin here once merged.
 
+### Submodule pinning policy
+
+DasherCore is pinned to **release tags** (e.g. `v0.1.5`), not arbitrary `main`
+commits. This ensures Xcode Cloud and other CI systems can always resolve the
+submodule. To update:
+
+```bash
+cd DasherCore
+git fetch --tags
+git checkout v0.1.X          # latest release tag
+cd ..
+git add DasherCore
+git commit -s -m "Bump DasherCore to v0.1.X"
+```
+
+Never commit a DasherCore pointer to a local-only commit — CI will fail with
+"Failed to find commit in submodule."
+
 ## Definition of Done
 
 - [ ] SwiftLint passes (zero warnings)
