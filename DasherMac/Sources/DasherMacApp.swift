@@ -429,7 +429,6 @@ struct MacDasherSettingsView: View {
                 .padding(.vertical, 4)
 
             TrainingTextManagementSection(
-                trainingFileName: viewModel.bridge.trainingFileName,
                 userTrainingFileSize: viewModel.bridge.userTrainingFileSize,
                 userTrainingSizeDescription: viewModel.bridge.userTrainingSizeDescription,
                 onImport: { viewModel.bridge.importTrainingText($0) },

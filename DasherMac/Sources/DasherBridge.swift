@@ -280,30 +280,31 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
 
     // MARK: - Training text management
 
-    /// The training filename for the current alphabet (e.g. "training_english_GB.txt").
-    var trainingFileName: String {
-        guard let ctx = ctx, let cStr = dasher_get_training_filename(ctx) else { return "" }
-        return String(cString: cStr)
+    /// The user-writable training directory.
+    private var userTrainingDirURL: URL {
+        URL(fileURLWithPath: userDir).appendingPathComponent("training", isDirectory: true)
     }
 
-    /// The user-writable training file URL for the current alphabet.
-    var userTrainingFileURL: URL? {
-        let name = trainingFileName
-        guard !name.isEmpty else { return nil }
-        return URL(fileURLWithPath: userDir)
-            .appendingPathComponent("training", isDirectory: true)
-            .appendingPathComponent(name)
+    /// Finds any training_*.txt file in the user directory.
+    private func trainingFileURL() -> URL? {
+        let fm = FileManager.default
+        let dir = userTrainingDirURL
+        if let files = try? fm.contentsOfDirectory(atPath: dir.path) {
+            let trainingFiles = files.filter { $0.hasPrefix("training_") && $0.hasSuffix(".txt") }
+            if let first = trainingFiles.first {
+                return dir.appendingPathComponent(first)
+            }
+        }
+        return nil
     }
 
-    /// Size in bytes of the user's accumulated training data for the current alphabet.
     var userTrainingFileSize: Int64 {
-        guard let url = userTrainingFileURL,
+        guard let url = trainingFileURL(),
               let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
               let size = attrs[.size] as? NSNumber else { return 0 }
         return size.int64Value
     }
 
-    /// Human-readable size string (e.g. "311 KB", "1.2 MB").
     var userTrainingSizeDescription: String {
         let bytes = userTrainingFileSize
         if bytes == 0 { return "No custom training data" }
@@ -312,42 +313,39 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return formatter.string(fromByteCount: bytes)
     }
 
-    /// Import training text — appends to the language model AND to the user
-    /// training file on disk so it persists across sessions.
     func importTrainingText(_ text: String) {
         guard let ctx = ctx else { return }
         dasher_import_training_text(ctx, text)
 
-        // Persist to disk so the training survives app restarts
-        if let url = userTrainingFileURL {
-            let dir = url.deletingLastPathComponent()
-            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-            if let data = text.data(using: .utf8) {
-                if FileManager.default.fileExists(atPath: url.path),
-                   let handle = try? FileHandle(forWritingTo: url) {
-                    handle.seekToEndOfFile()
-                    handle.write(data)
-                    handle.closeFile()
-                } else {
-                    try? data.write(to: url)
-                }
+        let dir = userTrainingDirURL
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let url = trainingFileURL() ?? dir.appendingPathComponent("training_english_GB.txt")
+        if let data = text.data(using: .utf8) {
+            if FileManager.default.fileExists(atPath: url.path),
+               let handle = try? FileHandle(forWritingTo: url) {
+                handle.seekToEndOfFile()
+                handle.write(data)
+                handle.closeFile()
+            } else {
+                try? data.write(to: url)
             }
         }
     }
 
-    /// Export the user's accumulated training text. Returns nil if no user training file exists.
     func exportTrainingText() -> String? {
-        guard let url = userTrainingFileURL,
+        guard let url = trainingFileURL(),
               FileManager.default.fileExists(atPath: url.path),
               let data = try? Data(contentsOf: url) else { return nil }
         return String(data: data, encoding: .utf8)
     }
 
-    /// Reset training data for the current alphabet — deletes the user training file.
-    /// The engine falls back to system (bundled) training data on next launch.
     func resetTrainingData() {
-        guard let url = userTrainingFileURL else { return }
-        try? FileManager.default.removeItem(at: url)
+        let dir = userTrainingDirURL
+        if let files = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
+            for file in files where file.hasPrefix("training_") && file.hasSuffix(".txt") {
+                try? FileManager.default.removeItem(atPath: dir.appendingPathComponent(file).path)
+            }
+        }
     }
 
     // MARK: - Parameter schema

@@ -5,7 +5,6 @@ import UniformTypeIdentifiers
 /// Shows current training data size, with import / export / reset buttons.
 /// Used by DasherApp (iOS), DasherMac, and DasherVision.
 public struct TrainingTextManagementSection: View {
-    let trainingFileName: String
     let userTrainingFileSize: Int64
     let userTrainingSizeDescription: String
     let onImport: (String) -> Void
@@ -18,17 +17,13 @@ public struct TrainingTextManagementSection: View {
     @State private var exportText: String?
     @State private var statusMessage: String?
 
-    /// Create from any bridge that has the training text methods.
-    /// Both DasherApp.DasherBridge and DasherMac.DasherBridge qualify.
     public init(
-        trainingFileName: String,
         userTrainingFileSize: Int64,
         userTrainingSizeDescription: String,
         onImport: @escaping (String) -> Void,
         onExport: @escaping () -> String?,
         onReset: @escaping () -> Void
     ) {
-        self.trainingFileName = trainingFileName
         self.userTrainingFileSize = userTrainingFileSize
         self.userTrainingSizeDescription = userTrainingSizeDescription
         self.onImport = onImport
@@ -115,7 +110,7 @@ public struct TrainingTextManagementSection: View {
                 statusMessage = "Training data reset. Restart Dasher to apply."
             }
         } message: {
-            Text("This deletes your accumulated training data for the current alphabet (\(trainingFileName)). The language model will return to built-in defaults on next launch. This cannot be undone.")
+            Text("This deletes your accumulated training data. The language model will return to built-in defaults on next launch. This cannot be undone.")
         }
         .alert("Training", isPresented: Binding(
             get: { statusMessage != nil },
