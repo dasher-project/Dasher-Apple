@@ -21,7 +21,7 @@ managed as local Swift Package Manager targets.
 ## Architecture
 
 Each frontend calls DasherCore exclusively through its flat C API
-([`dasher.h`](https://github.com/dasher-project/DasherCore/blob/main/Src/dasher.h))
+([`dasher.h`](https://github.com/dasher-project/DasherCore/blob/main/src/dasher.h))
 via per-target bridging headers. The frontend owns input capture, canvas
 rendering (Metal/CoreGraphics), and platform UI (SwiftUI).
 

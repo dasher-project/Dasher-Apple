@@ -136,7 +136,7 @@ To verify that current APIs deliver zero gaze events:
 4. Look around the view for 30+ seconds.
 5. Observe: zero `began`/`changed`/`ended` callbacks in Console.app.
 
-Sample project: [Dasher for visionOS](https://github.com/DasherProject/dasher) — `DasherVision` target.
+Sample project: [Dasher for visionOS](https://github.com/dasher-project/dasher), `DasherVision` target.
 
 ## Related Apple resources
 
