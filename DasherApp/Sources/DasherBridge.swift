@@ -208,14 +208,35 @@ class DasherBridge: InputMethodBridge {
         dasher_key_event(ctx, Int32(key), pressed ? 1 : 0)
     }
 
+    /// Fires once when the engine enters the RFC 0009 A2 error state. The
+    /// frontend should surface a "please restart" message; only engine
+    /// recreation (dasher_destroy + dasher_create) clears the flag.
+    var onEngineError: (() -> Void)?
+    private var engineErrorReported = false
+
+    private func notifyEngineErrorIfNeeded() {
+        guard !engineErrorReported else { return }
+        engineErrorReported = true
+        onEngineError?()
+    }
+
     func frame(timeMs: Int64) -> DrawCommands? {
         guard let ctx = ctx else { return nil }
+        if dasher_has_engine_error(ctx) != 0 {
+            notifyEngineErrorIfNeeded()
+            return nil
+        }
         var cmds: UnsafeMutablePointer<Int32>?
         var cmdCount: Int32 = 0
         var strs: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
         var strCount: Int32 = 0
 
         dasher_frame(ctx, timeMs, &cmds, &cmdCount, &strs, &strCount)
+
+        if dasher_has_engine_error(ctx) != 0 {
+            notifyEngineErrorIfNeeded()
+            return nil
+        }
 
         guard let cmds = cmds, cmdCount > 0 else { return nil }
         let fn = fontParamKey >= 0 ? getStringParameter(key: fontParamKey) : ""
@@ -569,6 +590,20 @@ class DasherBridge: InputMethodBridge {
     func saveSettings() {
         guard let ctx = ctx else { return }
         dasher_save_settings(ctx)
+    }
+
+    /// Restore all Dasher settings to their built-in defaults. Deletes the
+    /// persisted settings files (so defaults load on the next launch) and
+    /// resets every in-memory parameter via `dasher_reset_settings` (so the
+    /// live engine updates too). The engine output/position is also reset.
+    func resetToDefaults() {
+        guard let ctx = ctx else { return }
+        let dir = URL(fileURLWithPath: userDir)
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent("dasher_settings.xml"))
+        try? FileManager.default.removeItem(at: dir.appendingPathComponent("appearance_settings.xml"))
+        dasher_reset_settings(ctx)
+        dasher_reset(ctx)
+        lastOutputText = ""
     }
 
     // MARK: - Locale

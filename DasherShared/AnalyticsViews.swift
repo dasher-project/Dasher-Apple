@@ -83,3 +83,41 @@ public struct AnalyticsPrivacySection: View {
         }
     }
 }
+
+/// Settings > Privacy > Reset to defaults. Mirrors the Dasher-Windows
+/// "Reset Settings" control: destructive, confirmed, restores built-in defaults.
+/// The caller supplies `onReset`, which typically deletes the persisted settings
+/// files and invokes the engine reset (see `DasherBridge.resetToDefaults()`).
+public struct ResetSettingsSection: View {
+    private let onReset: () -> Void
+    @State private var showingConfirmation = false
+
+    public init(onReset: @escaping () -> Void) {
+        self.onReset = onReset
+    }
+
+    public var body: some View {
+        Section {
+            Button("Reset to defaults", role: .destructive) {
+                showingConfirmation = true
+            }
+            .accessibilityIdentifier("resetToDefaultsButton")
+        } header: {
+            Text("Reset Settings")
+        } footer: {
+            Text("Restore all Dasher settings to their default values. This cannot be undone.")
+        }
+        .confirmationDialog(
+            "Reset all settings to their defaults?",
+            isPresented: $showingConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Reset to defaults", role: .destructive) {
+                onReset()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All Dasher settings will be restored to their default values. This cannot be undone.")
+        }
+    }
+}

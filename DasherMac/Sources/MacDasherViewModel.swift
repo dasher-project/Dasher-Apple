@@ -58,6 +58,9 @@ class MacDasherViewModel: ObservableObject {
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
         }
+        bridge.onEngineError = { [weak self] in
+            self?.pendingMessage = (true, "Dasher encountered an error and has stopped. Please restart Dasher to continue.")
+        }
 
         bridge.onOutput = { [weak self] text in
             guard let self else { return }
