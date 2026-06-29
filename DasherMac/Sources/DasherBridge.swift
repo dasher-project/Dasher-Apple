@@ -1,11 +1,14 @@
 import Foundation
 import DasherShared
+import os
 
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
 import AppKit
 #endif
+
+private let macEngineLog = OSLog(subsystem: "at.dasher.Dasher.mac", category: "engine")
 
 // MARK: - Parameter types
 
@@ -160,6 +163,20 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
                 let str = String(cString: text)
                 instance.onClipboard?(str)
             }, retained5)
+            // RFC 0009: forward engine diagnostic lines to the unified system log
+            // (os_log) so engine state and boundary exceptions are visible in
+            // Console. min_level = 1 (info) keeps per-frame debug spam out.
+            dasher_set_log_callback(ctx, { level, message, _ in
+                guard let message = message else { return }
+                let type: OSLogType
+                switch level {
+                case 0: type = .debug
+                case 1: type = .info
+                case 2: type = .default
+                default: type = .error
+                }
+                os_log("%{public}@", log: macEngineLog, type: type, String(cString: message))
+            }, nil, 1)
         }
         resolveFontParamKey()
     }
