@@ -168,6 +168,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
             // Console. min_level = 1 (info) keeps per-frame debug spam out.
             dasher_set_log_callback(ctx, { level, message, _ in
                 guard let message = message else { return }
+                let msg = String(cString: message)
                 let type: OSLogType
                 switch level {
                 case 0: type = .debug
@@ -175,7 +176,9 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
                 case 2: type = .default
                 default: type = .error
                 }
-                os_log("%{public}@", log: macEngineLog, type: type, String(cString: message))
+                os_log("%{public}@", log: macEngineLog, type: type, msg)
+                // RFC 0009: also feed the crash-report ring buffer.
+                EngineLogBuffer.shared.append(level: Int(level), message: msg)
             }, nil, 1)
         }
         resolveFontParamKey()

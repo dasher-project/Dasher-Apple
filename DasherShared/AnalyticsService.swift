@@ -40,6 +40,9 @@ public final class AnalyticsService {
         let config = PostHogConfig(apiKey: Self.projectToken, host: Self.host)
         config.captureScreenViews = false
         PostHogSDK.shared.setup(config)
+        // Identify so captureException (which takes no distinctId parameter)
+        // attributes crashes to the same anonymous ID as our analytics events.
+        PostHogSDK.shared.identify(distinctId)
     }
 
     public func setOptIn(_ optedIn: Bool) {
@@ -123,13 +126,22 @@ public final class AnalyticsService {
         PostHogSDK.shared.capture(eventName, distinctId: distinctId, properties: props)
     }
 
-    /// Capture a crash/exception. Called from uncaught exception handlers.
-    public func captureCrash(_ error: Error) {
+    /// Capture a deferred crash as a PostHog `$exception` (Error Tracking), so
+    /// macOS crashes appear alongside Windows crashes in PostHog's Error
+    /// Tracking product. RFC 0009 A3: use captureException, not a custom
+    /// `crash` event. The original exception type/reason are reconstructed into
+    /// an NSError; the saved stack trace and engine log tail travel as
+    /// properties (PostHog won't have the original frames at send time).
+    public func captureCrash(envelope: [String: Any]) {
         guard settings.optedIn, initialized else { return }
 
         var props = defaultProperties()
-        props["stack_trace"] = String(describing: error)
-        PostHogSDK.shared.capture("crash", distinctId: distinctId, properties: props)
+        for (k, v) in envelope { props[k] = v }
+
+        let type = (envelope["exception_type"] as? String) ?? "Unknown"
+        let reason = (envelope["reason"] as? String) ?? type
+        let error = NSError(domain: type, code: 0, userInfo: [NSLocalizedDescriptionKey: reason])
+        PostHogSDK.shared.captureException(error, properties: props)
     }
 
     public func flush() {

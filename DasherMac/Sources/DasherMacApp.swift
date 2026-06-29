@@ -4,6 +4,14 @@ import DasherSpeech
 import LucideIcons
 import UniformTypeIdentifiers
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillTerminate(_ notification: Notification) {
+        // Clean shutdown — clear the alive marker so the next launch doesn't
+        // treat a normal quit as a crash.
+        CrashReporter.shared.markCleanShutdown()
+    }
+}
+
 @main
 struct DasherMacApp: App {
     @StateObject private var viewModel = MacDasherViewModel()
@@ -11,9 +19,12 @@ struct DasherMacApp: App {
     @State private var showAnalyticsPrompt = false
     @State private var showV5Migration = false
     @State private var engineStarted = false
+    @State private var showCrashAlert = false
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         AnalyticsService.shared.initialize()
+        CrashReporter.shared.install()
     }
 
     var body: some Scene {
@@ -34,6 +45,11 @@ struct DasherMacApp: App {
                     AnalyticsService.shared.capture("app_launched", properties: [
                         "locale": Locale.current.identifier,
                     ])
+
+                    // RFC 0009: report any crash captured on the previous launch.
+                    if CrashReporter.shared.sendPendingCrashIfNeeded() {
+                        showCrashAlert = true
+                    }
                 }
                 .sheet(isPresented: $showV5Migration) {
                     V5MigrationPrompt(
@@ -75,6 +91,11 @@ struct DasherMacApp: App {
                     case .failure:
                         break
                     }
+                }
+                .alert("Dasher quit unexpectedly", isPresented: $showCrashAlert) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("A crash report was saved to ~/Library/Logs/DiagnosticReports/Dasher-*.ips. If you can share it in a GitHub issue, it helps us fix the bug.")
                 }
         }
         .windowStyle(.hiddenTitleBar)
