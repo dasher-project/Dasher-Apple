@@ -25,9 +25,8 @@ open Dasher.xcodeproj
 | `DasherVision/`    | visionOS app (SwiftUI + RealityKit)                           |
 | `DasherShared/`    | Shared Swift library — access config, input methods, UI       |
 | `DasherSpeech/`    | Shared TTS wrapper (swift-tts-wrapper)                        |
-| `DasherEngine/`    | Resource bundle (DasherCore data files)                       |
+| `DasherEngine/`    | Resource bundle (DasherCore data files)                          |
 | `DasherCore/`      | **Submodule** — the C++ engine (do not edit here; PR upstream) |
-| `docs/`            | Design documents (input system, access settings)              |
 
 ## Code style
 
