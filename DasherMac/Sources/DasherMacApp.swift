@@ -235,6 +235,10 @@ struct MacDasherSettingsView: View {
                         AnalyticsPrivacySection()
                         Divider()
                         V5MigrationSettingsSection()
+                        Divider()
+                        ResetSettingsSection {
+                            viewModel.bridge.resetToDefaults()
+                        }
                     }
                     .padding(16)
                 } else {

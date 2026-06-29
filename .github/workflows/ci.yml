@@ -7,18 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Only DasherMac is built here. It is distributed by direct download (not via
+# the App Store / TestFlight), so it has no other build validation — this
+# per-PR build is its CI gate. iOS (DasherApp) and visionOS are validated by
+# Xcode Cloud / TestFlight, so building them here would duplicate that and
+# surface asset/config issues that don't affect the real distribution builds.
 jobs:
   build:
-    name: Build (${{ matrix.scheme }})
+    name: Build (DasherMac)
     runs-on: macos-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - scheme: DasherMac
-            destination: generic/platform=macOS
-          - scheme: DasherApp
-            destination: generic/platform=iOS
 
     steps:
       - name: Checkout
@@ -36,8 +33,8 @@ jobs:
         run: |
           xcodebuild \
             -project Dasher.xcodeproj \
-            -scheme ${{ matrix.scheme }} \
+            -scheme DasherMac \
             -configuration Debug \
-            -destination '${{ matrix.destination }}' \
+            -destination 'generic/platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build

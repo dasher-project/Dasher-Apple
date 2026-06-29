@@ -60,6 +60,9 @@ class VisionViewModel: ObservableObject {
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
         }
+        bridge.onEngineError = { [weak self] in
+            self?.pendingMessage = (true, "Dasher encountered an error and has stopped. Please restart Dasher to continue.")
+        }
         bridge.onSpeak = { [weak self] text, interrupt in
             Task { @MainActor in
                 self?.lastSpokenText = text
