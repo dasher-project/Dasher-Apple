@@ -124,6 +124,15 @@ DasherCore submodule policy, and DCO sign-off. For project-wide conventions
 - [Developer handbook](https://dasher.at/developers/) — architecture, build, contributing, RFCs
 - [Feature status matrix](https://dasher.at/status/) — what's supported where
 
+## Troubleshooting
+
+**Crash reports.** If DasherMac crashes, macOS writes a report to
+`~/Library/Logs/DiagnosticReports/Dasher-*.ips`. On the next launch Dasher
+offers to reveal this folder — attaching the `.ips` to a
+[GitHub issue](https://github.com/dasher-project/Dasher-Apple/issues) is the
+fastest way to help us fix it. (Anonymous crash events are also sent to PostHog
+if you've opted in to analytics.)
+
 ## License
 
 MIT — see [LICENSE](LICENSE). The bundled `DasherCore` submodule retains its
