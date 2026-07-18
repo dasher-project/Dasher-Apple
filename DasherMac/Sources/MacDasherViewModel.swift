@@ -13,6 +13,7 @@ class MacDasherViewModel: ObservableObject {
     @Published var gameCorrectCount: Int = 0
     @Published var gameTargetLength: Int = 0
     @Published var gameWrongText: String = ""
+    @Published var gamePhrasesCompleted: Int = 0
     @Published var pendingMessage: (isWarning: Bool, text: String)?
     @Published var speed: Double = 1.0
     @Published var autoSpeed: Bool = false
@@ -180,10 +181,15 @@ class MacDasherViewModel: ObservableObject {
         let active = bridge.isGameModeActive
         if active != isGameModeActive {
             isGameModeActive = active
+            if !active { gamePhrasesCompleted = 0 }
         }
         if active {
-            gameTargetText = bridge.getGameTargetText()
-            gameCorrectCount = bridge.getGameCorrectCount()
+            let newTarget = bridge.getGameTargetText()
+            if newTarget != gameTargetText && !gameTargetText.isEmpty && !newTarget.isEmpty {
+                gamePhrasesCompleted += 1
+            }
+            gameTargetText = newTarget
+            gameCorrectCount = max(0, bridge.getGameCorrectCount())
             gameTargetLength = bridge.getGameTargetLength()
             gameWrongText = bridge.getGameWrongText()
         } else {

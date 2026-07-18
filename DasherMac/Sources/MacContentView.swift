@@ -734,7 +734,7 @@ struct MacOutputTextView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Target:")
+                Text("Phrase \(viewModel.gamePhrasesCompleted + 1)")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
