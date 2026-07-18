@@ -405,6 +405,15 @@ struct ContentView: View {
                 speechPicker
 
                 Spacer(minLength: 0)
+
+                if viewModel.showTypingRate {
+                    Text(viewModel.typingWPMMax > 0
+                         ? "\(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
+                         : "\(Int(viewModel.typingWPM)) wpm")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(Color("BarText"))
+                        .padding(.horizontal, 8)
+                }
             }
             .padding(.horizontal, 12)
         }

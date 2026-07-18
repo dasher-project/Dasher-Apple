@@ -340,6 +340,15 @@ struct MacContentView: View {
             barDivider
             speechPicker
             Spacer(minLength: 0)
+
+            if viewModel.showTypingRate {
+                Text(viewModel.typingWPMMax > 0
+                     ? "\(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
+                     : "\(Int(viewModel.typingWPM)) wpm")
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 8)
+            }
         }
         .padding(.horizontal, 12)
         .frame(height: 44)
@@ -689,7 +698,6 @@ struct MacOutputTextView: View {
 
             if viewModel.isGameModeActive && !viewModel.gameTargetText.isEmpty {
                 macGameTargetBar
-                Divider()
             }
 
             ScrollViewReader { proxy in
@@ -734,7 +742,7 @@ struct MacOutputTextView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Phrase \(viewModel.gamePhrasesCompleted + 1)")
+                Text("Phrase \(viewModel.gamePhrasesCompleted + 1) · \(String(format: "%.0f", viewModel.typingWPM)) wpm")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()

@@ -97,6 +97,9 @@ struct DasherSettingsView: View {
                             viewModel.bridge.resetToDefaults()
                         }
                     } else {
+                        if selectedSection == .output {
+                            TypingRateSection()
+                        }
                         sectionContent(for: selectedSection)
                     }
                 }

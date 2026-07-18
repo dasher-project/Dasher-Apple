@@ -84,6 +84,17 @@ public struct AnalyticsPrivacySection: View {
     }
 }
 
+/// Settings > Output: toggle to show live typing rate (WPM) during regular use.
+public struct TypingRateSection: View {
+    @AppStorage("showTypingRate") private var showTypingRate = false
+
+    public init() {}
+
+    public var body: some View {
+        Toggle("Show typing rate (WPM)", isOn: $showTypingRate)
+    }
+}
+
 /// Settings > Privacy > Reset to defaults. Mirrors the Dasher-Windows
 /// "Reset Settings" control: destructive, confirmed, restores built-in defaults.
 /// The caller supplies `onReset`, which typically deletes the persisted settings

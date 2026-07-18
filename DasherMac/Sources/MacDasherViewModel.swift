@@ -14,6 +14,13 @@ class MacDasherViewModel: ObservableObject {
     @Published var gameTargetLength: Int = 0
     @Published var gameWrongText: String = ""
     @Published var gamePhrasesCompleted: Int = 0
+    @Published var typingWPM: Double = 0
+    @AppStorage("showTypingRate") public var showTypingRate = false
+    @Published var typingWPMMax: Double = 0
+    private var typingWPMSum: Double = 0
+    private var typingWPMCount: Int = 0
+    var typingWPMAvg: Double { typingWPMCount > 0 ? typingWPMSum / Double(typingWPMCount) : 0 }
+    func resetTypingStats() { typingWPMMax = 0; typingWPMSum = 0; typingWPMCount = 0 }
     @Published var pendingMessage: (isWarning: Bool, text: String)?
     @Published var speed: Double = 1.0
     @Published var autoSpeed: Bool = false
@@ -183,6 +190,12 @@ class MacDasherViewModel: ObservableObject {
             isGameModeActive = active
             if !active { gamePhrasesCompleted = 0 }
         }
+        typingWPM = bridge.getWPM()
+        if typingWPM > 0 {
+            typingWPMMax = max(typingWPMMax, typingWPM)
+            typingWPMSum += typingWPM
+            typingWPMCount += 1
+        }
         if active {
             let newTarget = bridge.getGameTargetText()
             if newTarget != gameTargetText && !gameTargetText.isEmpty && !newTarget.isEmpty {
@@ -203,6 +216,7 @@ class MacDasherViewModel: ObservableObject {
     func newMessage() {
         bridge.reset()
         outputText = ""
+        resetTypingStats()
     }
 
     func openText(_ text: String) {

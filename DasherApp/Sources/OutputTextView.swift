@@ -116,7 +116,6 @@ struct OutputTextView: View {
 
             if viewModel.isGameModeActive && !viewModel.gameTargetText.isEmpty {
                 gameTargetBar
-                Divider().overlay(Color("BarBorder"))
             }
 
             ScrollViewReader { proxy in
@@ -151,7 +150,7 @@ struct OutputTextView: View {
 
         return VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("Phrase \(viewModel.gamePhrasesCompleted + 1)")
+                Text("Phrase \(viewModel.gamePhrasesCompleted + 1) · \(String(format: "%.0f", viewModel.typingWPM)) wpm")
                     .font(.caption)
                     .foregroundColor(.secondary)
                 Spacer()
