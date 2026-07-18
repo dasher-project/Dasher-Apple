@@ -40,10 +40,12 @@ public struct SpeechSettingsView: View {
                         Text(keyLabel(key))
                             .frame(width: 120, alignment: .trailing)
                         if key.isSecret {
-                            SecureField("Enter \(key)...", text: bindingForKey(key))
+                            let placeholder = "Enter \(key)..."
+                            SecureField(placeholder, text: bindingForKey(key))
                                 .textFieldStyle(.roundedBorder)
                         } else {
-                            TextField("Enter \(key)...", text: bindingForKey(key))
+                            let placeholder = "Enter \(key)..."
+                            TextField(placeholder, text: bindingForKey(key))
                                 .textFieldStyle(.roundedBorder)
                         }
                     }

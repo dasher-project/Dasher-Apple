@@ -106,7 +106,6 @@ struct MacContentView: View {
         VStack(spacing: 0) {
             GeometryReader { geo in
                 let contentWidth = geo.size.width
-                let contentHeight = geo.size.height - 44
 
                 HStack(spacing: 0) {
                     MacCanvasView(viewModel: viewModel)
@@ -168,7 +167,6 @@ struct MacContentView: View {
     private var bottomTextLayout: some View {
         VStack(spacing: 0) {
             GeometryReader { geo in
-                let contentWidth = geo.size.width
                 let contentHeight = geo.size.height - 44
 
                 VStack(spacing: 0) {
