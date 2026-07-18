@@ -596,6 +596,13 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return String(cString: cStr)
     }
 
+    // MARK: - Typing rate (RFC 0012)
+
+    func getWPM() -> Double {
+        guard let ctx = ctx else { return 0 }
+        return dasher_get_wpm(ctx)
+    }
+
     // MARK: - Persistence
 
     func saveSettings() {

@@ -263,8 +263,13 @@ struct MacDasherSettingsView: View {
                     }
                     .padding(16)
                 } else {
-                    sectionContent(for: selectedSection)
-                        .padding(16)
+                    Group {
+                        if selectedSection == .output {
+                            TypingRateSection()
+                        }
+                        sectionContent(for: selectedSection)
+                    }
+                    .padding(16)
                 }
             }
 
