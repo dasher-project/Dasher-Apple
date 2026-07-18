@@ -50,7 +50,11 @@ class DasherViewModel: ObservableObject {
             self?.pendingMessage = (isWarning, text)
         }
         bridge.onEngineError = { [weak self] in
-            self?.pendingMessage = (true, "Dasher encountered an error and has stopped. Please restart Dasher to continue.")
+            guard let self else { return }
+            self.pendingMessage = (true, "Dasher encountered an error and has stopped. Please restart Dasher to continue.")
+            // RFC 0009: caught engine faults don't crash (TestFlight only sees
+            // hard crashes), so report via PostHog with the engine_log_tail.
+            AnalyticsService.shared.captureEngineError(reason: "Engine entered error state (dasher_has_engine_error)")
         }
         bridge.onSpeak = { [weak self] text, interrupt in
             Task { @MainActor in

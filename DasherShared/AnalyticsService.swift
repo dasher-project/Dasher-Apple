@@ -144,6 +144,20 @@ public final class AnalyticsService {
         PostHogSDK.shared.captureException(error, properties: props)
     }
 
+    /// Report a caught engine error (DasherCore #38: the engine caught a C++
+    /// exception at the C-API boundary and latched `engineError`). These don't
+    /// crash — so TestFlight / the OS crash reporter never sees them — and would
+    /// otherwise be invisible. Send the `engine_log_tail` (which carries the
+    /// level-3 boundary-exception line) as a PostHog `$exception`.
+    public func captureEngineError(reason: String) {
+        captureCrash(envelope: [
+            "exception_type": "EngineError",
+            "reason": reason,
+            "engine_log_tail": EngineLogBuffer.shared.persistedTail(),
+            "source": "dasher_has_engine_error",
+        ])
+    }
+
     public func flush() {
         guard initialized else { return }
         PostHogSDK.shared.flush()
