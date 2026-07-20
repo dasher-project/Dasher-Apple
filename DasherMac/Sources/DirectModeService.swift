@@ -31,8 +31,10 @@ class DirectModeService: ObservableObject {
             let trusted = AXIsProcessTrustedWithOptions(
                 [kAXTrustedCheckOptionPrompt.takeUnretainedValue(): false] as CFDictionary
             )
-            if trusted != self.hasAccessibilityPermission {
-                self.hasAccessibilityPermission = trusted
+            DispatchQueue.main.async {
+                if trusted != self.hasAccessibilityPermission {
+                    self.hasAccessibilityPermission = trusted
+                }
             }
         }
     }
@@ -49,8 +51,10 @@ class DirectModeService: ObservableObject {
         ) { [weak self] note in
             guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
             if app.bundleIdentifier != Bundle.main.bundleIdentifier {
-                self?.lastTargetApp = app
-                self?.targetAppName = app.localizedName ?? "Unknown"
+                DispatchQueue.main.async {
+                    self?.lastTargetApp = app
+                    self?.targetAppName = app.localizedName ?? "Unknown"
+                }
             }
         }
         if let front = NSWorkspace.shared.frontmostApplication {

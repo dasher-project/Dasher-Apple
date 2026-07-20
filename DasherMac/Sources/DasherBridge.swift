@@ -466,7 +466,6 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return String(cString: cStr)
     }
 
-
     // MARK: - Appearance / dark mode (RFC 0007)
 
     func setSystemAppearance(dark: Bool) {
@@ -824,7 +823,7 @@ extension DrawCommands {
                     }
                     let attrs: [NSAttributedString.Key: Any] = [
                         .font: font,
-                        .foregroundColor: color
+                        .foregroundColor: color ?? NSColor.textColor
                     ]
                     let flippedY = viewHeight - b - fontSize
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))

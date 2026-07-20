@@ -37,7 +37,7 @@ public final class AnalyticsService {
         guard !initialized else { return }
         initialized = true
 
-        let config = PostHogConfig(apiKey: Self.projectToken, host: Self.host)
+        let config = PostHogConfig(projectToken: Self.projectToken, host: Self.host)
         config.captureScreenViews = false
         PostHogSDK.shared.setup(config)
         // Identify so captureException (which takes no distinctId parameter)

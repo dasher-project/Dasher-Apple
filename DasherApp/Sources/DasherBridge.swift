@@ -455,7 +455,6 @@ class DasherBridge: InputMethodBridge {
         return String(cString: cStr)
     }
 
-
     // MARK: - Appearance / dark mode (RFC 0007)
 
     func setSystemAppearance(dark: Bool) {
