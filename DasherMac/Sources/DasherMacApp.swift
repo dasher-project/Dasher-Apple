@@ -308,6 +308,7 @@ struct MacDasherSettingsView: View {
 
     private func parameters(for section: DasherSettingsSection) -> [DasherParameterInfo] {
         parameters.filter { param in
+            if param.name == "Simulate Transparency" { return false }
             guard DasherSettingsSection.section(for: param) == section else { return false }
             if section != .input { return true }
             if param.subgroup.isEmpty { return true }
