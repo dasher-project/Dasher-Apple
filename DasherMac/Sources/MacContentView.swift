@@ -8,7 +8,18 @@ struct MacContentView: View {
     @State private var showSettings = false
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
+    @State private var useStrand2Demo = false
     @Environment(\.colorScheme) private var colorScheme
+
+    var canvasView: some View {
+        Group {
+            if useStrand2Demo {
+                Strand2CubeView(viewModel: viewModel)
+            } else {
+                MacCanvasView(viewModel: viewModel)
+            }
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -68,6 +79,12 @@ struct MacContentView: View {
                 Button(action: { showSettings = true }) {
                     LucideLabel("Settings", icon: DasherIcon.settings)
                 }
+
+                barDivider
+
+                Toggle("3D Cubes", isOn: $useStrand2Demo)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
             }
         }
         .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
@@ -108,7 +125,7 @@ struct MacContentView: View {
                 let contentWidth = geo.size.width
 
                 HStack(spacing: 0) {
-                    MacCanvasView(viewModel: viewModel)
+                    canvasView
                         .frame(width: contentWidth * (1 - outputPaneFraction))
 
                     Divider()
@@ -152,7 +169,7 @@ struct MacContentView: View {
 
                     Divider()
 
-                    MacCanvasView(viewModel: viewModel)
+                    canvasView
                         .frame(width: contentWidth * (1 - outputPaneFraction))
                 }
             }
@@ -170,7 +187,7 @@ struct MacContentView: View {
                 let contentHeight = geo.size.height - 44
 
                 VStack(spacing: 0) {
-                    MacCanvasView(viewModel: viewModel)
+                    canvasView
                         .frame(height: contentHeight * (1 - outputPaneFraction))
 
                     Divider()
@@ -214,7 +231,7 @@ struct MacContentView: View {
 
                     Divider()
 
-                    MacCanvasView(viewModel: viewModel)
+                    canvasView
                         .frame(height: contentHeight * (1 - outputPaneFraction))
                 }
             }
@@ -241,7 +258,7 @@ struct MacContentView: View {
                     }
             } else {
                 ZStack(alignment: .topTrailing) {
-                    MacCanvasView(viewModel: viewModel)
+                    canvasView
                         .background(Color.clear)
                     VStack(spacing: 4) {
                         targetAppIndicator.padding(8)

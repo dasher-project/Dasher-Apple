@@ -1,6 +1,7 @@
 import Foundation
 import DasherShared
 import os
+import Darwin
 
 #if canImport(UIKit)
 import UIKit
@@ -603,6 +604,99 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return dasher_get_wpm(ctx)
     }
 
+    // MARK: - Strand 2: custom rendering (RFC 0013)
+
+    struct VisibleNode {
+        let dasherY1: Int64
+        let dasherY2: Int64
+        let symbol: Int32
+        let hasChildren: Bool
+        let depth: Int32
+        let isGameNode: Bool
+        let screenX1: Int32
+        let screenY1: Int32
+        let screenX2: Int32
+        let screenY2: Int32
+        let fillARGB: Int32
+        let outlineARGB: Int32
+        let labelIndex: Int32
+    }
+
+    func setVisibleNodesEnabled(_ enabled: Bool) {
+        guard let ctx = ctx else { return }
+        dasher_set_visible_nodes_enabled(ctx, enabled ? 1 : 0)
+    }
+
+    func getVisibleNodes() -> [VisibleNode] {
+        guard let ctx = ctx else { return [] }
+        var info = dasher_node_info()
+        info.struct_size = Int32(MemoryLayout<dasher_node_info>.size)
+        var nodes: [VisibleNode] = []
+        var strings: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>? = nil
+        var stringCount: Int32 = 0
+
+        // First call with a small buffer to get total count
+        var buffer = [dasher_node_info](repeating: info, count: 4)
+        let total = dasher_get_visible_nodes(ctx, &buffer, 4, &strings, &stringCount)
+        guard total > 0 else { return [] }
+
+        // Re-allocate if needed
+        if total > 4 {
+            buffer = [dasher_node_info](repeating: info, count: Int(total))
+        }
+
+        let written = total > Int32(buffer.count) ? Int32(buffer.count) : total
+        for i in 0..<Int(written) {
+            buffer[i].struct_size = Int32(MemoryLayout<dasher_node_info>.size)
+        }
+        // Re-query with correct buffer size
+        let actualTotal = dasher_get_visible_nodes(ctx, &buffer, Int32(buffer.count), &strings, &stringCount)
+        let count = min(Int(actualTotal), buffer.count)
+
+        for i in 0..<count {
+            let n = buffer[i]
+            nodes.append(VisibleNode(
+                dasherY1: n.dasher_y1,
+                dasherY2: n.dasher_y2,
+                symbol: n.symbol,
+                hasChildren: n.has_children != 0,
+                depth: n.depth,
+                isGameNode: n.is_game_node != 0,
+                screenX1: n.screen_x1,
+                screenY1: n.screen_y1,
+                screenX2: n.screen_x2,
+                screenY2: n.screen_y2,
+                fillARGB: n.fill_argb,
+                outlineARGB: n.outline_argb,
+                labelIndex: n.label_index
+            ))
+        }
+        _ = strings // owned by engine
+        return nodes
+    }
+
+    func getVisibleNodeLabels() -> [String] {
+        guard let ctx = ctx else { return [] }
+        var info = dasher_node_info()
+        info.struct_size = Int32(MemoryLayout<dasher_node_info>.size)
+        var buffer = [dasher_node_info](repeating: info, count: 256)
+        var strings: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>? = nil
+        var stringCount: Int32 = 0
+
+        for i in 0..<256 { buffer[i].struct_size = Int32(MemoryLayout<dasher_node_info>.size) }
+        dasher_get_visible_nodes(ctx, &buffer, 256, &strings, &stringCount)
+        guard let strPtr = strings, stringCount > 0 else { return [] }
+        var result: [String] = []
+        for i in 0..<Int(stringCount) {
+            if let cStr = strPtr[i] {
+                result.append(String(cString: cStr))
+            } else {
+                result.append("")
+            }
+        }
+        return result
+    }
+
     // MARK: - Persistence
 
     func saveSettings() {
@@ -708,6 +802,19 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
             alpha: CGFloat((argb >> 24) & 0xFF) / 255.0)
 }
 
+private func shadeCGColor(_ color: CGColor, by factor: CGFloat) -> CGColor {
+    guard let comps = color.components, comps.count >= 3 else { return color }
+    let r = comps[0], g = comps[1], b = comps[2]
+    let a = comps.count >= 4 ? comps[3] : 1.0
+    if factor >= 0 {
+        return CGColor(red: r + (1 - r) * factor, green: g + (1 - g) * factor,
+                       blue: b + (1 - b) * factor, alpha: a)
+    } else {
+        let m = 1 + factor
+        return CGColor(red: r * m, green: g * m, blue: b * m, alpha: a)
+    }
+}
+
 // MARK: - UIKit rendering
 
 #if canImport(UIKit)
@@ -774,7 +881,14 @@ extension DrawCommands {
 extension DrawCommands {
     func render(in context: CGContext, bounds: CGRect, viewHeight: CGFloat) {
         let count = commandCount / 6
-        for i in 0..<count {
+
+        // Cube data buffered during pass 1 for pass-2 3D overlay.
+        struct CubeCmd { let x1: CGFloat; let y1: CGFloat; let x2: CGFloat; let y2: CGFloat;
+                        let fill: CGColor; let outline: CGColor; let thick: Int }
+        var cubes: [CubeCmd] = []
+
+        var i = 0
+        while i < count {
             let base = i * 6
             let op = Int(commands[base + 0])
             let a = CGFloat(commands[base + 1])
@@ -783,9 +897,18 @@ extension DrawCommands {
             let d = Int(commands[base + 4])
             let argb = Int32(commands[base + 5])
             let cgColor = argbToCGColor(argb)
-            let color = NSColor(cgColor: cgColor)
 
             switch op {
+            case 7:
+                if i + 1 < count {
+                    let base2 = (i + 1) * 6
+                    cubes.append(CubeCmd(x1: a, y1: b, x2: CGFloat(c), y2: CGFloat(d),
+                                          fill: argbToCGColor(Int32(commands[base2 + 1])),
+                                          outline: argbToCGColor(Int32(commands[base2 + 2])),
+                                          thick: Int(commands[base2 + 3])))
+                }
+                i += 2
+                continue
             case 0:
                 context.setFillColor(cgColor)
                 context.fill(bounds)
@@ -824,13 +947,101 @@ extension DrawCommands {
                     }
                     let attrs: [NSAttributedString.Key: Any] = [
                         .font: font,
-                        .foregroundColor: color ?? NSColor.textColor
+                        .foregroundColor: NSColor(cgColor: cgColor) ?? NSColor.textColor
                     ]
                     let flippedY = viewHeight - b - fontSize
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
                 }
             default:
                 break
+            }
+            i += 1
+        }
+
+        // Pass 2: render buffered cubes as 3D overlay.
+        for cube in cubes {
+            let y1f = viewHeight - cube.y1
+            let y2f = viewHeight - cube.y2
+            let minY = min(y1f, y2f)
+            let maxY = max(y1f, y2f)
+            let w = cube.x2 - cube.x1
+            let h = maxY - minY
+            let e = max(5.0, min(20.0, h * 0.4))
+
+            // Right face (darker) — to the right of the front face
+            context.setFillColor(shadeCGColor(cube.fill, by: -0.35))
+            context.fill(CGRect(x: cube.x2, y: minY, width: e, height: h))
+            // Top face (lighter) — above the front face, spanning full width + extrusion
+            context.setFillColor(shadeCGColor(cube.fill, by: 0.35))
+            context.fill(CGRect(x: cube.x1, y: maxY, width: w + e, height: e))
+            // Front face (base colour)
+            context.setFillColor(cube.fill)
+            context.fill(CGRect(x: cube.x1, y: minY, width: w, height: h))
+            // Outline around the front face
+            if cube.thick > 0 {
+                context.setStrokeColor(cube.outline)
+                context.setLineWidth(CGFloat(cube.thick))
+                context.stroke(CGRect(x: cube.x1, y: minY, width: w, height: h))
+            }
+        }
+
+        /// Strand 2 helper: render Strand 1 commands but SKIP opcode 4 (node fills)
+        /// so the Strand 2 cube overlay renders them instead. Background (0),
+        /// circles (1), lines (2), outlines (3), text (5) all pass through.
+        func renderStrand1Background(in context: CGContext, bounds: CGRect, viewHeight: CGFloat) {
+            let count = commandCount / 6
+            var i = 0
+            while i < count {
+                let base = i * 6
+                let op = Int(commands[base + 0])
+                if op == 7 { i += 2; continue } // skip cube slots
+                if op == 4 { i += 1; continue }  // skip node fills — Strand 2 handles them
+
+                let a = CGFloat(commands[base + 1])
+                let b = CGFloat(commands[base + 2])
+                let c = Int(commands[base + 3])
+                let d = Int(commands[base + 4])
+                let argb = Int32(commands[base + 5])
+                let cgColor = argbToCGColor(argb)
+
+                switch op {
+                case 0:
+                    context.setFillColor(cgColor)
+                    context.fill(bounds)
+                case 1:
+                    let radius = CGFloat(c)
+                    context.setFillColor(cgColor)
+                    context.fillEllipse(in: CGRect(x: a - radius, y: viewHeight - b - radius,
+                                                    width: radius * 2, height: radius * 2))
+                case 2:
+                    context.setStrokeColor(cgColor)
+                    context.setLineWidth(2)
+                    context.move(to: CGPoint(x: a, y: viewHeight - b))
+                    context.addLine(to: CGPoint(x: CGFloat(c), y: viewHeight - CGFloat(d)))
+                    context.strokePath()
+                case 3:
+                    context.setStrokeColor(cgColor)
+                    context.setLineWidth(1)
+                    let y1 = viewHeight - b
+                    let y2 = viewHeight - CGFloat(d)
+                    context.stroke(CGRect(x: a, y: min(y1, y2), width: CGFloat(c) - a, height: abs(y2 - y1)))
+                case 5:
+                    let fontSize = CGFloat(c > 0 ? c : 14)
+                    let stringIndex = d
+                    if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
+                        let text = String(cString: strPtr)
+                        let font = NSFont.systemFont(ofSize: fontSize)
+                        let attrs: [NSAttributedString.Key: Any] = [
+                            .font: font,
+                            .foregroundColor: NSColor(cgColor: cgColor) ?? NSColor.textColor
+                        ]
+                        let flippedY = viewHeight - b - fontSize
+                        NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
+                    }
+                default:
+                    break
+                }
+                i += 1
             }
         }
     }

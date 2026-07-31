@@ -697,13 +697,32 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
             alpha: CGFloat((argb >> 24) & 0xFF) / 255.0)
 }
 
+private func shadeCGColor(_ color: CGColor, by factor: CGFloat) -> CGColor {
+    guard let comps = color.components, comps.count >= 3 else { return color }
+    let r = comps[0], g = comps[1], b = comps[2]
+    let a = comps.count >= 4 ? comps[3] : 1.0
+    if factor >= 0 {
+        return CGColor(red: r + (1 - r) * factor, green: g + (1 - g) * factor,
+                       blue: b + (1 - b) * factor, alpha: a)
+    } else {
+        let m = 1 + factor
+        return CGColor(red: r * m, green: g * m, blue: b * m, alpha: a)
+    }
+}
+
 // MARK: - UIKit rendering
 
 #if canImport(UIKit)
 extension DrawCommands {
     func render(in context: CGContext, bounds: CGRect) {
         let count = commandCount / 6
-        for i in 0..<count {
+
+        struct CubeCmd { let x1: CGFloat; let y1: CGFloat; let x2: CGFloat; let y2: CGFloat;
+                        let fill: CGColor; let outline: CGColor; let thick: Int }
+        var cubes: [CubeCmd] = []
+
+        var i = 0
+        while i < count {
             let base = i * 6
             let op = Int(commands[base + 0])
             let a = CGFloat(commands[base + 1])
@@ -712,9 +731,18 @@ extension DrawCommands {
             let d = Int(commands[base + 4])
             let argb = Int32(commands[base + 5])
             let cgColor = argbToCGColor(argb)
-            let color = UIColor(cgColor: cgColor)
 
             switch op {
+            case 7:
+                if i + 1 < count {
+                    let base2 = (i + 1) * 6
+                    cubes.append(CubeCmd(x1: a, y1: b, x2: CGFloat(c), y2: CGFloat(d),
+                                          fill: argbToCGColor(Int32(commands[base2 + 1])),
+                                          outline: argbToCGColor(Int32(commands[base2 + 2])),
+                                          thick: Int(commands[base2 + 3])))
+                }
+                i += 2
+                continue
             case 0:
                 context.setFillColor(cgColor)
                 context.fill(bounds)
@@ -749,12 +777,33 @@ extension DrawCommands {
                     }
                     let attrs: [NSAttributedString.Key: Any] = [
                         .font: font,
-                        .foregroundColor: color
+                        .foregroundColor: UIColor(cgColor: cgColor)
                     ]
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: b))
                 }
             default:
                 break
+            }
+            i += 1
+        }
+
+        // Pass 2: 3D cube overlay
+        for cube in cubes {
+            let minY = min(cube.y1, cube.y2)
+            let maxY = max(cube.y1, cube.y2)
+            let nodeH = maxY - minY
+            let e = max(3.0, min(12.0, nodeH * 0.3))
+
+            context.setFillColor(shadeCGColor(cube.fill, by: -0.22))
+            context.fill(CGRect(x: cube.x2, y: minY, width: e, height: maxY - minY))
+            context.setFillColor(shadeCGColor(cube.fill, by: 0.22))
+            context.fill(CGRect(x: cube.x1, y: maxY, width: cube.x2 - cube.x1 + e, height: e))
+            context.setFillColor(cube.fill)
+            context.fill(CGRect(x: cube.x1, y: minY, width: cube.x2 - cube.x1, height: maxY - minY))
+            if cube.thick > 0 {
+                context.setStrokeColor(cube.outline)
+                context.setLineWidth(CGFloat(cube.thick))
+                context.stroke(CGRect(x: cube.x1, y: minY, width: cube.x2 - cube.x1, height: maxY - minY))
             }
         }
     }
@@ -763,7 +812,13 @@ extension DrawCommands {
 extension DrawCommands {
     func render(in context: CGContext, bounds: CGRect, viewHeight: CGFloat) {
         let count = commandCount / 6
-        for i in 0..<count {
+
+        struct CubeCmd { let x1: CGFloat; let y1: CGFloat; let x2: CGFloat; let y2: CGFloat;
+                        let fill: CGColor; let outline: CGColor; let thick: Int }
+        var cubes: [CubeCmd] = []
+
+        var i = 0
+        while i < count {
             let base = i * 6
             let op = Int(commands[base + 0])
             let a = CGFloat(commands[base + 1])
@@ -772,9 +827,18 @@ extension DrawCommands {
             let d = Int(commands[base + 4])
             let argb = Int32(commands[base + 5])
             let cgColor = argbToCGColor(argb)
-            let color = NSColor(cgColor: cgColor)
 
             switch op {
+            case 7:
+                if i + 1 < count {
+                    let base2 = (i + 1) * 6
+                    cubes.append(CubeCmd(x1: a, y1: b, x2: CGFloat(c), y2: CGFloat(d),
+                                          fill: argbToCGColor(Int32(commands[base2 + 1])),
+                                          outline: argbToCGColor(Int32(commands[base2 + 2])),
+                                          thick: Int(commands[base2 + 3])))
+                }
+                i += 2
+                continue
             case 0:
                 context.setFillColor(cgColor)
                 context.fill(bounds)
@@ -813,13 +877,36 @@ extension DrawCommands {
                     }
                     let attrs: [NSAttributedString.Key: Any] = [
                         .font: font,
-                        .foregroundColor: color
+                        .foregroundColor: NSColor(cgColor: cgColor) ?? NSColor.textColor
                     ]
                     let flippedY = viewHeight - b - fontSize
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
                 }
             default:
                 break
+            }
+            i += 1
+        }
+
+        // Pass 2: 3D cube overlay
+        for cube in cubes {
+            let y1f = viewHeight - cube.y1
+            let y2f = viewHeight - cube.y2
+            let minY = min(y1f, y2f)
+            let maxY = max(y1f, y2f)
+            let nodeH = maxY - minY
+            let e = max(3.0, min(12.0, nodeH * 0.3))
+
+            context.setFillColor(shadeCGColor(cube.fill, by: -0.22))
+            context.fill(CGRect(x: cube.x2, y: minY, width: e, height: maxY - minY))
+            context.setFillColor(shadeCGColor(cube.fill, by: 0.22))
+            context.fill(CGRect(x: cube.x1, y: maxY, width: cube.x2 - cube.x1 + e, height: e))
+            context.setFillColor(cube.fill)
+            context.fill(CGRect(x: cube.x1, y: minY, width: cube.x2 - cube.x1, height: maxY - minY))
+            if cube.thick > 0 {
+                context.setStrokeColor(cube.outline)
+                context.setLineWidth(CGFloat(cube.thick))
+                context.stroke(CGRect(x: cube.x1, y: minY, width: cube.x2 - cube.x1, height: maxY - minY))
             }
         }
     }
