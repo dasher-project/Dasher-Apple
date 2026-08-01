@@ -874,7 +874,7 @@ final class MacDasherCanvas: NSView {
 
         let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
-            cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height)
+            cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])
         }
         vm.outputText = vm.bridge.getOutputText()
         vm.syncGameModeState()

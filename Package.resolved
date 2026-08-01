@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/aactools/swift-tts-wrapper",
       "state" : {
-        "revision" : "565c0abfb4f1b10274206bf6ebd0456e1f6353a8",
-        "version" : "1.2.6"
+        "revision" : "47cd8d0be262d2fd8e2cffbd42732a2af8f35fb0",
+        "version" : "1.2.8"
       }
     }
   ],

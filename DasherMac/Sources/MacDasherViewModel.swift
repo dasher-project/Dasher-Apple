@@ -95,6 +95,7 @@ class MacDasherViewModel: ObservableObject {
                 if interrupt {
                     self?.speech.stop()
                 }
+                self?.speech.phonemeMode = self?.bridge.alphabetId.contains("X-SAMPA") ?? false
                 self?.speech.speak(text)
             }
         }
