@@ -273,6 +273,86 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         )
     }
 
+    // MARK: - Image labels (RFC 0014)
+
+    #if canImport(AppKit)
+    private var imageLabelMap: [String: NSImage] = [:]
+    #elseif canImport(UIKit)
+    private var imageLabelMap: [String: UIImage] = [:]
+    #endif
+
+    /// Query the engine for image paths and build a label→image lookup table.
+    /// Call when the alphabet changes. Frontends use this in the opcode-5
+    /// (text drawing) path to substitute images for text labels.
+    func buildImageLabelMap() {
+        guard let ctx = ctx else { return }
+        imageLabelMap.removeAll()
+
+        let count = dasher_get_alphabet_symbol_count(ctx)
+        guard count > 0 else {
+            print("[ImageLabels] no symbols (count=\(count))")
+            return
+        }
+
+        var foundPaths = 0
+        var loadedImages = 0
+
+        for i in 0..<count {
+            var textBuf = [CChar](repeating: 0, count: 64)
+            guard dasher_get_alphabet_symbol_display(ctx, i, &textBuf, 64) == 0 else { continue }
+            let displayText = String(cString: textBuf)
+
+            var pathBuf = [CChar](repeating: 0, count: 256)
+            guard dasher_get_alphabet_symbol_image(ctx, i, &pathBuf, 256) == 0 else { continue }
+            let imagePath = String(cString: pathBuf)
+            guard !imagePath.isEmpty else { continue }
+
+            foundPaths += 1
+
+            #if canImport(AppKit)
+            if let img = loadImageFromBundle(path: imagePath) {
+                imageLabelMap[displayText] = img
+                loadedImages += 1
+            }
+            #elseif canImport(UIKit)
+            if let img = loadImageFromBundle(path: imagePath) {
+                imageLabelMap[displayText] = img
+                loadedImages += 1
+            }
+            #endif
+        }
+
+        if foundPaths > 0 {
+            print("[ImageLabels] symbols=\(count) imagePaths=\(foundPaths) loaded=\(loadedImages)")
+        }
+    }
+
+    var imageLabels: [String: Any] { imageLabelMap }
+
+    #if canImport(AppKit)
+    private func loadImageFromBundle(path: String) -> NSImage? {
+        let bundle = Bundle.main
+        let nsPath = path as NSString
+        let ext = nsPath.pathExtension
+        let baseName = (nsPath.lastPathComponent as NSString).deletingPathExtension
+        let dir = nsPath.deletingLastPathComponent
+        let extOrPng = ext.isEmpty ? "png" : ext
+
+        for subdir in ["Data/\(dir)", dir] {
+            if let url = bundle.url(forResource: baseName, withExtension: extOrPng, subdirectory: subdir) {
+                return NSImage(contentsOf: url)
+            }
+        }
+        return nil
+    }
+    #elseif canImport(UIKit)
+    private func loadImageFromBundle(path: String) -> UIImage? {
+        let baseName = (path as NSString).lastPathComponent
+        let ext = (path as NSString).pathExtension
+        return UIImage(named: baseName) ?? UIImage(named: path)
+    }
+    #endif
+
     func getOutputText() -> String {
         guard let ctx = ctx, let cStr = dasher_get_output_text(ctx) else { return "" }
         return String(cString: cStr)
@@ -308,6 +388,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     func setAlphabetId(_ id: String) {
         guard let ctx = ctx else { return }
         dasher_set_alphabet_id(ctx, id)
+        buildImageLabelMap()
     }
 
     var speedPercent: Int {
@@ -772,7 +853,7 @@ extension DrawCommands {
 }
 #elseif canImport(AppKit)
 extension DrawCommands {
-    func render(in context: CGContext, bounds: CGRect, viewHeight: CGFloat) {
+    func render(in context: CGContext, bounds: CGRect, viewHeight: CGFloat, imageMap: [String: NSImage] = [:]) {
         let count = commandCount / 6
         for i in 0..<count {
             let base = i * 6
@@ -816,18 +897,24 @@ extension DrawCommands {
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
                     let text = String(cString: strPtr)
-                    let font: NSFont
-                    if self.fontName.isEmpty {
-                        font = NSFont.systemFont(ofSize: fontSize)
-                    } else {
-                        font = NSFont(name: self.fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
-                    }
-                    let attrs: [NSAttributedString.Key: Any] = [
-                        .font: font,
-                        .foregroundColor: color ?? NSColor.textColor
-                    ]
                     let flippedY = viewHeight - b - fontSize
-                    NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
+                    // Image label substitution (RFC 0014)
+                    if let img = imageMap[text] {
+                        let imgSize = fontSize * 1.5
+                        img.draw(in: CGRect(x: a, y: flippedY, width: imgSize, height: imgSize))
+                    } else {
+                        let font: NSFont
+                        if self.fontName.isEmpty {
+                            font = NSFont.systemFont(ofSize: fontSize)
+                        } else {
+                            font = NSFont(name: self.fontName, size: fontSize) ?? NSFont.systemFont(ofSize: fontSize)
+                        }
+                        let attrs: [NSAttributedString.Key: Any] = [
+                            .font: font,
+                            .foregroundColor: color ?? NSColor.textColor
+                        ]
+                        NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
+                    }
                 }
             default:
                 break

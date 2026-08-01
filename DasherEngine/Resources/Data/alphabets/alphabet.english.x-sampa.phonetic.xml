@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE alphabet SYSTEM "../alphabet.dtd">
+<alphabet name="English X-SAMPA Phonetic" orientation="LR" trainingFilename="training_sampa_GB.txt" colorsName="European/Asian">
+	<!-- Plain phoneme alphabet — text labels only, no images.
+	     Useful for users who can read IPA glyphs or for lightweight deployments. -->
+	<group name="Vowels" colorInfoName="lowercase">
+		<node label="æ (cat)" text="a"><textCharAction /></node>
+		<node label="ɑ (father)" text="A"><textCharAction /></node>
+		<node label="ɒ (lot)" text="O"><textCharAction /></node>
+		<node label="ɔ (thought)" text="O"><textCharAction /></node>
+		<node label="ɛ (dress)" text="E"><textCharAction /></node>
+		<node label="ɪ (kit)" text="I"><textCharAction /></node>
+		<node label="i (fleece)" text="i"><textCharAction /></node>
+		<node label="ʊ (foot)" text="U"><textCharAction /></node>
+		<node label="u (goose)" text="u"><textCharAction /></node>
+		<node label="ʌ (strut)" text="V"><textCharAction /></node>
+		<node label="ɜ (nurse)" text="3"><textCharAction /></node>
+		<node label="ə (schwa)" text="@"><textCharAction /></node>
+		<node label="e (face)" text="e"><textCharAction /></node>
+		<node label="o (goat)" text="o"><textCharAction /></node>
+	</group>
+	<group name="Consonants" colorInfoName="punctuation">
+		<node label="p" text="p"><textCharAction /></node>
+		<node label="b" text="b"><textCharAction /></node>
+		<node label="t" text="t"><textCharAction /></node>
+		<node label="d" text="d"><textCharAction /></node>
+		<node label="k" text="k"><textCharAction /></node>
+		<node label="g" text="g"><textCharAction /></node>
+		<node label="f" text="f"><textCharAction /></node>
+		<node label="v" text="v"><textCharAction /></node>
+		<node label="θ (think)" text="T"><textCharAction /></node>
+		<node label="ð (this)" text="D"><textCharAction /></node>
+		<node label="s" text="s"><textCharAction /></node>
+		<node label="z" text="z"><textCharAction /></node>
+		<node label="ʃ (she)" text="S"><textCharAction /></node>
+		<node label="ʒ (measure)" text="Z"><textCharAction /></node>
+		<node label="h" text="h"><textCharAction /></node>
+		<node label="m" text="m"><textCharAction /></node>
+		<node label="n" text="n"><textCharAction /></node>
+		<node label="ŋ (sing)" text="N"><textCharAction /></node>
+		<node label="l" text="l"><textCharAction /></node>
+		<node label="r" text="r"><textCharAction /></node>
+		<node label="w" text="w"><textCharAction /></node>
+		<node label="j (yes)" text="j"><textCharAction /></node>
+	</group>
+	<group name="Punctuation" colorInfoName="punctuationLong">
+		<node label="?"><textCharAction /></node>
+		<node label=","><textCharAction /></node>
+		<node label="."><textCharAction /></node>
+		<node label="x" text="x"><textCharAction /></node>
+	</group>
+	<group name="space" colorInfoName="space">
+		<node label="□"><textCharAction unicode="32" /></node>
+	</group>
+</alphabet>

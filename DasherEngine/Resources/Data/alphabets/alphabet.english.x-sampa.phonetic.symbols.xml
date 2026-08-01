@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE alphabet SYSTEM "../alphabet.dtd">
+<alphabet name="English X-SAMPA Phonetic (Symbols)" orientation="LR" trainingFilename="training_sampa_GB.txt" colorsName="European/Asian">
+	<!-- Phoneme alphabet with pictorial symbols (RFC 0014 proof of concept).
+	     Uses SVG images from the phonemeSymbols set for visual phoneme cues. -->
+	<group name="Vowels" colorInfoName="lowercase">
+		<node label="æ (cat)" text="a" image="phonemes/a.svg"><textCharAction /></node>
+		<node label="ɑ (father)" text="A" image="phonemes/ar.svg"><textCharAction /></node>
+		<node label="ɒ (lot)" text="O" image="phonemes/o.svg"><textCharAction /></node>
+		<node label="ɔ (thought)" text="O" image="phonemes/or.svg"><textCharAction /></node>
+		<node label="ɛ (dress)" text="E" image="phonemes/e.svg"><textCharAction /></node>
+		<node label="ɪ (kit)" text="I" image="phonemes/i.svg"><textCharAction /></node>
+		<node label="i (fleece)" text="i" image="phonemes/ee.svg"><textCharAction /></node>
+		<node label="ʊ (foot)" text="U" image="phonemes/oo_short.svg"><textCharAction /></node>
+		<node label="u (goose)" text="u" image="phonemes/oo.svg"><textCharAction /></node>
+		<node label="ʌ (strut)" text="V" image="phonemes/u.svg"><textCharAction /></node>
+		<node label="ɜ (nurse)" text="3" image="phonemes/er.svg"><textCharAction /></node>
+		<node label="ə (schwa)" text="@" image="phonemes/schwa.svg"><textCharAction /></node>
+		<node label="e (face)" text="e" image="phonemes/ei.svg"><textCharAction /></node>
+		<node label="o (goat)" text="o" image="phonemes/oa.svg"><textCharAction /></node>
+	</group>
+	<group name="Consonants" colorInfoName="punctuation">
+		<node label="p" text="p" image="phonemes/p.svg"><textCharAction /></node>
+		<node label="b" text="b" image="phonemes/b.svg"><textCharAction /></node>
+		<node label="t" text="t" image="phonemes/t.svg"><textCharAction /></node>
+		<node label="d" text="d" image="phonemes/d.svg"><textCharAction /></node>
+		<node label="k" text="k" image="phonemes/c_k.svg"><textCharAction /></node>
+		<node label="g" text="g" image="phonemes/g.svg"><textCharAction /></node>
+		<node label="f" text="f" image="phonemes/f.svg"><textCharAction /></node>
+		<node label="v" text="v" image="phonemes/v.svg"><textCharAction /></node>
+		<node label="θ (think)" text="T" image="phonemes/th.svg"><textCharAction /></node>
+		<node label="ð (this)" text="D" image="phonemes/th.svg"><textCharAction /></node>
+		<node label="s" text="s" image="phonemes/s.svg"><textCharAction /></node>
+		<node label="z" text="z" image="phonemes/z.svg"><textCharAction /></node>
+		<node label="ʃ (she)" text="S" image="phonemes/sh.svg"><textCharAction /></node>
+		<node label="ʒ (measure)" text="Z" image="phonemes/zh.svg"><textCharAction /></node>
+		<node label="h" text="h" image="phonemes/h.svg"><textCharAction /></node>
+		<node label="m" text="m" image="phonemes/m.svg"><textCharAction /></node>
+		<node label="n" text="n" image="phonemes/n.svg"><textCharAction /></node>
+		<node label="ŋ (sing)" text="N" image="phonemes/ng.svg"><textCharAction /></node>
+		<node label="l" text="l" image="phonemes/l.svg"><textCharAction /></node>
+		<node label="r" text="r" image="phonemes/r.svg"><textCharAction /></node>
+		<node label="w" text="w" image="phonemes/w.svg"><textCharAction /></node>
+		<node label="j (yes)" text="j" image="phonemes/y.svg"><textCharAction /></node>
+	</group>
+	<group name="Punctuation" colorInfoName="punctuationLong">
+		<node label="?"><textCharAction /></node>
+		<node label=","><textCharAction /></node>
+		<node label="."><textCharAction /></node>
+		<node label="x" text="x"><textCharAction /></node>
+	</group>
+	<group name="space" colorInfoName="space">
+		<node label="□"><textCharAction unicode="32" /></node>
+	</group>
+</alphabet>

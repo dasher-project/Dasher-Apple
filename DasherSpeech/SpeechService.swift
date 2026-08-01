@@ -25,6 +25,11 @@ public final class SpeechService {
         didSet { saveVolumeSelection() }
     }
 
+    /// When true, spoken text is wrapped in SpeechMarkdown X-SAMPA annotations
+    /// so the TTS engine pronounces phonemes correctly. Set by the view model
+    /// when the active alphabet is the X-SAMPA phonetic alphabet.
+    public var phonemeMode: Bool = false
+
     private var client: TTSClient?
 
     public static let shared = SpeechService()
@@ -52,9 +57,23 @@ public final class SpeechService {
         options.rate = speechRate
         options.pitch = speechPitch
         options.volume = speechVolume
+
+        // When the X-SAMPA phoneme alphabet is active, wrap each space-separated
+        // token in SpeechMarkdown (token)[xsampa:"token"] syntax. swift-tts-wrapper
+        // 1.2.8+ auto-detects SpeechMarkdown and converts X-SAMPA → IPA → SSML
+        // <phoneme> tags for engines that support them.
+        let payload: String
+        if phonemeMode {
+            payload = text.split(separator: " ")
+                .map { "(\($0))[xsampa:\"\($0)\"]" }
+                .joined(separator: " ")
+        } else {
+            payload = text
+        }
+
         Task {
             do {
-                try await client?.speak(text, options: options)
+                try await client?.speak(payload, options: options)
             } catch {
                 errorMessage = error.localizedDescription
                 isSpeaking = false
