@@ -93,6 +93,7 @@ struct DasherSettingsView: View {
                 List {
                     if selectedSection == .privacy {
                         AnalyticsPrivacySection()
+                        KeyboardSetupSection()
                         ResetSettingsSection {
                             viewModel.bridge.resetToDefaults()
                         }

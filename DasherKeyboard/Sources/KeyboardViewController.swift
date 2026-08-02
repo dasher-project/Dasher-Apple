@@ -9,6 +9,15 @@ class KeyboardViewController: UIInputViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        // RFC 0008 heartbeat: tell the host app the keyboard was activated by the
+        // system, and whether Full Access is on. iOS exposes no public API for
+        // "is the keyboard enabled", so the host app reads this to drive its
+        // enablement onboarding. Keys must match DasherShared.KeyboardOnboarding.
+        if let group = UserDefaults(suiteName: "group.at.dasher.Dasher") {
+            group.set(Date(), forKey: "keyboardActivatedAt")
+            group.set(hasFullAccess, forKey: "keyboardHasFullAccess")
+        }
+
         let vm = KeyboardViewModel(textDocumentProxy: textDocumentProxy)
         vm.onAdvanceInputMode = { [weak self] in
             self?.advanceToNextInputMode()
