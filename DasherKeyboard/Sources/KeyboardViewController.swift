@@ -132,6 +132,16 @@ class KeyboardViewController: UIInputViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        // RFC 0008 heartbeat: tell the host app the keyboard is being shown, and
+        // whether Full Access is on. iOS exposes no public API for "is the
+        // keyboard enabled", so the host reads this to drive its enablement
+        // onboarding. Written on every appearance so the host gets fresh state
+        // (and Full Access changes) each time the keyboard is shown. Keys must
+        // match DasherShared.KeyboardOnboarding.
+        if let group = UserDefaults(suiteName: "group.at.dasher.Dasher") {
+            group.set(Date(), forKey: "keyboardActivatedAt")
+            group.set(hasFullAccess, forKey: "keyboardHasFullAccess")
+        }
         // The bridge is a singleton so its model state survives across open/close
         // cycles. Reset to the root so each keyboard session starts fresh.
         viewModel?.bridge.setSystemAppearance(dark: traitCollection.userInterfaceStyle == .dark)

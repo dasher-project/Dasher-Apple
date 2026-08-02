@@ -169,20 +169,7 @@ struct MacDasherSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var parameters: [DasherParameterInfo] = []
     @State private var selectedSection: DasherSettingsSection = .customization
-    @State private var selectedLocale: String = "en"
     @State private var accessSummary: String = ""
-
-    private let availableLocales: [(code: String, name: String)] = [
-        ("en", "English"),
-        ("de", "Deutsch"),
-        ("es", "Español"),
-        ("fr", "Français"),
-        ("it", "Italiano"),
-        ("pt", "Português (BR)"),
-        ("pt-PT", "Português (PT)"),
-        ("zh-CN", "中文"),
-        ("ar", "العربية")
-    ]
 
     private static let spInputFilter = "SP_INPUT_FILTER"
     private static let spGameTextFile = "SP_GAME_TEXT_FILE"
@@ -287,7 +274,6 @@ struct MacDasherSettingsView: View {
         }
         .frame(width: 560, height: 520)
         .onAppear {
-            selectedLocale = viewModel.bridge.locale
             updateAccessSummary()
             parameters = DasherBridge.allParameters
         }
@@ -416,17 +402,6 @@ struct MacDasherSettingsView: View {
 
     private func languageSection(_ params: [DasherParameterInfo]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            Picker("App Language", selection: $selectedLocale) {
-                ForEach(availableLocales, id: \.code) { loc in
-                    Text(loc.name).tag(loc.code)
-                }
-            }
-            .onChange(of: selectedLocale) {
-                if viewModel.bridge.setLocale(selectedLocale) {
-                    parameters = DasherBridge.allParameters
-                }
-            }
-
             let alphabets = viewModel.bridge.allAlphabets
             let currentId = viewModel.bridge.alphabetId
             let pickerAlphabets = currentId.isEmpty || alphabets.contains(where: { $0.name == currentId })

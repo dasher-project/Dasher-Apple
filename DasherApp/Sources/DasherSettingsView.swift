@@ -8,20 +8,7 @@ struct DasherSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var parameters: [DasherParameterInfo] = []
     @State private var selectedSection: DasherSettingsSection = .input
-    @State private var selectedLocale: String = "en"
     @State private var currentAccessSummary: String = ""
-
-    private let availableLocales: [(code: String, name: String)] = [
-        ("en", "English"),
-        ("de", "Deutsch"),
-        ("es", "Español"),
-        ("fr", "Français"),
-        ("it", "Italiano"),
-        ("pt", "Português (BR)"),
-        ("pt-PT", "Português (PT)"),
-        ("zh-CN", "中文"),
-        ("ar", "العربية")
-    ]
 
     private static let spInputFilter = "SP_INPUT_FILTER"
     private static let spGameTextFile = "SP_GAME_TEXT_FILE"
@@ -93,6 +80,7 @@ struct DasherSettingsView: View {
                 List {
                     if selectedSection == .privacy {
                         AnalyticsPrivacySection()
+                        KeyboardSetupSection()
                         ResetSettingsSection {
                             viewModel.bridge.resetToDefaults()
                         }
@@ -117,7 +105,6 @@ struct DasherSettingsView: View {
             }
         }
         .onAppear {
-            selectedLocale = viewModel.bridge.locale
             updateAccessSummary()
             parameters = DasherBridge.allParameters
         }
@@ -319,17 +306,6 @@ struct DasherSettingsView: View {
     private func languageSection(_ params: [DasherParameterInfo]) -> some View {
         Group {
             Section {
-            Picker("App Language", selection: $selectedLocale) {
-                ForEach(availableLocales, id: \.code) { loc in
-                    Text(loc.name).tag(loc.code)
-                }
-            }
-            .onChange(of: selectedLocale) {
-                if viewModel.bridge.setLocale(selectedLocale) {
-                    parameters = DasherBridge.allParameters
-                }
-            }
-
             let alphabets = viewModel.bridge.allAlphabets
             if !alphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(

@@ -107,6 +107,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
     private let userDir: String
+    private let dataDir: String
 
     var onOutput: ((String) -> Void)?
     var onDelete: ((String) -> Void)?
@@ -119,6 +120,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
 
     init(dataDir: String, userDir: String? = nil) {
         self.userDir = userDir ?? dataDir
+        self.dataDir = dataDir
         var errorMsg: UnsafeMutablePointer<CChar>?
         ctx = dasher_create(dataDir, userDir, &errorMsg)
         if let errorMsg = errorMsg {
@@ -684,6 +686,11 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return dasher_get_wpm(ctx)
     }
 
+    func getCPS() -> Double {
+        guard let ctx = ctx else { return 0 }
+        return dasher_get_cps(ctx)
+    }
+
     // MARK: - Persistence
 
     func saveSettings() {
@@ -717,9 +724,41 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return dasher_set_locale(ctx, code) == 0
     }
 
+    /// Set the engine locale to the device language (falls back to English) so
+    /// engine parameter labels follow the OS language. RFC 0003.
+    @discardableResult
+    func setLocaleFromDevice() -> Bool {
+        let lang = Locale.current.language.languageCode?.identifier ?? "en"
+        let codes = Set(availableLocales().map { $0.code })
+        let target = codes.contains(lang)
+            ? lang
+            : (lang == "zh" && codes.contains("zh-CN") ? "zh-CN" : "en")
+        return setLocale(target)
+    }
+
     func getLocalizedString(_ key: String) -> String? {
         guard let ctx = ctx, let cStr = dasher_get_localized_string(ctx, key) else { return nil }
         return String(cString: cStr)
+    }
+
+    /// Locales available in DasherCore's Strings dir, loaded from locales.json
+    /// (RFC 0003). English first, then alphabetical by endonym. Falls back to
+    /// English-only if the file is missing or unreadable.
+    func availableLocales() -> [(code: String, name: String)] {
+        let url = URL(fileURLWithPath: dataDir)
+            .appendingPathComponent("Strings", isDirectory: true)
+            .appendingPathComponent("locales.json")
+        struct LocalesFile: Decodable { let locales: [Entry] }
+        struct Entry: Decodable { let code: String; let endonym: String; let rtl: Bool }
+        guard let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(LocalesFile.self, from: data) else {
+            return [("en", "English")]
+        }
+        let entries = file.locales.map { (code: $0.code, name: $0.endonym) }
+        let en = entries.filter { $0.code == "en" }
+        let rest = entries.filter { $0.code != "en" }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return en + rest
     }
 
     func setStringOverride(key: String, value: String?) {
