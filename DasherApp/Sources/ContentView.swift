@@ -408,8 +408,8 @@ struct ContentView: View {
 
                 if viewModel.showTypingRate {
                     Text(viewModel.typingWPMMax > 0
-                         ? "\(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
-                         : "\(Int(viewModel.typingWPM)) wpm")
+                         ? "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
+                         : "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
                         .font(.caption.weight(.medium))
                         .foregroundColor(Color("BarText"))
                         .padding(.horizontal, 8)

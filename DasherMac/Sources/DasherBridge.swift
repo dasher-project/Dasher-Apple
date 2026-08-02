@@ -684,6 +684,11 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         return dasher_get_wpm(ctx)
     }
 
+    func getCPS() -> Double {
+        guard let ctx = ctx else { return 0 }
+        return dasher_get_cps(ctx)
+    }
+
     // MARK: - Persistence
 
     func saveSettings() {

@@ -15,6 +15,7 @@ class DasherViewModel: ObservableObject {
     @Published var gameWrongText: String = ""
     @Published var gamePhrasesCompleted: Int = 0
     @Published var typingWPM: Double = 0
+    @Published var typingCPS: Double = 0
     @AppStorage("showTypingRate") public var showTypingRate = false
     @Published var typingWPMMax: Double = 0
     private var typingWPMSum: Double = 0
@@ -172,6 +173,7 @@ class DasherViewModel: ObservableObject {
             if !active { gamePhrasesCompleted = 0 }
         }
         typingWPM = bridge.getWPM()
+        typingCPS = bridge.getCPS()
         if typingWPM > 0 {
             typingWPMMax = max(typingWPMMax, typingWPM)
             typingWPMSum += typingWPM
