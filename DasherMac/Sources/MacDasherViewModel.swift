@@ -52,6 +52,7 @@ class MacDasherViewModel: ObservableObject {
         )
         let userDir = sharedURL?.path ?? dataPath
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userDir)
+        bridge.setLocaleFromDevice()
 
         // Store bridge reference for migration
         MigrationBridgeHolder.shared.bridge = bridge

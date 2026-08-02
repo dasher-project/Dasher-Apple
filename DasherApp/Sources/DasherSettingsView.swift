@@ -8,10 +8,7 @@ struct DasherSettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var parameters: [DasherParameterInfo] = []
     @State private var selectedSection: DasherSettingsSection = .input
-    @State private var selectedLocale: String = "en"
     @State private var currentAccessSummary: String = ""
-    @State private var availableLocales: [(code: String, name: String)] = [("en", "English")]
-    @AppStorage("localeAutoDefaulted") private var localeAutoDefaulted = false
 
     private static let spInputFilter = "SP_INPUT_FILTER"
     private static let spGameTextFile = "SP_GAME_TEXT_FILE"
@@ -108,37 +105,12 @@ struct DasherSettingsView: View {
             }
         }
         .onAppear {
-            let loaded = viewModel.bridge.availableLocales()
-            if loaded.count > 1 { availableLocales = loaded }
-            // Align the engine locale with the device language once (RFC 0003),
-            // so engine parameter labels match the localised chrome by default.
-            if !localeAutoDefaulted {
-                localeAutoDefaulted = true
-                if let dev = preferredLocaleCode(in: availableLocales),
-                   dev != viewModel.bridge.locale {
-                    selectedLocale = dev
-                    _ = viewModel.bridge.setLocale(dev)
-                } else {
-                    selectedLocale = viewModel.bridge.locale
-                }
-            } else {
-                selectedLocale = viewModel.bridge.locale
-            }
             updateAccessSummary()
             parameters = DasherBridge.allParameters
         }
         .onChange(of: currentAccessSummary) {
             parameters = DasherBridge.allParameters
         }
-    }
-
-    /// Map the device language to a supported DasherCore locale code, if any.
-    private func preferredLocaleCode(in locales: [(code: String, name: String)]) -> String? {
-        let lang = Locale.current.language.languageCode?.identifier ?? ""
-        let codes = Set(locales.map { $0.code })
-        if codes.contains(lang) { return lang }
-        if lang == "zh" { return codes.contains("zh-CN") ? "zh-CN" : nil }
-        return nil
     }
 
     // MARK: - Filtering
@@ -334,17 +306,6 @@ struct DasherSettingsView: View {
     private func languageSection(_ params: [DasherParameterInfo]) -> some View {
         Group {
             Section {
-            Picker("App Language", selection: $selectedLocale) {
-                ForEach(availableLocales, id: \.code) { loc in
-                    Text(loc.name).tag(loc.code)
-                }
-            }
-            .onChange(of: selectedLocale) {
-                if viewModel.bridge.setLocale(selectedLocale) {
-                    parameters = DasherBridge.allParameters
-                }
-            }
-
             let alphabets = viewModel.bridge.allAlphabets
             if !alphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(

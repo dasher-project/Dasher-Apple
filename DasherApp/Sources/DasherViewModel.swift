@@ -53,6 +53,7 @@ class DasherViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
+        bridge.setLocaleFromDevice()
         bridge.setScreenSize(width: 800, height: 600)
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }

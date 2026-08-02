@@ -632,6 +632,18 @@ class DasherBridge: InputMethodBridge {
         return dasher_set_locale(ctx, code) == 0
     }
 
+    /// Set the engine locale to the device language (falls back to English) so
+    /// engine parameter labels follow the OS language. RFC 0003.
+    @discardableResult
+    func setLocaleFromDevice() -> Bool {
+        let lang = Locale.current.language.languageCode?.identifier ?? "en"
+        let codes = Set(availableLocales().map { $0.code })
+        let target = codes.contains(lang)
+            ? lang
+            : (lang == "zh" && codes.contains("zh-CN") ? "zh-CN" : "en")
+        return setLocale(target)
+    }
+
     func getLocalizedString(_ key: String) -> String? {
         guard let ctx = ctx, let cStr = dasher_get_localized_string(ctx, key) else { return nil }
         return String(cString: cStr)
