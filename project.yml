@@ -35,6 +35,12 @@ settings:
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # Stop Xcode from auto-extracting code strings into the committed
+    # Localizable.xcstrings on every build (it mutates the catalog in place).
+    # We manage the catalog from source via Localization/extract-chrome.py +
+    # merge-translations.py. The compiled catalog still localises chrome at
+    # runtime (resource build phase is independent of this flag).
+    SWIFT_EMIT_LOC_STRINGS: NO
 
 targetTemplates:
   DasherCoreTemplate:
