@@ -7,6 +7,7 @@ import DasherShared
 /// keyboard extension's heartbeat.
 struct KeyboardSetupSection: View {
     @State private var state: KeyboardOnboarding.State = .unknown
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Section {
@@ -27,6 +28,9 @@ struct KeyboardSetupSection: View {
             Text("Enable Dasher under Settings → General → Keyboard → Keyboards, then turn on Allow Full Access so Dasher can speak and learn.")
         }
         .onAppear { state = KeyboardOnboarding.state }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { state = KeyboardOnboarding.state }
+        }
     }
 
     private var statusText: String {
