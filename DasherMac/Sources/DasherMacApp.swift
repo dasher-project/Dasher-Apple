@@ -286,7 +286,7 @@ struct MacDasherSettingsView: View {
                 if let dev = preferredLocaleCode(in: availableLocales),
                    dev != viewModel.bridge.locale {
                     selectedLocale = dev
-                    viewModel.bridge.setLocale(dev)
+                    _ = viewModel.bridge.setLocale(dev)
                 } else {
                     selectedLocale = viewModel.bridge.locale
                 }
