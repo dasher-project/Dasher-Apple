@@ -107,6 +107,8 @@ targets:
       - path: DasherApp
         excludes:
           - "**/.gitkeep"
+      - path: Localization/Localizable.xcstrings
+        buildPhase: resources
       - path: DasherIcon.icon
         buildPhase: resources
       - path: DasherEngine/Resources/Data
@@ -178,6 +180,8 @@ targets:
       - path: DasherKeyboard
         excludes:
           - "**/.gitkeep"
+      - path: Localization/Localizable.xcstrings
+        buildPhase: resources
       - path: DasherIcon.icon
         buildPhase: resources
       - path: DasherKeyboardData
@@ -253,6 +257,8 @@ targets:
       - path: DasherMac
         excludes:
           - "**/.gitkeep"
+      - path: Localization/Localizable.xcstrings
+        buildPhase: resources
       - path: DasherApp/Resources/Colors.xcassets
         buildPhase: resources
       - path: DasherIcon.icon
@@ -327,6 +333,8 @@ targets:
       - path: DasherVision
         excludes:
           - "**/.gitkeep"
+      - path: Localization/Localizable.xcstrings
+        buildPhase: resources
       - path: DasherShared
       - path: DasherEngine/Resources/Data
         buildPhase: resources
