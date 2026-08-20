@@ -39,6 +39,9 @@ public final class AnalyticsService {
 
         let config = PostHogConfig(projectToken: Self.projectToken, host: Self.host)
         config.captureScreenViews = false
+        // RFC 0001: only events in the published schema may be collected. The SDK
+        // would otherwise auto-emit Application Opened/Backgrounded/Installed.
+        config.captureApplicationLifecycleEvents = false
         PostHogSDK.shared.setup(config)
         // Identify so captureException (which takes no distinctId parameter)
         // attributes crashes to the same anonymous ID as our analytics events.
@@ -73,6 +76,10 @@ public final class AnalyticsService {
             "platform": platformName,
             "app_variant": appVariant,
             "app_version": appVersion,
+            // RFC 0001 promises no location data. PostHog Cloud derives $geoip_*
+            // (city, postal code, lat/lon) from the client IP even with project
+            // IP anonymisation on — this per-event flag is the only way to stop it.
+            "$geoip_disable": true,
         ]
 
         #if canImport(UIKit)
