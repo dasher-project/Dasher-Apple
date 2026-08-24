@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-release:
     runs-on: macos-latest
+    # Export normally completes in under a minute; if signing hangs again,
+    # fail loudly instead of burning hours of runner time.
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -66,8 +69,15 @@ jobs:
               <string>developer-id</string>
               <key>teamID</key>
               <string>${MAC_TEAM_ID}</string>
+              <!-- Manual signing: automatic style (used through v0.1.8) hung the
+                   v0.1.9 export for 2h+ in CI — xcodebuild's automatic identity
+                   resolution can block on an interactive/cloud-signing prompt
+                   that nobody can dismiss headless. Pin the certificate so no
+                   resolution step runs at all. -->
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Developer ID Application</string>
           </dict>
           </plist>
           EOF
