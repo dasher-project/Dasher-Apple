@@ -237,13 +237,13 @@ class MacDasherViewModel: ObservableObject {
     }
 
     func increaseSpeed() {
-        let newSpeed = min(bridge.speedPercent + 10, 400)
+        let newSpeed = min(bridge.speedPercent + 10, DasherBridge.speedRangePercent.upperBound)
         bridge.setSpeedPercent(newSpeed)
         speed = Double(newSpeed) / 100.0
     }
 
     func decreaseSpeed() {
-        let newSpeed = max(bridge.speedPercent - 10, 20)
+        let newSpeed = max(bridge.speedPercent - 10, DasherBridge.speedRangePercent.lowerBound)
         bridge.setSpeedPercent(newSpeed)
         speed = Double(newSpeed) / 100.0
     }

@@ -306,6 +306,20 @@ class DasherBridge: InputMethodBridge {
         return (0..<count).compactMap { getParameterInfo(index: $0) }
     }
 
+    /// Speed-control bounds from the engine parameter manifest (issue #34):
+    /// LP_MAX_BITRATE is in raw units where 160 = 100 %, so the engine range
+    /// raw 1–1000 maps to ~1–625 %. Falls back to the historic 20–400 if the
+    /// manifest is unavailable.
+    static var speedRangePercent: ClosedRange<Int> {
+        let key = Int(dasher_find_parameter_key("LP_MAX_BITRATE"))
+        if key >= 0, let info = allParameters.first(where: { $0.key == key }), info.maxVal > 0 {
+            let minPct = Int((Double(info.minVal) * 100.0 / 160.0).rounded())
+            let maxPct = Int((Double(info.maxVal) * 100.0 / 160.0).rounded())
+            if maxPct > minPct { return minPct...maxPct }
+        }
+        return 20...400
+    }
+
     // MARK: - Enum values
 
     static func getEnumValues(key: Int) -> [(name: String, value: Int)] {
