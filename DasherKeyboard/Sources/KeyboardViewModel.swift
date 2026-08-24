@@ -75,12 +75,12 @@ class KeyboardViewModel {
     }
 
     func decreaseSpeed() {
-        let s = max(20, bridge.speedPercent - 10)
+        let s = max(DasherBridge.speedRangePercent.lowerBound, bridge.speedPercent - 10)
         bridge.setSpeedPercent(s)
     }
 
     func increaseSpeed() {
-        let s = min(400, bridge.speedPercent + 10)
+        let s = min(DasherBridge.speedRangePercent.upperBound, bridge.speedPercent + 10)
         bridge.setSpeedPercent(s)
     }
 
