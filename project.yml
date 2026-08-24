@@ -142,6 +142,16 @@ targets:
           if command -v swiftlint &> /dev/null; then
             swiftlint lint --quiet
           fi
+      - name: Stamp Git Commit
+        basedOnDependencyAnalysis: false
+        script: |
+          # DasherGitCommit in Info.plist: short sha for display + analytics
+          # (RFC 0016). Xcode Cloud sets CI_COMMIT (full sha); locally, git.
+          COMMIT="${CI_COMMIT:0:7}"
+          if [ -z "$COMMIT" ]; then COMMIT=$(git -C "$SRCROOT" rev-parse --short HEAD 2>/dev/null || echo dev); fi
+          PLIST="DasherApp/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -154,7 +164,7 @@ targets:
         INFOPLIST_FILE: DasherApp/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
-        MARKETING_VERSION: "1.0.0"
+        MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
         SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: YES
         CODE_SIGN_IDENTITY: "Apple Development"
@@ -236,7 +246,7 @@ targets:
         INFOPLIST_FILE: DasherKeyboard/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
-        MARKETING_VERSION: "1.0.0"
+        MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
@@ -291,6 +301,16 @@ targets:
           if command -v swiftlint &> /dev/null; then
             swiftlint lint --quiet
           fi
+      - name: Stamp Git Commit
+        basedOnDependencyAnalysis: false
+        script: |
+          # DasherGitCommit in Info.plist: short sha for display + analytics
+          # (RFC 0016). Xcode Cloud sets CI_COMMIT (full sha); locally, git.
+          COMMIT="${CI_COMMIT:0:7}"
+          if [ -z "$COMMIT" ]; then COMMIT=$(git -C "$SRCROOT" rev-parse --short HEAD 2>/dev/null || echo dev); fi
+          PLIST="DasherMac/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -303,7 +323,7 @@ targets:
         INFOPLIST_FILE: DasherMac/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
-        MARKETING_VERSION: "1.0.0"
+        MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
@@ -365,6 +385,16 @@ targets:
           if command -v swiftlint &> /dev/null; then
             swiftlint lint --quiet
           fi
+      - name: Stamp Git Commit
+        basedOnDependencyAnalysis: false
+        script: |
+          # DasherGitCommit in Info.plist: short sha for display + analytics
+          # (RFC 0016). Xcode Cloud sets CI_COMMIT (full sha); locally, git.
+          COMMIT="${CI_COMMIT:0:7}"
+          if [ -z "$COMMIT" ]; then COMMIT=$(git -C "$SRCROOT" rev-parse --short HEAD 2>/dev/null || echo dev); fi
+          PLIST="DasherVision/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
+          /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
       - name: Copy Locale Strings
         basedOnDependencyAnalysis: false
         script: |
@@ -377,7 +407,7 @@ targets:
         INFOPLIST_FILE: DasherVision/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.0.0"
+        MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic

@@ -117,9 +117,13 @@ public final class AnalyticsService {
 
     /// User-visible app version (RFC 0016). The same source the analytics
     /// events report, so the Settings version line can never disagree with
-    /// telemetry.
+    /// telemetry. Format: "6.0.0 (a1b2c3d)" — numeric marketing version
+    /// (TestFlight requires plain X.Y.Z) plus the git commit stamped into
+    /// Info.plist at build time ("dev" for unscripted local builds).
     public static var displayVersion: String {
-        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+        let commit = Bundle.main.infoDictionary?["DasherGitCommit"] as? String ?? "dev"
+        return commit.isEmpty || commit == "dev" ? version : "\(version) (\(commit))"
     }
 
     private var appVersion: String {
