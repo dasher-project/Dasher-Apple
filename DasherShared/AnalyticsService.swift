@@ -115,8 +115,15 @@ public final class AnalyticsService {
         #endif
     }
 
-    private var appVersion: String {
+    /// User-visible app version (RFC 0016). The same source the analytics
+    /// events report, so the Settings version line can never disagree with
+    /// telemetry.
+    public static var displayVersion: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown"
+    }
+
+    private var appVersion: String {
+        Self.displayVersion
     }
 
     /// Capture an analytics event. No-ops if the user has not opted in.
