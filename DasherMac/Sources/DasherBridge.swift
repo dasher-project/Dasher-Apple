@@ -106,6 +106,11 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     private var ctx: OpaquePointer?
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
+    /// Current canvas font name (SP_DASHER_FONT). Shared by opcode-5 drawing
+    /// and measureLabel so both always use the same face (issue #41).
+    var fontName: String {
+        fontParamKey >= 0 ? getStringParameter(key: fontParamKey) : ""
+    }
     private let userDir: String
     private let dataDir: String
 
@@ -137,6 +142,16 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
                 } else if eventType == 1 {
                     instance.onDelete?(str)
                 }
+            }, retained)
+            // Real font metrics for node labels (issue #41): the engine's
+            // code-point estimate under-measures wide glyphs and the error
+            // compounds down the ancestor chain — squashed/jumbled labels at
+            // depth. Contract (dasher.h): fill out_width/out_height in pixels
+            // and return 0 on success; non-zero falls back to the estimate.
+            dasher_set_text_size_callback(ctx, { text, fontSize, outWidth, outHeight, userData in
+                guard let text = text, let outWidth = outWidth, let outHeight = outHeight, let userData = userData else { return 1 }
+                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                return instance.measureLabel(String(cString: text), fontSize: fontSize, outWidth: outWidth, outHeight: outHeight)
             }, retained)
             let retained2 = Unmanaged.passUnretained(self).toOpaque()
             dasher_set_message_callback(ctx, { messageType, text, userData in
@@ -247,18 +262,47 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         onEngineError?()
     }
 
+    // Clamped engine timeline (issue #41): the engine consumes raw deltas as
+    // zoom amount, so pause gaps must never arrive as multi-second jumps.
+    // Wall-clock timestamps from the caller are converted to deltas capped at
+    // 50 ms, accumulated on our own monotonic timeline. Mirrors the fix in
+    // Dasher-Windows #36 (their EngineTimelineTests pin the same contract).
+    private var lastWallMs: Int64?
+    private var engineTimeMs: Int64 = 0
+    private static let maxFrameDeltaMs: Int64 = 50
+
+    /// Convert a wall-clock millisecond timestamp into the engine timeline.
+    /// Pure function of stored state — internal for testability.
+    func timelineMs(forWallMs wallMs: Int64) -> Int64 {
+        if let last = lastWallMs {
+            var delta = wallMs - last
+            if delta < 0 { delta = 0 } // clock went backwards: hold position
+            if delta > Self.maxFrameDeltaMs { delta = Self.maxFrameDeltaMs }
+            engineTimeMs += delta
+        }
+        lastWallMs = wallMs
+        return engineTimeMs
+    }
+
+    /// Reset the timeline baseline (e.g. after engine reset/recreate).
+    func resetTimeline() {
+        lastWallMs = nil
+        engineTimeMs = 0
+    }
+
     func frame(timeMs: Int64) -> DrawCommands? {
         guard let ctx = ctx else { return nil }
         if dasher_has_engine_error(ctx) != 0 {
             notifyEngineErrorIfNeeded()
             return nil
         }
+        let engineMs = timelineMs(forWallMs: timeMs)
         var cmds: UnsafeMutablePointer<Int32>?
         var cmdCount: Int32 = 0
         var strs: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
         var strCount: Int32 = 0
 
-        dasher_frame(ctx, timeMs, &cmds, &cmdCount, &strs, &strCount)
+        dasher_frame(ctx, engineMs, &cmds, &cmdCount, &strs, &strCount)
 
         if dasher_has_engine_error(ctx) != 0 {
             notifyEngineErrorIfNeeded()
@@ -271,7 +315,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
             commandCount: Int(cmdCount),
             strings: strs,
             stringCount: Int(strCount),
-            fontName: fontParamKey >= 0 ? getStringParameter(key: fontParamKey) : ""
+            fontName: fontName
         )
     }
 
@@ -521,10 +565,14 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
 
     func getStringValues(key: Int) -> [String] {
         guard let ctx = ctx else { return [] }
-        let bufSize = 64
-        var buffer: [UnsafePointer<CChar>?] = Array(repeating: nil, count: bufSize)
-        let actual = Int(dasher_get_parameter_string_values(ctx, Int32(key), &buffer, Int32(bufSize)))
-        return (0..<min(actual, bufSize)).compactMap { ptr in
+        // Probe-then-fetch (issue #41, needs DasherCore >= v0.2.5 for the
+        // probe to report the count): the old fixed 64-slot buffer silently
+        // truncated longer lists — SP_DASHER_FONT runs to hundreds of entries.
+        let count = Int(dasher_get_parameter_string_values(ctx, Int32(key), nil, 0))
+        guard count > 0 else { return [] }
+        var buffer: [UnsafePointer<CChar>?] = Array(repeating: nil, count: count)
+        let actual = Int(dasher_get_parameter_string_values(ctx, Int32(key), &buffer, Int32(count)))
+        return (0..<min(actual, count)).compactMap { ptr in
             guard let p = buffer[ptr] else { return nil }
             return String(cString: p)
         }
@@ -650,6 +698,44 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     func setStringParameter(key: Int, value: String) {
         guard let ctx = ctx else { return }
         dasher_set_string_parameter(ctx, Int32(key), value)
+        // The canvas font changed: cached label measurements are stale.
+        if key == fontParamKey {
+            textMeasureCache.removeAll()
+            dasher_text_metrics_changed(ctx)
+        }
+    }
+
+    // MARK: - Label measurement (issue #41)
+
+    // Cache keyed on text+font+size; the engine also caches engine-side, this
+    // keeps repeated cold misses cheap (mirrors Dasher-Windows #36).
+    private var textMeasureCache: [String: (w: Int32, h: Int32)] = [:]
+
+    /// Measure a single-line label with the same font the canvas draws opcode-5
+    /// text with. Returns 0 on success (dasher.h contract); 1 = fall back to
+    /// the engine's estimate.
+    func measureLabel(_ text: String, fontSize: Int32, outWidth: UnsafeMutablePointer<Int32>, outHeight: UnsafeMutablePointer<Int32>) -> Int32 {
+        let cacheKey = "\(fontName)|\(fontSize)|\(text)"
+        if let hit = textMeasureCache[cacheKey] {
+            outWidth.pointee = hit.w
+            outHeight.pointee = hit.h
+            return 0
+        }
+        let size = CGFloat(fontSize)
+        #if canImport(UIKit)
+        let font = fontName.isEmpty ? UIFont.systemFont(ofSize: size) : (UIFont(name: fontName, size: size) ?? UIFont.systemFont(ofSize: size))
+        #elseif canImport(AppKit)
+        let font = fontName.isEmpty ? NSFont.systemFont(ofSize: size) : (NSFont(name: fontName, size: size) ?? NSFont.systemFont(ofSize: size))
+        #endif
+        let bounds = (text as NSString).size(withAttributes: [.font: font])
+        guard bounds.width > 0 || bounds.height > 0 else { return 1 }
+        let w = Int32(bounds.width.rounded(.up))
+        let h = Int32(bounds.height.rounded(.up))
+        if textMeasureCache.count > 4096 { textMeasureCache.removeAll() } // bounded
+        textMeasureCache[cacheKey] = (w, h)
+        outWidth.pointee = w
+        outHeight.pointee = h
+        return 0
     }
 
     // MARK: - Game Mode

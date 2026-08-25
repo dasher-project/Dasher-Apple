@@ -2,6 +2,7 @@ import SwiftUI
 import DasherShared
 import LucideIcons
 import UniformTypeIdentifiers
+import CoreVideo
 
 struct MacContentView: View {
     @ObservedObject var viewModel: MacDasherViewModel
@@ -790,7 +791,7 @@ struct MacCanvasView: NSViewRepresentable {
 
 final class MacDasherCanvas: NSView {
     var viewModel: MacDasherViewModel?
-    private var timer: Timer?
+    private var displayLink: CVDisplayLink?
     private var mouseIsDown = false
 
     override init(frame: CGRect) {
@@ -814,13 +815,29 @@ final class MacDasherCanvas: NSView {
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        if window != nil {
-            timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
-                self?.needsDisplay = true
-            }
-        } else {
-            timer?.invalidate()
-            timer = nil
+        if window != nil, displayLink == nil {
+            // Compositor-synced frame clock (issue #41): a free-running Timer
+            // beat against the compositor's cadence and produced judder
+            // (same bug as Dasher-Windows #35). CVDisplayLink drives draw(_:)
+            // locked to the display's vsync, like CADisplayLink on iOS.
+            var link: CVDisplayLink?
+            guard CVDisplayLinkCreateWithActiveCGDisplays(&link) == kCVReturnSuccess, let link else { return }
+            // Retain ourselves for the callback's lifetime; hop to the main
+            // queue because draw(_:) must run on the main thread.
+            let canvas = Unmanaged.passRetained(self)
+            CVDisplayLinkSetOutputCallback(link, { _, _, _, _, _, userInfo in
+                guard let userInfo else { return kCVReturnSuccess }
+                let me = Unmanaged<MacDasherCanvas>.fromOpaque(userInfo).takeUnretainedValue()
+                DispatchQueue.main.async { me.needsDisplay = true }
+                return kCVReturnSuccess
+            }, canvas.toOpaque())
+            CVDisplayLinkStart(link)
+            displayLink = link
+        } else if window == nil, let link = displayLink {
+            CVDisplayLinkStop(link)
+            displayLink = nil
+            // Release the retain paired with passRetained in the callback.
+            Unmanaged.passRetained(self).release()
         }
     }
 
