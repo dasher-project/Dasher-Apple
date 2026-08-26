@@ -314,6 +314,19 @@ struct MacContentView: View {
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
+
+            // Live typing rate in Direct Mode (RFC 0012 direct-entry clause,
+            // mirrors Dasher-Windows #39): the bottom bar is hidden here, so
+            // users who enable the typing-rate display would otherwise lose
+            // it in their primary mode. Compact current-rate only (no room
+            // for max/avg), gated by the same Settings > Output toggle.
+            if viewModel.showTypingRate {
+                Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.white.opacity(0.85))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+            }
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 3)
