@@ -48,7 +48,13 @@ struct VisionSettingsView: View {
                     ))
                     Toggle("Auto-Centre Target", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE")) },
-                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE"), value: $0) }
+                        set: { newValue in
+                            // Explicit user choice — record it so launch-time
+                            // method gating doesn't revert it.
+                            AccessConfiguration.userToggledAutocalibrate(to: newValue,
+                                                                        method: AccessConfiguration.current.method)
+                            viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE"), value: newValue)
+                        }
                     ))
                     Toggle("Adapt Speed Automatically", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
