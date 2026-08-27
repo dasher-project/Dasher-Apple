@@ -18,6 +18,27 @@ the SwiftUI toolbar, settings tabs, buttons, onboarding, and dialog text.
 | `extract-chrome.py` | Re-extracts the JSONL from the Swift sources. |
 | `build-xcstrings.py` | Rebuilds the English scaffold `Localizable.xcstrings` from the JSONL. |
 | `merge-translations.py` | Merges a locale's translations into `Localizable.xcstrings`. |
+| `generate-from-catalogue.py` | Syncs translations from the shared UI string catalogue (see below). |
+
+## Shared UI string catalogue (RFC 0003, 2026-08-27 amendment)
+
+The `SharedResources/` submodule points at
+[dasher-shared-resources](https://github.com/dasher-project/dasher-shared-resources),
+which holds the canonical cross-frontend `ui-strings.json` (223 English source
+strings × 33 locales). Our catalog keys are the English source strings, so the
+generator maps catalogue entries onto our keys directly:
+
+```sh
+git submodule update --init --remote SharedResources   # pull latest catalogue
+python3 Localization/generate-from-catalogue.py        # sync (--force to overwrite)
+```
+
+State as of first wiring: 123 of 123 static keys matched; Apple's catalog was
+one of the catalogue's sources and already carries the translations, so the
+first run is a no-op. Future runs pick up catalogue improvements (e.g.
+hand-reviewed locales) and new strings other frontends contribute. The six
+Xcode format-string keys (`"%@ ..."`) are Android-style positional formats in
+the catalogue and stay manual (see Notes).
 
 ## How to translate
 

@@ -42,10 +42,19 @@ public struct AccessConfiguration: Codable, Equatable {
 
         if selection == .dwell {
             bridge.setBoolParameter(key: bridge.findParameterKey("BP_STOP_OUTSIDE"), value: true)
-            bridge.setBoolParameter(key: bridge.findParameterKey("BP_AUTOCALIBRATE"), value: true)
         } else {
             bridge.setBoolParameter(key: bridge.findParameterKey("BP_STOP_OUTSIDE"), value: false)
         }
+
+        // Auto-calibration follows the access method (Dasher-Windows #41 parity,
+        // needs DasherCore >= v0.2.9): on for eye gaze — its original purpose,
+        // Dasher's 2004 eye-tracker Y-error correction — and explicitly off for
+        // pointer/touch/etc. For a pointer user deliberately steering off-centre
+        // it drifted the steering offset every sentence (the restart-drift and
+        // "wobbly cursor" reports). v0.2.9 also makes the learned offset
+        // session-scoped and ignores stale persisted offsets from older builds,
+        // so upgraders need no manual settings wipe.
+        bridge.setBoolParameter(key: bridge.findParameterKey("BP_AUTOCALIBRATE"), value: method == .eyeGaze)
 
         if needsSwitchProfile, let profile = switchProfile {
             let buttonMap = profile.buttonMapString
