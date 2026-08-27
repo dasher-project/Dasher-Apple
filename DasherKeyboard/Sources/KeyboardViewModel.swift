@@ -28,6 +28,13 @@ class KeyboardViewModel {
         os_log("KeyboardViewModel.init: configureForLowMemory", log: keyboardLog)
         bridge.configureForLowMemory()
 
+        // Auto-calibration stays off in the keyboard extension (DasherCore #64/
+        // #65, Dasher-Windows #41): the keyboard surface is touch/pointer, never
+        // eye gaze, and this engine shares the app group's dasher_settings.xml —
+        // a stale persisted BP_AUTOCALIBRATE=true from an older build would
+        // otherwise drift the steering offset here.
+        bridge.setBoolParameter(key: bridge.findParameterKey("BP_AUTOCALIBRATE"), value: false)
+
         // First-run: no dasher_settings.xml yet means DasherCore fell back to
         // its compiled-in default alphabet ("English with limited punctuation").
         // If the user's system locale maps to a different bundled alphabet,

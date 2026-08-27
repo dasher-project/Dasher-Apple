@@ -171,7 +171,11 @@ public struct V5MigrationService {
             "PaletteChange": "BP_PALETTE_CHANGE",
             "TurboMode": "BP_TURBO_MODE",
             "ExactDynamics": "BP_EXACT_DYNAMICS",
-            "Autocalibrate": "BP_AUTOCALIBRATE",
+            // "Autocalibrate" is deliberately NOT migrated verbatim: v5 defaulted
+            // it on for everyone, and for pointer/touch users it drifted the
+            // steering offset every sentence (DasherCore #64/#65, Dasher-Windows
+            // #41). Auto-calibration follows the access method instead — on for
+            // eye gaze only, off otherwise — applied after the import below.
             "RemapXtreme": "BP_REMAP_XTREME",
             "AutoSpeedControl": "BP_AUTO_SPEEDCONTROL",
             "LMAdaptive": "BP_LM_ADAPTIVE",
@@ -198,6 +202,18 @@ public struct V5MigrationService {
                     }
                     result.importedSettings.append((regName, "\(value)"))
                 }
+            }
+        }
+
+        // Auto-calibration follows the access method, never the v5 value (see
+        // the boolMap note). Re-assert it after the import in case anything
+        // above or an old persisted setting left it on for a non-gaze user.
+        if let v5Autocalibrate = plist["Autocalibrate"] as? Bool, v5Autocalibrate {
+            let key = bridge.findParameterKey("BP_AUTOCALIBRATE")
+            if key >= 0 {
+                let gazeOnly = AccessConfiguration.current.method == .eyeGaze
+                bridge.setBoolParameter(key: key, value: gazeOnly)
+                result.importedSettings.append(("Autocalibrate", gazeOnly ? "true (eye gaze)" : "false (not eye gaze — v5 value ignored)"))
             }
         }
 
