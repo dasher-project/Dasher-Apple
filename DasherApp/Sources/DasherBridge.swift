@@ -119,34 +119,9 @@ class DasherBridge: InputMethodBridge {
     init(dataDir: String, userDir: String? = nil) {
         self.userDir = userDir ?? dataDir
         self.dataDir = dataDir
-        var errorMsg: UnsafeMutablePointer<CChar>?
-        ctx = dasher_create(dataDir, userDir, &errorMsg)
-        if let errorMsg = errorMsg {
-            lastError = String(cString: errorMsg)
-        }
-        if let ctx = ctx {
-            let retained = Unmanaged.passUnretained(self).toOpaque()
-            dasher_set_output_callback(ctx, { eventType, text, userData in
-                guard let text = text, let userData = userData else { return }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                let str = String(cString: text)
-                if eventType == 0 {
-                    instance.onOutput?(str)
-                } else if eventType == 1 {
-                    instance.onDelete?(str)
-                }
-            }, retained)
-            // Real font metrics for node labels (issue #41): the engine's
-            // code-point estimate under-measures wide glyphs and the error
-            // compounds down the ancestor chain — squashed/jumbled labels at
-            // depth. Contract (dasher.h): fill out_width/out_height in pixels
-            // and return 0 on success; non-zero falls back to the estimate.
-            dasher_set_text_size_callback(ctx, { text, fontSize, outWidth, outHeight, userData in
-                guard let text = text, let outWidth = outWidth, let outHeight = outHeight, let userData = userData else { return 1 }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                return instance.measureLabel(String(cString: text), fontSize: fontSize, outWidth: outWidth, outHeight: outHeight)
-            }, retained)
-
+        // Two-phase start (RFC 0018 pattern, mirrors Dasher-Android): init is
+        // deliberately cheap — no engine work — so the first UI frame never
+        // blocks. bootstrap() creates the engine off the main thread.
             // Cross-component settings sync (issue #44, Dasher-Android #30
             // pattern): the keyboard extension shares this user dir and may
             // have written dasher_settings.xml while this app was inactive.
@@ -162,36 +137,119 @@ class DasherBridge: InputMethodBridge {
                 self?.reloadSettings()
             }
             #endif
-            let retained2 = Unmanaged.passUnretained(self).toOpaque()
-            dasher_set_message_callback(ctx, { messageType, text, userData in
-                guard let text = text, let userData = userData else { return }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                let str = String(cString: text)
-                let isWarning = messageType == 1
-                instance.onMessage?(isWarning, str)
-            }, retained2)
-            let retained3 = Unmanaged.passUnretained(self).toOpaque()
-            dasher_set_speak_callback(ctx, { text, interrupt, userData in
-                guard let text = text, let userData = userData else { return }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                let str = String(cString: text)
-                instance.onSpeak?(str, interrupt != 0)
-            }, retained3)
-            let retained4 = Unmanaged.passUnretained(self).toOpaque()
-            dasher_set_parameter_callback(ctx, { paramKey, userData in
-                guard let userData = userData else { return }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                instance.onParameterChange?(Int(paramKey))
-            }, retained4)
-            let retained5 = Unmanaged.passUnretained(self).toOpaque()
-            dasher_set_clipboard_callback(ctx, { text, userData in
-                guard let text = text, let userData = userData else { return }
-                let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
-                let str = String(cString: text)
-                instance.onClipboard?(str)
-            }, retained5)
-        }
         resolveFontParamKey()
+    }
+
+    /// Creates the engine, registers callbacks, applies the device locale and
+    /// realizes the default alphabet (parse + training) on a background task,
+    /// then marks the bridge ready on the main actor. Every engine method
+    /// no-ops (ctx guard) until then, so views can be built immediately.
+    /// Locale/screen-size helpers are ctx-free pre-computed on the main actor.
+    /// - Parameter realizeDefaultScreen: realize immediately (alphabet parse +
+    ///    training at 800×600). iOS/visionOS want this; macOS defers its first
+    ///    realize to startEngine (after the v5-migration choice).
+    func bootstrap(realizeDefaultScreen: Bool = true) async {
+        guard ctx == nil else { return }
+        let dataDir = self.dataDir
+        let userDir = self.userDir
+        let localeTag = Self.engineLocaleTag(dataDir: dataDir)
+        let created: (OpaquePointer?, String?) = await Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return (nil, nil) }
+            var errorMsg: UnsafeMutablePointer<CChar>?
+            let newCtx = dasher_create(dataDir, userDir, &errorMsg)
+            let err = errorMsg.map { String(cString: $0) }
+            guard let newCtx else { return (nil, err) }
+                let retained = Unmanaged.passUnretained(self).toOpaque()
+                dasher_set_output_callback(newCtx, { eventType, text, userData in
+                    guard let text = text, let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    let str = String(cString: text)
+                    if eventType == 0 {
+                        instance.onOutput?(str)
+                    } else if eventType == 1 {
+                        instance.onDelete?(str)
+                    }
+                }, retained)
+                // Real font metrics for node labels (issue #41): the engine's
+                // code-point estimate under-measures wide glyphs and the error
+                // compounds down the ancestor chain — squashed/jumbled labels at
+                // depth. Contract (dasher.h): fill out_width/out_height in pixels
+                // and return 0 on success; non-zero falls back to the estimate.
+                dasher_set_text_size_callback(newCtx, { text, fontSize, outWidth, outHeight, userData in
+                    guard let text = text, let outWidth = outWidth, let outHeight = outHeight, let userData = userData else { return 1 }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    return instance.measureLabel(String(cString: text), fontSize: fontSize, outWidth: outWidth, outHeight: outHeight)
+                }, retained)
+                dasher_set_message_callback(newCtx, { messageType, text, userData in
+                    guard let text = text, let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    let str = String(cString: text)
+                    let isWarning = messageType == 1
+                    // Engine work during bootstrap happens off the main actor;
+                    // rare UI-facing callbacks hop to the main queue (output/
+                    // delete stay synchronous — draw-loop ordering).
+                    DispatchQueue.main.async { instance.onMessage?(isWarning, str) }
+                }, retained)
+                dasher_set_speak_callback(newCtx, { text, interrupt, userData in
+                    guard let text = text, let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    let str = String(cString: text)
+                    DispatchQueue.main.async { instance.onSpeak?(str, interrupt != 0) }
+                }, retained)
+                dasher_set_parameter_callback(newCtx, { paramKey, userData in
+                    guard let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    DispatchQueue.main.async { instance.onParameterChange?(Int(paramKey)) }
+                }, retained)
+                dasher_set_clipboard_callback(newCtx, { text, userData in
+                    guard let text = text, let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    let str = String(cString: text)
+                    DispatchQueue.main.async { instance.onClipboard?(str) }
+                }, retained)
+
+            // Device locale for engine strings (RFC 0003), then the initial
+            // realize (alphabet parse + training) — off the main thread.
+            if dasher_set_locale(newCtx, localeTag) != 0 {
+                _ = dasher_set_locale(newCtx, "en")
+            }
+            if realizeDefaultScreen {
+                dasher_set_screen_size(newCtx, 800, 600)
+            }
+            return (newCtx, err)
+        }.value
+        lastError = created.1
+        ctx = created.0
+    }
+
+    /// Off-main realize (alphabet parse + training) at an explicit size — for
+    /// targets that defer the first realize (macOS v5-migration flow) or need
+    /// a large re-realize (e.g. alphabet switch on first canvas layout).
+    func realize(screenWidth: Int, screenHeight: Int) async {
+        guard let ctx = ctx else { return }
+        let w = Int32(screenWidth), h = Int32(screenHeight)
+        await Task.detached(priority: .userInitiated) {
+            dasher_set_screen_size(ctx, w, h)
+        }.value
+    }
+
+    /// Device locale mapped to an available engine locale code (RFC 0003).
+    /// Static and ctx-free so bootstrap() can pre-compute it on the main actor.
+    static func engineLocaleTag(dataDir: String) -> String {
+        let lang = Locale.current.language.languageCode?.identifier ?? "en"
+        let url = URL(fileURLWithPath: dataDir)
+            .appendingPathComponent("Strings", isDirectory: true)
+            .appendingPathComponent("locales.json")
+        struct LocalesFile: Decodable { let locales: [Entry] }
+        struct Entry: Decodable { let code: String }
+        guard let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(LocalesFile.self, from: data) else {
+            return "en"
+        }
+        let codes = Set(file.locales.map { $0.code })
+        if codes.contains(lang) { return lang }
+        if lang == "zh" && codes.contains("zh-CN") { return "zh-CN" }
+        return "en"
     }
 
     private func resolveFontParamKey() {
