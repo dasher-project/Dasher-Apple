@@ -550,7 +550,15 @@ struct MacDasherSettingsView: View {
         case .bool:
             let binding = Binding<Bool>(
                 get: { viewModel.bridge.getBoolParameter(key: param.key) },
-                set: { viewModel.bridge.setBoolParameter(key: param.key, value: $0) }
+                set: { newValue in
+                    // An explicit flip of auto-calibration is a user choice —
+                    // record it so launch-time method gating doesn't revert it.
+                    if param.key == viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE") {
+                        AccessConfiguration.userToggledAutocalibrate(to: newValue,
+                                                                    method: AccessConfiguration.current.method)
+                    }
+                    viewModel.bridge.setBoolParameter(key: param.key, value: newValue)
+                }
             )
             HStack {
                 VStack(alignment: .leading, spacing: 2) {

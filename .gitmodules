@@ -1,3 +1,6 @@
 [submodule "DasherCore"]
 	path = DasherCore
 	url = https://github.com/dasher-project/DasherCore.git
+[submodule "SharedResources"]
+	path = SharedResources
+	url = https://github.com/dasher-project/dasher-shared-resources.git
