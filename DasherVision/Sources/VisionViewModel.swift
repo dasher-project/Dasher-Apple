@@ -47,9 +47,7 @@ class VisionViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
-        configureForEyeGaze()
         let savedConfig = AccessConfiguration.current
-        savedConfig.apply(to: bridge)
         bridge.onOutput = { [weak self] _ in
             self?.outputText = self?.bridge.getOutputText() ?? ""
         }
@@ -82,7 +80,22 @@ class VisionViewModel: ObservableObject {
                 UIPasteboard.general.string = text
             }
         }
+
+        // RFC 0018 two-phase start: engine create + locale + first realize on
+        // a background task; gaze defaults + access config need the live
+        // engine, so they run post-boot.
+        Task { [weak self] in
+            await bridge.bootstrap()
+            guard let self else { return }
+            self.configureForEyeGaze()
+            savedConfig.apply(to: self.bridge)
+            self.isEngineReady = true
+        }
     }
+
+    /// RFC 0018: false until the background engine bootstrap completes —
+    /// drives the canvas loading overlay.
+    @Published private(set) var isEngineReady = false
 
     func setCanvasSize(_ size: CGSize) {
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))

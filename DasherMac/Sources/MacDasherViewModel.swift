@@ -52,7 +52,6 @@ class MacDasherViewModel: ObservableObject {
         )
         let userDir = sharedURL?.path ?? dataPath
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userDir)
-        bridge.setLocaleFromDevice()
 
         // Store bridge reference for migration
         MigrationBridgeHolder.shared.bridge = bridge
@@ -109,7 +108,6 @@ class MacDasherViewModel: ObservableObject {
         }
 
         let savedConfig = AccessConfiguration.current
-        savedConfig.apply(to: bridge)
 
         let bitrateKey = bridge.findParameterKey("LP_MAX_BITRATE")
         bridge.onParameterChange = { [weak self] key in
@@ -118,8 +116,21 @@ class MacDasherViewModel: ObservableObject {
                 self?.speed = Double(self?.bridge.speedPercent ?? 100) / 100.0
             }
         }
-        speed = Double(bridge.speedPercent) / 100.0
+        // RFC 0018 two-phase start: engine create + locale on a background
+        // task (the first realize is deferred to startEngine below — the v5
+        // migration must be able to set parameters first). apply(to:) also
+        // needs a live engine, so it runs post-boot.
+        Task { [weak self] in
+            await bridge.bootstrap(realizeDefaultScreen: false)
+            guard let self else { return }
+            savedConfig.apply(to: self.bridge)
+            self.speed = Double(self.bridge.speedPercent) / 100.0
+        }
     }
+
+    /// RFC 0018: false until the first realize completes — drives the canvas
+    /// loading overlay.
+    @Published private(set) var isEngineReady = false
 
     private var engineStarted = false
 
@@ -129,11 +140,17 @@ class MacDasherViewModel: ObservableObject {
     /// Starts the Dasher engine. Call this after any v5 migration has completed.
     func startEngine(width: Int = 900, height: Int = 600) {
         engineStarted = true
-        bridge.setScreenSize(width: width, height: height)
-        // Apply deferred migration parameters now that engine is realized
+        // Apply deferred migration parameters now that engine is realized,
+        // then realize off the main thread (RFC 0018) so the canvas never
+        // blocks on alphabet parse + training.
         if !v5DeferredParams.isEmpty {
             V5MigrationService.applyDeferredParameters(v5DeferredParams, bridge: bridge)
             v5DeferredParams = []
+        }
+        Task { [weak self] in
+            await bridge.realize(screenWidth: width, screenHeight: height)
+            guard let self else { return }
+            self.isEngineReady = true
         }
     }
 

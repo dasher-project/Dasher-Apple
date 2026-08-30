@@ -88,7 +88,7 @@ struct ContentView: View {
 
             Divider().overlay(Color("BarBorder"))
 
-            DasherCanvasView(viewModel: viewModel)
+            DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
                 .frame(height: contentHeight * (1 - outputPaneFraction))
                 .ignoresSafeArea(edges: .leading)
 
@@ -137,7 +137,7 @@ struct ContentView: View {
 
             Divider().overlay(Color("GridBorder"))
 
-            DasherCanvasView(viewModel: viewModel)
+            DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
                 .frame(height: contentHeight * (1 - outputPaneFraction))
                 .ignoresSafeArea(edges: .leading)
 
@@ -162,7 +162,7 @@ struct ContentView: View {
             Divider().overlay(Color("BarBorder"))
 
             HStack(spacing: 0) {
-                DasherCanvasView(viewModel: viewModel)
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
                     .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
 
                 Divider().overlay(Color("GridBorder"))
@@ -213,7 +213,7 @@ struct ContentView: View {
 
                 Divider().overlay(Color("GridBorder"))
 
-                DasherCanvasView(viewModel: viewModel)
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
                     .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
             }
 

@@ -9,6 +9,9 @@ class DasherViewModel: ObservableObject {
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
     @Published var isControlModeActive: Bool = false
+    /// RFC 0018: false until the background engine bootstrap (create, locale,
+    /// realize) completes — drives the canvas loading overlay.
+    @Published private(set) var isEngineReady = false
     @Published var gameTargetText: String = ""
     @Published var gameCorrectCount: Int = 0
     @Published var gameTargetLength: Int = 0
@@ -53,8 +56,6 @@ class DasherViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
-        bridge.setLocaleFromDevice()
-        bridge.setScreenSize(width: 800, height: 600)
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
@@ -82,12 +83,6 @@ class DasherViewModel: ObservableObject {
             }
         }
         let savedConfig = AccessConfiguration.current
-        savedConfig.apply(to: bridge)
-        #if os(iOS)
-        if savedConfig.method == .tilt {
-            tiltService.activate(bridge: bridge)
-        }
-        #endif
 
         let bitrateKey = bridge.findParameterKey("LP_MAX_BITRATE")
         bridge.onParameterChange = { [weak self] key in
@@ -96,7 +91,23 @@ class DasherViewModel: ObservableObject {
                 self?.speed = Double(self?.bridge.speedPercent ?? 100) / 100.0
             }
         }
-        speed = Double(bridge.speedPercent) / 100.0
+
+        // RFC 0018 two-phase start (Dasher-Android pattern): the engine is
+        // created + realized on a background task so the first canvas frame
+        // never blocks; configuration that needs a live engine runs when it
+        // completes and the UI swaps the loading state out.
+        Task { [weak self] in
+            await bridge.bootstrap()
+            guard let self else { return }
+            savedConfig.apply(to: self.bridge)
+            #if os(iOS)
+            if savedConfig.method == .tilt {
+                self.tiltService.activate(bridge: self.bridge)
+            }
+            #endif
+            self.speed = Double(self.bridge.speedPercent) / 100.0
+            self.isEngineReady = true
+        }
     }
 
     func setCanvasSize(_ size: CGSize) {
