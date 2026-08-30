@@ -246,6 +246,7 @@ struct MacDasherSettingsView: View {
                         Divider()
                         ResetSettingsSection {
                             viewModel.bridge.resetToDefaults()
+                            AlphabetFollow.followsLocale = true // reset re-enables locale-follow (RFC 0003)
                         }
                     }
                     .padding(16)
@@ -410,7 +411,10 @@ struct MacDasherSettingsView: View {
             if !pickerAlphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
                     get: { viewModel.bridge.alphabetId },
-                    set: { viewModel.bridge.setAlphabetId($0) }
+                    set: {
+                        AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
+                        viewModel.bridge.setAlphabetId($0)
+                    }
                 )) {
                     ForEach(pickerAlphabets, id: \.name) { a in
                         Text(a.name).tag(a.name)
