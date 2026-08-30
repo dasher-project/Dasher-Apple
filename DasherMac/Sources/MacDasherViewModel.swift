@@ -163,6 +163,9 @@ class MacDasherViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.realize(screenWidth: width, screenHeight: height)
             guard let self else { return }
+            if let size = self.pendingCanvasSize {
+                self.bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
+            }
             self.applyLocaleFollowIfNeeded()
             self.isEngineReady = true
         }
@@ -178,7 +181,12 @@ class MacDasherViewModel: ObservableObject {
         }
     }
 
+    /// Buffered: canvas layout can precede startEngine (migration prompt), in
+    /// which case the forward no-ops — re-apply after the first realize.
+    private var pendingCanvasSize: CGSize?
+
     func setCanvasSize(_ size: CGSize) {
+        pendingCanvasSize = size
         guard engineStarted else { return }
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
     }

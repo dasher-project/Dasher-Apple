@@ -102,6 +102,9 @@ class DasherViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.bootstrap()
             guard let self else { return }
+            if let size = self.pendingCanvasSize {
+                await bridge.realize(screenWidth: Int(size.width), screenHeight: Int(size.height))
+            }
             savedConfig.apply(to: self.bridge)
             #if os(iOS)
             if savedConfig.method == .tilt {
@@ -125,7 +128,15 @@ class DasherViewModel: ObservableObject {
         bridge.saveSettings()
     }
 
+    /// Last canvas size reported by layout. Pre-bootstrap the forward to the
+    /// engine no-ops (ctx guard), so it is buffered and re-applied as the real
+    /// first realize once the engine is ready — otherwise the engine stays at
+    /// the bootstrap's 800×600 default and a portrait canvas draws off-layout
+    /// until a rotation happens to fire layout again (first-run bug report).
+    private var pendingCanvasSize: CGSize?
+
     func setCanvasSize(_ size: CGSize) {
+        pendingCanvasSize = size
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
         #if os(iOS)
         tiltService.screenWidth = Int(size.width)
