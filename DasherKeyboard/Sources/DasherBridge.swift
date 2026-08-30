@@ -563,6 +563,16 @@ class DasherBridge: InputMethodBridge {
         dasher_save_settings(ctx)
     }
 
+    /// Re-read dasher_settings.xml and apply differing values to the live
+    /// engine (parameter-change notifications fire; the edit buffer is
+    /// preserved). Closes the stale-engine window where two components share
+    /// the user dir — the keyboard extension and this app (issue #44, the
+    /// Dasher-Android #30 pattern). Needs DasherCore >= v0.2.11.
+    func reloadSettings() {
+        guard let ctx = ctx else { return }
+        dasher_reload_settings(ctx)
+    }
+
     func configureForLowMemory() {
         guard let ctx = ctx else { return }
         let maxOrderKey = dasher_find_parameter_key("LP_LM_MAX_ORDER")

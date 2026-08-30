@@ -153,6 +153,22 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
                 let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
                 return instance.measureLabel(String(cString: text), fontSize: fontSize, outWidth: outWidth, outHeight: outHeight)
             }, retained)
+
+            // Cross-component settings sync (issue #44, Dasher-Android #30
+            // pattern): the keyboard extension shares this user dir and may
+            // have written dasher_settings.xml while this app was inactive.
+            // Reload on becoming active — cheap, no-op when nothing changed.
+            #if canImport(UIKit)
+            NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification,
+                                                   object: nil, queue: .main) { [weak self] _ in
+                self?.reloadSettings()
+            }
+            #elseif canImport(AppKit)
+            NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification,
+                                                   object: nil, queue: .main) { [weak self] _ in
+                self?.reloadSettings()
+            }
+            #endif
             let retained2 = Unmanaged.passUnretained(self).toOpaque()
             dasher_set_message_callback(ctx, { messageType, text, userData in
                 guard let text = text, let userData = userData else { return }
@@ -796,6 +812,16 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     func saveSettings() {
         guard let ctx = ctx else { return }
         dasher_save_settings(ctx)
+    }
+
+    /// Re-read dasher_settings.xml and apply differing values to the live
+    /// engine (parameter-change notifications fire; the edit buffer is
+    /// preserved). Closes the stale-engine window where two components share
+    /// the user dir — the keyboard extension and this app (issue #44, the
+    /// Dasher-Android #30 pattern). Needs DasherCore >= v0.2.11.
+    func reloadSettings() {
+        guard let ctx = ctx else { return }
+        dasher_reload_settings(ctx)
     }
 
     /// Restore all Dasher settings to their built-in defaults. Deletes the
