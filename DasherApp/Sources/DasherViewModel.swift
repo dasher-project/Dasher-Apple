@@ -12,6 +12,8 @@ class DasherViewModel: ObservableObject {
     /// RFC 0018: false until the background engine bootstrap (create, locale,
     /// realize) completes — drives the canvas loading overlay.
     @Published private(set) var isEngineReady = false
+
+    private let dataPath: String
     @Published var gameTargetText: String = ""
     @Published var gameCorrectCount: Int = 0
     @Published var gameTargetLength: Int = 0
@@ -52,6 +54,7 @@ class DasherViewModel: ObservableObject {
 
     init() {
         let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
+        self.dataPath = dataPath
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
@@ -106,8 +109,20 @@ class DasherViewModel: ObservableObject {
             }
             #endif
             self.speed = Double(self.bridge.speedPercent) / 100.0
+            self.applyLocaleFollowIfNeeded()
             self.isEngineReady = true
         }
+    }
+
+    /// RFC 0003 locale-follow (Dasher-Android #31 parity): until the user
+    /// explicitly picks an alphabet, follow the device locale. Runs after the
+    /// first realize; the suggested alphabet lands via a normal ChangeAlphabet.
+    private func applyLocaleFollowIfNeeded() {
+        guard AlphabetFollow.followsLocale,
+              let suggested = AlphabetIndex.suggestForLocale(dataDir: dataPath, localeTag: Locale.current.identifier),
+              suggested.id != bridge.alphabetId else { return }
+        bridge.setAlphabetId(suggested.id)
+        bridge.saveSettings()
     }
 
     func setCanvasSize(_ size: CGSize) {

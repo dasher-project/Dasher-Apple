@@ -446,6 +446,7 @@ struct ContentView: View {
             NavigationView {
                 List(alphabets, id: \.name) { a in
                     Button {
+                        AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId(a.name)
                         AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": a.name])
                         showAlphabetPopover = false

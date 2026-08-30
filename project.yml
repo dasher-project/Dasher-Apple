@@ -224,6 +224,7 @@ targets:
           mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/colors" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
           # Essential alphabets only (root-level English/German variants)
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet.dtd" "$DEST/alphabets/"
+          cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet_index.json" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
           # All colour/color palettes (small, ~270KB total)
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true

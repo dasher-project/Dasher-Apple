@@ -51,6 +51,7 @@ class MacDasherViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         let userDir = sharedURL?.path ?? dataPath
+        self.dataPath = dataPath
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userDir)
 
         // Store bridge reference for migration
@@ -128,9 +129,21 @@ class MacDasherViewModel: ObservableObject {
         }
     }
 
+    /// RFC 0003 locale-follow (Dasher-Android #31 parity): until the user
+    /// explicitly picks an alphabet, follow the device locale.
+    func applyLocaleFollowIfNeeded() {
+        guard AlphabetFollow.followsLocale,
+              let suggested = AlphabetIndex.suggestForLocale(dataDir: dataPath, localeTag: Locale.current.identifier),
+              suggested.id != bridge.alphabetId else { return }
+        bridge.setAlphabetId(suggested.id)
+        bridge.saveSettings()
+    }
+
     /// RFC 0018: false until the first realize completes — drives the canvas
     /// loading overlay.
     @Published private(set) var isEngineReady = false
+
+    private let dataPath: String
 
     private var engineStarted = false
 
@@ -150,6 +163,7 @@ class MacDasherViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.realize(screenWidth: width, screenHeight: height)
             guard let self else { return }
+            self.applyLocaleFollowIfNeeded()
             self.isEngineReady = true
         }
     }
