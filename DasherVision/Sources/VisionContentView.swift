@@ -12,7 +12,7 @@ struct VisionContentView: View {
             // Canvas owns its own UIHoverGestureRecognizer (dormant on
             // current visionOS — hover APIs deliver zero events) AND handles
             // pinch via touchesBegan/Moved/Ended. Pinch-and-look is the model.
-            VisionCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+            VisionCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                 .ignoresSafeArea()
 
             VStack {

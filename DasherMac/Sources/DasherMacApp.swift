@@ -55,13 +55,21 @@ struct DasherMacApp: App {
                     V5MigrationPrompt(
                         scanResult: viewModel.v5MigrationScan,
                         onImport: {
-                            let result = V5MigrationService.importSettings(
-                                bridge: viewModel.bridge,
-                                userDir: MigrationBridgeHolder.shared.userDir
-                            )
-                            viewModel.v5DeferredParams = result.deferredParameters
-                            showV5Migration = false
-                            startEngineIfNeeded()
+                            // Audit #2: the prompt can be answered while the
+                            // detached dasher_create is still running — every
+                            // parameter write would silently no-op at the ctx
+                            // guard while migration is marked completed.
+                            // Await engine creation first.
+                            Task { @MainActor in
+                                await viewModel.waitForEngine()
+                                let result = V5MigrationService.importSettings(
+                                    bridge: viewModel.bridge,
+                                    userDir: MigrationBridgeHolder.shared.userDir
+                                )
+                                viewModel.v5DeferredParams = result.deferredParameters
+                                showV5Migration = false
+                                startEngineIfNeeded()
+                            }
                         },
                         onSkip: {
                             V5MigrationService.markOffered()

@@ -109,7 +109,7 @@ struct MacContentView: View {
                 let contentWidth = geo.size.width
 
                 HStack(spacing: 0) {
-                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .frame(width: contentWidth * (1 - outputPaneFraction))
 
                     Divider()
@@ -153,7 +153,7 @@ struct MacContentView: View {
 
                     Divider()
 
-                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .frame(width: contentWidth * (1 - outputPaneFraction))
                 }
             }
@@ -171,7 +171,7 @@ struct MacContentView: View {
                 let contentHeight = geo.size.height - 44
 
                 VStack(spacing: 0) {
-                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .frame(height: contentHeight * (1 - outputPaneFraction))
 
                     Divider()
@@ -215,7 +215,7 @@ struct MacContentView: View {
 
                     Divider()
 
-                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .frame(height: contentHeight * (1 - outputPaneFraction))
                 }
             }
@@ -242,7 +242,7 @@ struct MacContentView: View {
                     }
             } else {
                 ZStack(alignment: .topTrailing) {
-                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady))
+                    MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .background(Color.clear)
                     VStack(spacing: 4) {
                         targetAppIndicator.padding(8)

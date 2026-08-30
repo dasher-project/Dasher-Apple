@@ -12,6 +12,9 @@ class DasherViewModel: ObservableObject {
     /// RFC 0018: false until the background engine bootstrap (create, locale,
     /// realize) completes — drives the canvas loading overlay.
     @Published private(set) var isEngineReady = false
+    /// Set when dasher_create failed — the overlay shows an error state and
+    /// the canvas never appears dead (audit #5).
+    @Published private(set) var engineErrorMessage: String?
 
     private let dataPath: String
     @Published var gameTargetText: String = ""
@@ -102,6 +105,10 @@ class DasherViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.bootstrap()
             guard let self else { return }
+            if let err = bridge.lastError {
+                self.engineErrorMessage = err
+                return
+            }
             if let size = self.pendingCanvasSize {
                 await bridge.realize(screenWidth: Int(size.width), screenHeight: Int(size.height))
             }

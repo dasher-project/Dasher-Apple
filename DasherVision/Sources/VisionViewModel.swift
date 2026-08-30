@@ -88,6 +88,10 @@ class VisionViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.bootstrap()
             guard let self else { return }
+            if let err = bridge.lastError {
+                self.engineErrorMessage = err
+                return
+            }
             if let size = self.pendingCanvasSize {
                 await bridge.realize(screenWidth: Int(size.width), screenHeight: Int(size.height))
             }
@@ -110,6 +114,8 @@ class VisionViewModel: ObservableObject {
     /// RFC 0018: false until the background engine bootstrap completes —
     /// drives the canvas loading overlay.
     @Published private(set) var isEngineReady = false
+    /// Set when dasher_create failed (audit #5) — overlay shows an error.
+    @Published private(set) var engineErrorMessage: String?
 
     private let dataPath: String
 
