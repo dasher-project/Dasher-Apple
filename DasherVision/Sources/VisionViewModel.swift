@@ -88,6 +88,9 @@ class VisionViewModel: ObservableObject {
         Task { [weak self] in
             await bridge.bootstrap()
             guard let self else { return }
+            if let size = self.pendingCanvasSize {
+                await bridge.realize(screenWidth: Int(size.width), screenHeight: Int(size.height))
+            }
             self.configureForEyeGaze()
             savedConfig.apply(to: self.bridge)
             self.applyLocaleFollowIfNeeded()
@@ -110,7 +113,12 @@ class VisionViewModel: ObservableObject {
 
     private let dataPath: String
 
+    /// Buffered like the iOS app: pre-bootstrap sizes no-op at the engine and
+    /// are re-applied as the real first realize (portrait first-run fix).
+    private var pendingCanvasSize: CGSize?
+
     func setCanvasSize(_ size: CGSize) {
+        pendingCanvasSize = size
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
     }
 
