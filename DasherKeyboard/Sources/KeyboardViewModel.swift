@@ -65,6 +65,12 @@ class KeyboardViewModel {
 
     func updateProxy(_ proxy: UITextDocumentProxy) {
         textDocumentProxy = proxy
+        // Cross-component settings sync (issue #44, Dasher-Android #30 pattern):
+        // the main app may have saved dasher_settings.xml while the keyboard
+        // process stayed warm holding an older snapshot. This fires each time
+        // the keyboard attaches to a text field — reload is cheap and a no-op
+        // when nothing changed (differing values only; edit buffer preserved).
+        bridge.reloadSettings()
     }
 
     func setCanvasSize(_ size: CGSize) {
