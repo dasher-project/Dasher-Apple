@@ -227,6 +227,10 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         }.value
         lastError = created.1
         ctx = created.0
+        if ctx != nil, let dark = pendingAppearanceDark {
+            pendingAppearanceDark = nil
+            setSystemAppearance(dark: dark)
+        }
     }
 
     /// Off-main realize (alphabet parse + training) at an explicit size — for
@@ -671,8 +675,16 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
 
     // MARK: - Appearance / dark mode (RFC 0007)
 
+    /// Appearance requested before the engine exists is buffered and replayed
+    /// at bootstrap completion — the onAppear call lands pre-boot, and a lost
+    /// dark-mode request meant a light palette on first run (audit #6).
+    private var pendingAppearanceDark: Bool?
+
     func setSystemAppearance(dark: Bool) {
-        guard let ctx = ctx else { return }
+        guard let ctx = ctx else {
+            pendingAppearanceDark = dark
+            return
+        }
         dasher_set_system_appearance(ctx, dark ? 2 : 1)
     }
     func setAppearanceMode(_ mode: Int) {
@@ -767,13 +779,20 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     // Cache keyed on text+font+size; the engine also caches engine-side, this
     // keeps repeated cold misses cheap (mirrors Dasher-Windows #36).
     private var textMeasureCache: [String: (w: Int32, h: Int32)] = [:]
+    /// measureLabel runs on the main draw loop AND the detached realize thread
+    /// (audit #4); the engine-side cache keeps contention rare, this lock keeps
+    /// the Dictionary access defined.
+    private let textMeasureLock = NSLock()
 
     /// Measure a single-line label with the same font the canvas draws opcode-5
     /// text with. Returns 0 on success (dasher.h contract); 1 = fall back to
     /// the engine's estimate.
     func measureLabel(_ text: String, fontSize: Int32, outWidth: UnsafeMutablePointer<Int32>, outHeight: UnsafeMutablePointer<Int32>) -> Int32 {
         let cacheKey = "\(fontName)|\(fontSize)|\(text)"
-        if let hit = textMeasureCache[cacheKey] {
+        let cached: (w: Int32, h: Int32)? = textMeasureLock.withLock {
+            textMeasureCache[cacheKey]
+        }
+        if let hit = cached {
             outWidth.pointee = hit.w
             outHeight.pointee = hit.h
             return 0
@@ -788,8 +807,10 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         guard bounds.width > 0 || bounds.height > 0 else { return 1 }
         let w = Int32(bounds.width.rounded(.up))
         let h = Int32(bounds.height.rounded(.up))
-        if textMeasureCache.count > 4096 { textMeasureCache.removeAll() } // bounded
-        textMeasureCache[cacheKey] = (w, h)
+        textMeasureLock.withLock {
+            if textMeasureCache.count > 4096 { textMeasureCache.removeAll() } // bounded
+            textMeasureCache[cacheKey] = (w, h)
+        }
         outWidth.pointee = w
         outHeight.pointee = h
         return 0

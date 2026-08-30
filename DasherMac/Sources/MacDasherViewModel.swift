@@ -142,6 +142,8 @@ class MacDasherViewModel: ObservableObject {
     /// RFC 0018: false until the first realize completes — drives the canvas
     /// loading overlay.
     @Published private(set) var isEngineReady = false
+    /// Set when dasher_create failed (audit #5) — overlay shows an error.
+    @Published private(set) var engineErrorMessage: String?
 
     private let dataPath: String
 
@@ -151,20 +153,38 @@ class MacDasherViewModel: ObservableObject {
     var v5DeferredParams: [(key: Int, value: String)] = []
 
     /// Starts the Dasher engine. Call this after any v5 migration has completed.
+    /// Await engine creation (idempotent — safe alongside the init boot Task).
+    /// Flows that write parameters from UI timing (the v5 migration import)
+    /// must call this first: writes landing before dasher_create finishes
+    /// silently no-op at the bridge's ctx guard and would be lost (audit #2).
+    func waitForEngine() async {
+        await bridge.bootstrap(realizeDefaultScreen: false)
+    }
+
     func startEngine(width: Int = 900, height: Int = 600) {
         engineStarted = true
-        // Apply deferred migration parameters now that engine is realized,
-        // then realize off the main thread (RFC 0018) so the canvas never
-        // blocks on alphabet parse + training.
-        if !v5DeferredParams.isEmpty {
-            V5MigrationService.applyDeferredParameters(v5DeferredParams, bridge: bridge)
-            v5DeferredParams = []
-        }
+        // RFC 0018 + audit #1/#3: serialize on bootstrap before realizing —
+        // startEngine fires from onAppear and can beat the detached create,
+        // in which case realize() no-ops and the engine stays unrealized
+        // forever. Deferred migration parameters apply AFTER the first
+        // realize: the engine's first set_screen_size forces
+        // SP_INPUT_FILTER="Normal Control" (CAPI), clobbering a pre-realize
+        // filter write — the historical order was realize-then-apply. The
+        // pending canvas size (if layout already ran) becomes the realize
+        // size directly instead of a second setScreenSize pass.
         Task { [weak self] in
-            await bridge.realize(screenWidth: width, screenHeight: height)
+            await bridge.bootstrap(realizeDefaultScreen: false)
+            let target = self?.pendingCanvasSize
+                .map { (Int($0.width), Int($0.height)) } ?? (width, height)
+            await bridge.realize(screenWidth: target.0, screenHeight: target.1)
             guard let self else { return }
-            if let size = self.pendingCanvasSize {
-                self.bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
+            if let err = bridge.lastError {
+                self.engineErrorMessage = err
+                return
+            }
+            if !self.v5DeferredParams.isEmpty {
+                V5MigrationService.applyDeferredParameters(self.v5DeferredParams, bridge: self.bridge)
+                self.v5DeferredParams = []
             }
             self.applyLocaleFollowIfNeeded()
             self.isEngineReady = true

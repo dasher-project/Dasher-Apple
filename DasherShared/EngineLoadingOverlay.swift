@@ -4,28 +4,24 @@ import SwiftUI
 /// a background task while the UI appears immediately; this overlay covers the
 /// canvas until the first frame is available. The 300 ms grace avoids flashing
 /// it on warm starts, where bootstrap typically completes with the first
-/// render anyway.
+/// render anyway. When `errorMessage` is set (engine creation failed) an
+/// error state shows instead — the canvas must never silently appear dead.
 public struct EngineLoadingOverlay: View {
     private let isReady: Bool
+    private let errorMessage: String?
     @State private var pastGrace = false
 
-    public init(isReady: Bool) {
+    public init(isReady: Bool, errorMessage: String? = nil) {
         self.isReady = isReady
+        self.errorMessage = errorMessage
     }
 
     public var body: some View {
         Group {
-            if pastGrace && !isReady {
-                ZStack {
-                    Rectangle().fill(.ultraThinMaterial)
-                    VStack(spacing: 12) {
-                        ProgressView()
-                        Text("Preparing Dasher…")
-                            .font(.callout)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .transition(.opacity)
+            if let errorMessage {
+                errorState(errorMessage)
+            } else if pastGrace && !isReady {
+                loadingState
             }
         }
         .onAppear {
@@ -35,6 +31,40 @@ public struct EngineLoadingOverlay: View {
             }
         }
         .animation(.easeInOut(duration: 0.15), value: pastGrace)
-        .allowsHitTesting(!isReady)
+    }
+
+    private var loadingState: some View {
+        ZStack {
+            Rectangle().fill(.ultraThinMaterial)
+            VStack(spacing: 12) {
+                ProgressView()
+                Text("Preparing Dasher…")
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .transition(.opacity)
+    }
+
+    private func errorState(_ message: String) -> some View {
+        ZStack {
+            Rectangle().fill(.regularMaterial)
+            VStack(spacing: 12) {
+                Image(systemName: "exclamationmark.triangle")
+                    .font(.title)
+                    .foregroundColor(.orange)
+                Text("Dasher could not start")
+                    .font(.headline)
+                Text(message)
+                    .font(.callout)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+                Text("Please try reinstalling, or report this in a GitHub issue.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .transition(.opacity)
     }
 }
