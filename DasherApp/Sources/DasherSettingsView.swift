@@ -83,6 +83,7 @@ struct DasherSettingsView: View {
                         KeyboardSetupSection()
                         ResetSettingsSection {
                             viewModel.bridge.resetToDefaults()
+                            AlphabetFollow.followsLocale = true // reset re-enables locale-follow (RFC 0003)
                         }
                     } else {
                         if selectedSection == .output {
@@ -310,7 +311,10 @@ struct DasherSettingsView: View {
             if !alphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
                     get: { viewModel.bridge.alphabetId },
-                    set: { viewModel.bridge.setAlphabetId($0) }
+                    set: {
+                        AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
+                        viewModel.bridge.setAlphabetId($0)
+                    }
                 )) {
                     ForEach(alphabets, id: \.name) { a in
                         Text(a.name).tag(a.name)

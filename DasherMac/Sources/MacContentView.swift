@@ -378,7 +378,10 @@ struct MacContentView: View {
         let alphabets = viewModel.bridge.allAlphabets
         return Menu {
             ForEach(alphabets, id: \.name) { a in
-                Button(a.name) { viewModel.bridge.setAlphabetId(a.name) }
+                Button(a.name) {
+                    AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
+                    viewModel.bridge.setAlphabetId(a.name)
+                }
             }
         } label: {
             HStack(spacing: 3) {

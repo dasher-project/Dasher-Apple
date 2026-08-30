@@ -37,10 +37,16 @@ class KeyboardViewModel {
 
         // First-run: no dasher_settings.xml yet means DasherCore fell back to
         // its compiled-in default alphabet ("English with limited punctuation").
-        // If the user's system locale maps to a different bundled alphabet,
-        // switch to it once and save. Subsequent launches read the saved value.
+        // Follow the device locale via the shared metadata index (replaces the
+        // old hardcoded en/de table) while locale-follow isn't pinned — the pin
+        // lives in the app group, so a pick in the main app applies here too.
         if let sharedURL = sharedURL, !FileManager.default.fileExists(atPath: sharedURL.appendingPathComponent("dasher_settings.xml").path) {
-            let localeAlphabet = Self.alphabetID(for: Locale.current)
+            let follows = UserDefaults(suiteName: SharedDefaults.groupIdentifier)?
+                .object(forKey: "alphabet_follows_locale") as? Bool ?? true
+            let localeAlphabet = follows
+                ? Self.suggestedAlphabet(for: Locale.current, dataDir: dataPath,
+                                         available: Set(bridge.allAlphabets.map { $0.name }))
+                : Self.alphabetID(for: Locale.current)
             os_log("KeyboardViewModel.init: first run, locale alphabet = %{public}@", log: keyboardLog, localeAlphabet)
             bridge.setAlphabetId(localeAlphabet)
             bridge.saveSettings()
@@ -107,5 +113,37 @@ class KeyboardViewModel {
         default:
             return "English with limited punctuation"
         }
+    }
+
+    /// Locale→alphabet via DasherCore's `alphabet_index.json` (bundled in
+    /// DasherKeyboardData), constrained to the alphabets this keyboard
+    /// actually ships. A minimal port of DasherShared/AlphabetIndex.swift —
+    /// the keyboard cannot link DasherShared (it would pull PostHog into the
+    /// memory-constrained extension). Falls back to the table above.
+    static func suggestedAlphabet(for locale: Locale, dataDir: String, available: Set<String>) -> String {
+        struct Entry: Decodable {
+            let id: String
+            let lang: String?
+            let source: String?
+        }
+        struct IndexFile: Decodable { let alphabets: [Entry] }
+        let url = URL(fileURLWithPath: dataDir)
+            .appendingPathComponent("alphabets", isDirectory: true)
+            .appendingPathComponent("alphabet_index.json")
+        guard let data = try? Data(contentsOf: url),
+              let file = try? JSONDecoder().decode(IndexFile.self, from: data) else {
+            return alphabetID(for: locale)
+        }
+        guard let language = locale.language.languageCode?.identifier.lowercased() else {
+            return alphabetID(for: locale)
+        }
+        let entries = file.alphabets.filter { available.contains($0.id) && $0.lang != nil }
+        func rank(_ e: Entry) -> Int {
+            let tier = e.source == "maintained" ? 0 : (e.source == "worldalphabets" ? 1 : 2)
+            return (2 - tier) * 1_000_000 + (e.id == "English with limited punctuation" ? 500_000 : 0)
+        }
+        let match = entries.filter { $0.lang!.lowercased().hasPrefix(language) }
+            .max(by: { rank($0) < rank($1) })
+        return match?.id ?? alphabetID(for: locale)
     }
 }

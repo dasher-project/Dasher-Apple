@@ -46,6 +46,7 @@ class VisionViewModel: ObservableObject {
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
+        self.dataPath = dataPath
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         let savedConfig = AccessConfiguration.current
         bridge.onOutput = { [weak self] _ in
@@ -89,13 +90,25 @@ class VisionViewModel: ObservableObject {
             guard let self else { return }
             self.configureForEyeGaze()
             savedConfig.apply(to: self.bridge)
+            self.applyLocaleFollowIfNeeded()
             self.isEngineReady = true
         }
+    }
+
+    /// RFC 0003 locale-follow (Dasher-Android #31 parity).
+    private func applyLocaleFollowIfNeeded() {
+        guard AlphabetFollow.followsLocale,
+              let suggested = AlphabetIndex.suggestForLocale(dataDir: dataPath, localeTag: Locale.current.identifier),
+              suggested.id != bridge.alphabetId else { return }
+        bridge.setAlphabetId(suggested.id)
+        bridge.saveSettings()
     }
 
     /// RFC 0018: false until the background engine bootstrap completes —
     /// drives the canvas loading overlay.
     @Published private(set) var isEngineReady = false
+
+    private let dataPath: String
 
     func setCanvasSize(_ size: CGSize) {
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
@@ -138,6 +151,7 @@ class VisionViewModel: ObservableObject {
     /// Reset all engine params to visionOS defaults. Useful when old persisted
     /// settings are causing unexpected behaviour.
     func resetToDefaults() {
+        AlphabetFollow.followsLocale = true // reset re-enables locale-follow (RFC 0003)
         // Clear persisted settings
         let userDir = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
