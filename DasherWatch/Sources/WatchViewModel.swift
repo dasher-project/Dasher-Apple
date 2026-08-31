@@ -74,8 +74,15 @@ final class WatchViewModel: ObservableObject {
     private static let tiltDeadZone = 0.10
 
     init() {
-        let dataPath = Bundle.main.path(forResource: "Data", ofType: nil) ?? ""
+        // The folder-reference resource keeps its source name: DasherWatchData
+        // (not "Data" like the iOS targets). A wrong name silently produced an
+        // empty dataDir and the engine's current_path() fallback scanned the
+        // user's home directory — now a hard, surfaced failure instead.
+        let dataPath = Bundle.main.path(forResource: "DasherWatchData", ofType: nil) ?? ""
         self.dataPath = dataPath
+        if dataPath.isEmpty {
+            engineErrorMessage = "Bundled data is missing (DasherWatchData). Reinstall the app."
+        }
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         self.bridge = WatchBridge(dataDir: dataPath, userDir: docs.path)
@@ -103,6 +110,8 @@ final class WatchViewModel: ObservableObject {
             // an unrealized engine segfaults (ChangeView with no screen).
             let target = self.pendingCanvasSize ?? CGSize(width: 324, height: 394)
             guard target.width >= 32, target.height >= 32 else { return }
+            self.isRealizing = true
+            defer { self.isRealizing = false }
             await bridge.realize(screenWidth: Int(target.width), screenHeight: Int(target.height))
             if bridge.hasEngineError {
                 self.engineErrorMessage = "The engine could not start (data scan failed). Try reinstalling the app."
@@ -134,10 +143,16 @@ final class WatchViewModel: ObservableObject {
 
     // MARK: - Frame
 
+    /// True while the (long) off-main realize runs: frame() returns nil
+    /// instead of blocking on the engine lock, so the UI stays responsive —
+    /// a slow realize previously froze the whole render loop behind the lock.
+    @Published private(set) var isRealizing = false
+
     /// Called from the TimelineView/Canvas each animation tick.
-    /// Returns nothing; the renderer pulls commands via bridge.
     func frame(timeMs: Int64) -> WatchDrawCommands? {
-        bridge.frame(timeMs: timeMs)
+        guard !isRealizing else { return nil }
+        bridge.debugNoteFrame()
+        return bridge.frame(timeMs: timeMs)
     }
 
     // MARK: - Touch input (2-D default filter, like the iOS app)

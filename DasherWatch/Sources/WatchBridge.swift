@@ -1,5 +1,8 @@
 import Foundation
 import UIKit
+import os
+
+private let watchDebugLog = OSLog(subsystem: "at.dasher.Dasher.watch", category: "input-debug")
 
 // MARK: - Draw command buffer (engine-owned: valid until the next frame() call)
 
@@ -88,6 +91,7 @@ final class WatchBridge {
                 let instance = Unmanaged<WatchBridge>.fromOpaque(userData).takeUnretainedValue()
                 let str = String(cString: text)
                 if eventType == 0 {
+                    instance.debugOutputCount += 1
                     DispatchQueue.main.async { instance.onOutput?(str) }
                 }
             }, retained)
@@ -185,19 +189,39 @@ final class WatchBridge {
 
     // MARK: - Input
 
+    private var debugMoveCount = 0
+    private var debugFrameCount = 0
+    private var debugOutputCount = 0
+
     func mouseMove(x: Float, y: Float) {
         guard let ctx = ctx else { return }
+        debugMoveCount += 1
+        if debugMoveCount <= 3 || debugMoveCount % 100 == 0 {
+            os_log("mouseMove #%d (%.0f, %.0f)", log: watchDebugLog, type: .debug, debugMoveCount, x, y)
+        }
         engineLock.withLock { dasher_mouse_move(ctx, x, y) }
     }
 
     func mouseDown() {
         guard let ctx = ctx else { return }
+        os_log("mouseDown", log: watchDebugLog, type: .debug)
         engineLock.withLock { dasher_mouse_down(ctx) }
     }
 
     func mouseUp() {
         guard let ctx = ctx else { return }
+        os_log("mouseUp (moves=%d frames=%d outputs=%d)", log: watchDebugLog, type: .debug,
+               debugMoveCount, debugFrameCount, debugOutputCount)
         engineLock.withLock { dasher_mouse_up(ctx) }
+    }
+
+    /// Debug: frame counter — call site logs periodically.
+    func debugNoteFrame() {
+        debugFrameCount += 1
+        if debugFrameCount % 300 == 0 {
+            os_log("frames=%d moves=%d outputs=%d outLen=%d", log: watchDebugLog, type: .debug,
+                   debugFrameCount, debugMoveCount, debugOutputCount, outputText.count)
+        }
     }
 
     /// One Dimensional Mode filter for crown steering: Y-only, engine
