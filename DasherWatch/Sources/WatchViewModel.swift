@@ -84,8 +84,17 @@ final class WatchViewModel: ObservableObject {
                 self.engineErrorMessage = err
                 return
             }
+            // Only realize at a sane size (>= 32pt via the setCanvasSize gate);
+            // the default covers the pre-layout window. Orientation and the
+            // input filter MUST follow a genuine realize — setting them against
+            // an unrealized engine segfaults (ChangeView with no screen).
             let target = self.pendingCanvasSize ?? CGSize(width: 324, height: 394)
+            guard target.width >= 32, target.height >= 32 else { return }
             await bridge.realize(screenWidth: Int(target.width), screenHeight: Int(target.height))
+            if bridge.hasEngineError {
+                self.engineErrorMessage = "The engine could not start (data scan failed). Try reinstalling the app."
+                return
+            }
             bridge.setVerticalOrientation()
             self.applyInputFilter()
             self.isEngineReady = true
@@ -94,7 +103,13 @@ final class WatchViewModel: ObservableObject {
 
     private var pendingCanvasSize: CGSize?
 
+    /// SwiftUI reports transient zero/tiny fractional sizes during multi-pass
+    /// layout. Forwarding them realizes/resizes the engine at a degenerate
+    /// geometry, which corrupts the model (verified crash — see the DasherCore
+    /// issues). Ignore anything below a sane floor; the settled size arrives
+    /// within a few passes.
     func setCanvasSize(_ size: CGSize) {
+        guard size.width >= 32, size.height >= 32 else { return }
         canvasSize = size
         pendingCanvasSize = size
         bridge.setCanvasSize(size)

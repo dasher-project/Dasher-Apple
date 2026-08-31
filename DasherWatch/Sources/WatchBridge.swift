@@ -30,6 +30,14 @@ final class WatchBridge {
     private(set) var lastError: String?
     private var pendingCanvasSize: CGSize?
 
+    /// Serializes ALL engine calls (audit #4, the deferred half — it bit the
+    /// watch first): the detached realize() flips `realized` mid-flight and
+    /// then rebuilds m_Root (pending-alphabet ChangeAlphabet), while the
+    /// TimelineView drives dasher_frame at 60fps from view-appear — RenderToView
+    /// caught m_Root null mid-rebuild and asserted. Every ctx-touching call
+    /// holds this lock; frame() waits instead of racing.
+    private let engineLock = NSLock()
+
     var onOutput: ((String) -> Void)?
     var onMessage: ((Bool, String) -> Void)?
 
@@ -54,6 +62,13 @@ final class WatchBridge {
     }
 
     var isReady: Bool { ctx != nil }
+
+    /// RFC 0009 error state (e.g. a failed Realize): frame/input no-op; the
+    /// VM surfaces it instead of showing a dead canvas.
+    var hasEngineError: Bool {
+        guard let ctx = ctx else { return false }
+        return engineLock.withLock { dasher_has_engine_error(ctx) != 0 }
+    }
 
     // MARK: - Bootstrap (RFC 0018)
 
@@ -108,15 +123,20 @@ final class WatchBridge {
     /// realize (see the note in bootstrap()).
     func setVerticalOrientation() {
         guard let ctx = ctx else { return }
-        dasher_set_long_parameter(ctx, dasher_find_parameter_key("LP_ORIENTATION"), 2)
+        engineLock.withLock {
+            dasher_set_long_parameter(ctx, dasher_find_parameter_key("LP_ORIENTATION"), 2)
+        }
     }
 
     /// Off-main realize at an explicit size.
     func realize(screenWidth: Int, screenHeight: Int) async {
         guard let ctx = ctx else { return }
         let w = Int32(screenWidth), h = Int32(screenHeight)
+        let lock = engineLock
         await Task.detached(priority: .userInitiated) {
-            dasher_set_screen_size(ctx, w, h)
+            lock.withLock {
+                dasher_set_screen_size(ctx, w, h)
+            }
         }.value
     }
 
@@ -125,7 +145,9 @@ final class WatchBridge {
     func setCanvasSize(_ size: CGSize) {
         pendingCanvasSize = size
         guard let ctx = ctx else { return }
-        dasher_set_screen_size(ctx, Int32(size.width), Int32(size.height))
+        engineLock.withLock {
+            dasher_set_screen_size(ctx, Int32(size.width), Int32(size.height))
+        }
     }
 
     func frame(timeMs: Int64) -> WatchDrawCommands? {
@@ -136,7 +158,9 @@ final class WatchBridge {
         var cmdCount: Int32 = 0
         var strs: UnsafeMutablePointer<UnsafeMutablePointer<CChar>?>?
         var strCount: Int32 = 0
-        dasher_frame(ctx, engineMs, &cmds, &cmdCount, &strs, &strCount)
+        engineLock.withLock {
+            dasher_frame(ctx, engineMs, &cmds, &cmdCount, &strs, &strCount)
+        }
         guard let cmds = cmds, cmdCount > 0 else { return nil }
         return WatchDrawCommands(commands: cmds, commandCount: Int(cmdCount),
                                  strings: strs, stringCount: Int(strCount))
@@ -157,79 +181,91 @@ final class WatchBridge {
 
     func mouseMove(x: Float, y: Float) {
         guard let ctx = ctx else { return }
-        dasher_mouse_move(ctx, x, y)
+        engineLock.withLock { dasher_mouse_move(ctx, x, y) }
     }
 
     func mouseDown() {
         guard let ctx = ctx else { return }
-        dasher_mouse_down(ctx)
+        engineLock.withLock { dasher_mouse_down(ctx) }
     }
 
     func mouseUp() {
         guard let ctx = ctx else { return }
-        dasher_mouse_up(ctx)
+        engineLock.withLock { dasher_mouse_up(ctx) }
     }
 
     /// One Dimensional Mode filter for crown steering: Y-only, engine
     /// synthesizes X (speed) from deflection.
     func setOneDimensionalMode(_ on: Bool) {
         guard let ctx = ctx else { return }
-        let values = getStringValues(key: Int(dasher_find_parameter_key("SP_INPUT_FILTER")))
         let target = on ? "One Dimensional Mode" : "Normal Control"
+        // Runs on the main actor; getStringValues/setStringParameter take the
+        // lock individually, so hold it across the pair for consistency.
+        engineLock.lock()
+        defer { engineLock.unlock() }
+        let values = getStringValuesLocked(ctx: ctx, key: Int(dasher_find_parameter_key("SP_INPUT_FILTER")))
         guard values.contains(target) else { return }
-        setStringParameter(key: Int(dasher_find_parameter_key("SP_INPUT_FILTER")), value: target)
+        dasher_set_string_parameter(ctx, Int32(dasher_find_parameter_key("SP_INPUT_FILTER")), target)
     }
 
     // MARK: - Text & state
 
     var outputText: String {
-        guard let ctx = ctx, let cStr = dasher_get_output_text(ctx) else { return "" }
-        return String(cString: cStr)
+        guard let ctx = ctx else { return "" }
+        return engineLock.withLock {
+            guard let cStr = dasher_get_output_text(ctx) else { return "" }
+            return String(cString: cStr)
+        }
     }
 
     func resetOutput() {
         guard let ctx = ctx else { return }
-        dasher_reset_output_text(ctx)
+        engineLock.withLock { dasher_reset_output_text(ctx) }
     }
 
     var speedPercent: Int {
         guard let ctx = ctx else { return 100 }
-        return Int(dasher_get_speed_percent(ctx))
+        return engineLock.withLock { Int(dasher_get_speed_percent(ctx)) }
     }
 
     func setSpeedPercent(_ percent: Int) {
         guard let ctx = ctx else { return }
-        dasher_set_speed_percent(ctx, Int32(percent))
+        engineLock.withLock { dasher_set_speed_percent(ctx, Int32(percent)) }
     }
 
     var alphabetId: String {
-        guard let ctx = ctx, let cStr = dasher_get_alphabet_id(ctx) else { return "" }
-        return String(cString: cStr)
+        guard let ctx = ctx else { return "" }
+        return engineLock.withLock {
+            guard let cStr = dasher_get_alphabet_id(ctx) else { return "" }
+            return String(cString: cStr)
+        }
     }
 
     func setAlphabetId(_ id: String) {
         guard let ctx = ctx else { return }
-        dasher_set_alphabet_id(ctx, id)
+        engineLock.withLock { dasher_set_alphabet_id(ctx, id) }
     }
 
     var allAlphabetNames: [String] {
         guard let ctx = ctx else { return [] }
-        let count = Int(dasher_get_alphabet_count(ctx))
-        return (0..<count).compactMap { i in
-            guard let p = dasher_get_alphabet_name(ctx, Int32(i)) else { return nil }
-            return String(cString: p)
+        return engineLock.withLock {
+            let count = Int(dasher_get_alphabet_count(ctx))
+            return (0..<count).compactMap { i in
+                guard let p = dasher_get_alphabet_name(ctx, Int32(i)) else { return nil }
+                return String(cString: p)
+            }
         }
     }
 
     func saveSettings() {
         guard let ctx = ctx else { return }
-        dasher_save_settings(ctx)
+        engineLock.withLock { dasher_save_settings(ctx) }
     }
 
     // MARK: - Parameter helpers
 
-    private func getStringValues(key: Int) -> [String] {
-        guard let ctx = ctx else { return [] }
+    /// Caller must hold engineLock (see setOneDimensionalMode).
+    private func getStringValuesLocked(ctx: OpaquePointer, key: Int) -> [String] {
         let count = Int(dasher_get_parameter_string_values(ctx, Int32(key), nil, 0))
         guard count > 0 else { return [] }
         var buffer: [UnsafePointer<CChar>?] = Array(repeating: nil, count: count)
