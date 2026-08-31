@@ -94,7 +94,10 @@ final class WatchViewModel: ObservableObject {
         self.orientation = savedOrientation
 
         bridge.onOutput = { [weak self] _ in
-            self?.outputText = self?.bridge.outputText ?? ""
+            let t = self?.bridge.outputText ?? ""
+            NSLog("[WATCH] onOutput fired, text now: \(t)")
+            self?.outputText = t
+            self?.markHintDone()
         }
 
         Task { [weak self] in
@@ -119,6 +122,7 @@ final class WatchViewModel: ObservableObject {
             }
             bridge.applyOrientation(self.orientation)
             self.applyInputFilter()
+            NSLog("[WATCH] BOOT COMPLETE ready")
             self.isEngineReady = true
         }
     }
@@ -249,6 +253,27 @@ final class WatchViewModel: ObservableObject {
         String(outputText.suffix(90))
     }
 
+    /// Writing requires holding the pointer on the FORWARD side of the
+    /// crosshair: below the centreline in vertical orientation, right of it in
+    /// horizontal. Users naturally dragged the braking side and got no text
+    /// (verified in the harness: top-half driving produces zero output).
+    var hintText: String {
+        switch orientation {
+        case .vertical: return "Hold in the LOWER half to write"
+        case .leftToRight: return "Hold in the RIGHT half to write"
+        case .rightToLeft: return "Hold in the LEFT half to write"
+        }
+    }
+
+    /// One-time canvas hint; dismissed by the first character typed.
+    var showCanvasHint: Bool {
+        outputText.isEmpty && !UserDefaults.standard.bool(forKey: "watch_hint_done")
+    }
+
+    func markHintDone() {
+        UserDefaults.standard.set(true, forKey: "watch_hint_done")
+    }
+
     /// watchOS has no UIPasteboard — the platform-native "copy" is Handoff:
     /// publish the text in a user activity so a receiving device (the Dasher
     /// iPhone app, once it adopts the activity type) can continue with it.
@@ -267,7 +292,13 @@ final class WatchViewModel: ObservableObject {
 
     // MARK: - Rendering (SwiftUI GraphicsContext port of the command buffer)
 
+    private var renderTickCount = 0
+
     func render(in context: GraphicsContext, size: CGSize, timeMs: Int64) {
+        renderTickCount += 1
+        if renderTickCount <= 3 || renderTickCount % 300 == 0 {
+            NSLog("[WATCH] render tick #\(renderTickCount) ready=\(isEngineReady)")
+        }
         guard let cmds = bridge.frame(timeMs: timeMs) else {
             // No commands this frame: keep the canvas black.
             context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(.black))

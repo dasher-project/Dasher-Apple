@@ -197,21 +197,20 @@ final class WatchBridge {
         guard let ctx = ctx else { return }
         debugMoveCount += 1
         if debugMoveCount <= 3 || debugMoveCount % 100 == 0 {
-            os_log("mouseMove #%d (%.0f, %.0f)", log: watchDebugLog, type: .debug, debugMoveCount, x, y)
+            NSLog("[WATCH] mouseMove #\(debugMoveCount) (\(x), \(y))")
         }
         engineLock.withLock { dasher_mouse_move(ctx, x, y) }
     }
 
     func mouseDown() {
         guard let ctx = ctx else { return }
-        os_log("mouseDown", log: watchDebugLog, type: .debug)
+        NSLog("[WATCH] mouseDown")
         engineLock.withLock { dasher_mouse_down(ctx) }
     }
 
     func mouseUp() {
         guard let ctx = ctx else { return }
-        os_log("mouseUp (moves=%d frames=%d outputs=%d)", log: watchDebugLog, type: .debug,
-               debugMoveCount, debugFrameCount, debugOutputCount)
+        NSLog("[WATCH] mouseUp moves=\(debugMoveCount) frames=\(debugFrameCount) outputs=\(debugOutputCount) outLen=\(outputText.count)")
         engineLock.withLock { dasher_mouse_up(ctx) }
     }
 
@@ -219,8 +218,7 @@ final class WatchBridge {
     func debugNoteFrame() {
         debugFrameCount += 1
         if debugFrameCount % 300 == 0 {
-            os_log("frames=%d moves=%d outputs=%d outLen=%d", log: watchDebugLog, type: .debug,
-                   debugFrameCount, debugMoveCount, debugOutputCount, outputText.count)
+            NSLog("[WATCH] frames=\(debugFrameCount) moves=\(debugMoveCount) outputs=\(debugOutputCount) outLen=\(outputText.count)")
         }
     }
 

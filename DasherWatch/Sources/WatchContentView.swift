@@ -44,7 +44,11 @@ struct WatchContentView: View {
         GeometryReader { geo in
             ZStack {
                 Color.black
-                TimelineView(.animation) { timeline in
+                // Explicit 30 Hz periodic schedule: TimelineView(.animation)
+                // proved unreliable on watchOS (degraded/never ticking in
+                // practice — the render closure ran zero times in a logged
+                // session). Periodic ticks deterministically.
+                TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { timeline in
                     Canvas { context, size in
                         viewModel.render(in: context, size: size,
                                          timeMs: Int64(timeline.date.timeIntervalSince1970 * 1000))
@@ -55,6 +59,8 @@ struct WatchContentView: View {
                 } else if !viewModel.isEngineReady {
                     ProgressView("Starting…")
                         .tint(.white)
+                } else if viewModel.showCanvasHint {
+                    drivingHint
                 }
             }
             .onGeometryChange(for: CGSize.self) { proxy in
@@ -95,6 +101,35 @@ struct WatchContentView: View {
             }
     }
 
+    /// First-run affordance: writing needs the pointer on the FORWARD side of
+    /// the crosshair. An arrow into the writing half, with a tap-to-dismiss.
+    private var drivingHint: some View {
+        VStack(spacing: 4) {
+            Image(systemName: hintArrowSymbol)
+                .font(.title2.weight(.bold))
+                .foregroundColor(.white)
+            Text(viewModel.hintText)
+                .font(.caption2)
+                .foregroundColor(.white)
+                .multilineTextAlignment(.center)
+            Text("tap to dismiss")
+                .font(.caption2)
+                .foregroundColor(.gray)
+        }
+        .padding(10)
+        .background(RoundedRectangle(cornerRadius: 10).fill(.black.opacity(0.55)))
+        .padding(6)
+        .onTapGesture { viewModel.markHintDone() }
+    }
+
+    private var hintArrowSymbol: String {
+        switch viewModel.orientation {
+        case .vertical: return "arrow.down.circle.fill"
+        case .leftToRight: return "arrow.right.circle.fill"
+        case .rightToLeft: return "arrow.left.circle.fill"
+        }
+    }
+
     private func errorOverlay(_ message: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: "exclamationmark.triangle")
@@ -120,7 +155,7 @@ struct WatchContentView: View {
             NavigationLink {
                 WatchTextView(viewModel: viewModel)
             } label: {
-                Text(viewModel.recentOutput.isEmpty ? "Start typing…" : viewModel.recentOutput)
+                Text(viewModel.recentOutput.isEmpty ? viewModel.hintText : viewModel.recentOutput)
                     .font(.caption2.monospaced())
                     .foregroundColor(viewModel.outputText.isEmpty ? .gray : .white)
                     .lineLimit(2)
