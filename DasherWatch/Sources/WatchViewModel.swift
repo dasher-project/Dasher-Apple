@@ -56,6 +56,59 @@ final class WatchViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Parity settings (Mac/iOS footer controls)
+
+    /// Learn from what is typed (BP_LM_ADAPTIVE) — "Learning" on Mac.
+    @Published var learningMode: Bool = true {
+        didSet {
+            bridge.setBoolParam("BP_LM_ADAPTIVE", learningMode)
+            bridge.saveSettings()
+        }
+    }
+
+    /// Adapt speed to the user's pace (BP_AUTO_SPEEDCONTROL) — "Auto" on Mac.
+    @Published var adaptiveSpeed: Bool = false {
+        didSet {
+            bridge.setBoolParam("BP_AUTO_SPEEDCONTROL", adaptiveSpeed)
+            bridge.saveSettings()
+        }
+    }
+
+    /// Control characters in the alphabet (BP_CONTROL_MODE): copy, speak,
+    /// paragraph/cursor commands — the "Control Mode" Mac setting.
+    @Published var controlMode: Bool = false {
+        didSet {
+            bridge.setBoolParam("BP_CONTROL_MODE", controlMode)
+            bridge.saveSettings()
+        }
+    }
+
+    /// Speed as the Apple-style multiplier the other frontends show
+    /// (1.0× = 100 %). The raw engine unit is MaxBitRate×100; the % we
+    /// previously presented confused users coming from Dasher-Apple.
+    @Published var speedMultiplier: Double = 1.0 {
+        didSet {
+            bridge.setSpeedPercent(Int(speedMultiplier * 100))
+            bridge.saveSettings()
+        }
+    }
+
+    /// Engine input filter (SP_INPUT_FILTER) — "Normal Control",
+    /// "One Dimensional Mode", button modes, etc. The input-method picker
+    /// above still drives the common cases; this exposes the full engine list.
+    @Published var inputFilter: String = "Normal Control" {
+        didSet {
+            bridge.setStringParam("SP_INPUT_FILTER", inputFilter)
+            bridge.saveSettings()
+        }
+    }
+
+    var permittedInputFilters: [String] {
+        bridge.permittedValues(forParam: "SP_INPUT_FILTER")
+    }
+
+    static let speedChoices: [Double] = [0.5, 0.8, 1.0, 1.3, 1.6, 2.0, 2.5, 3.2]
+
     // MARK: - Crown state (0...1, 0.5 = centreline)
 
     @Published var crownPosition: Double = 0.5 {
@@ -119,6 +172,11 @@ final class WatchViewModel: ObservableObject {
             }
             bridge.applyOrientation(self.orientation)
             self.applyInputFilter()
+            self.learningMode = bridge.boolParam("BP_LM_ADAPTIVE")
+            self.adaptiveSpeed = bridge.boolParam("BP_AUTO_SPEEDCONTROL")
+            self.controlMode = bridge.boolParam("BP_CONTROL_MODE")
+            self.speedMultiplier = Double(bridge.speedPercent) / 100.0
+            self.inputFilter = bridge.stringParam("SP_INPUT_FILTER")
             self.isEngineReady = true
         }
     }
@@ -262,6 +320,19 @@ final class WatchViewModel: ObservableObject {
     func clearOutput() {
         bridge.resetOutput()
         outputText = ""
+    }
+
+    /// Factory reset: wipe persisted settings, reset the live engine, refresh
+    /// every published setting from the fresh defaults.
+    func resetAllSettings() {
+        bridge.resetAllSettings()
+        learningMode = bridge.boolParam("BP_LM_ADAPTIVE")
+        adaptiveSpeed = bridge.boolParam("BP_AUTO_SPEEDCONTROL")
+        controlMode = bridge.boolParam("BP_CONTROL_MODE")
+        speedMultiplier = Double(bridge.speedPercent) / 100.0
+        inputFilter = bridge.stringParam("SP_INPUT_FILTER")
+        bridge.applyOrientation(orientation)
+        clearOutput()
     }
 
     // MARK: - Rendering (SwiftUI GraphicsContext port of the command buffer)

@@ -223,12 +223,32 @@ struct WatchSettingsView: View {
                 }
             }
 
-            Section("Speed") {
-                Picker("Speed", selection: speedBinding) {
-                    ForEach([80, 100, 130, 160, 200, 260], id: \.self) { s in
-                        Text("\(s)%").tag(s)
+            Section("Engine input filter") {
+                Picker("Filter", selection: $viewModel.inputFilter) {
+                    ForEach(viewModel.permittedInputFilters, id: \.self) { f in
+                        Text(f).tag(f)
                     }
                 }
+                Text("Normal Control suits touch; One Dimensional Mode suits crown.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+
+            Section("Speed") {
+                Picker("Speed", selection: $viewModel.speedMultiplier) {
+                    ForEach(WatchViewModel.speedChoices, id: \.self) { m in
+                        Text(String(format: "%.1f×", m)).tag(m)
+                    }
+                }
+                Toggle("Auto (adapt speed)", isOn: $viewModel.adaptiveSpeed)
+            }
+
+            Section("Behaviour") {
+                Toggle("Learning (adapt to text)", isOn: $viewModel.learningMode)
+                Toggle("Control characters", isOn: $viewModel.controlMode)
+                Text("Control characters add copy, speak and paragraph commands to the alphabet.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
             }
 
             Section("Text") {
@@ -236,21 +256,37 @@ struct WatchSettingsView: View {
                     viewModel.clearOutput()
                 }
             }
+
+            Section("Reset") {
+                Button("Reset all settings", role: .destructive) {
+                    showResetConfirm = true
+                }
+                Text("Restores every Dasher setting to its default. Typed text is cleared. Cannot be undone.")
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
         }
         .navigationTitle("Settings")
+        .confirmationDialog(
+            "Reset all settings to their defaults?",
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Reset all settings", role: .destructive) {
+                viewModel.resetAllSettings()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
+        }
     }
+
+    @State private var showResetConfirm = false
 
     private var alphabetBinding: Binding<String> {
         Binding(
             get: { viewModel.bridge.alphabetId },
             set: { viewModel.bridge.setAlphabetId($0); viewModel.bridge.saveSettings() }
-        )
-    }
-
-    private var speedBinding: Binding<Int> {
-        Binding(
-            get: { viewModel.bridge.speedPercent },
-            set: { viewModel.bridge.setSpeedPercent($0); viewModel.bridge.saveSettings() }
         )
     }
 }

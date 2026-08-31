@@ -287,6 +287,64 @@ final class WatchBridge {
         dasher_set_string_parameter(ctx, Int32(key), value)
     }
 
+    // MARK: - Generic engine parameters (Mac/iOS-parity settings)
+
+    func boolParam(_ name: String) -> Bool {
+        guard let ctx = ctx else { return false }
+        return engineLock.withLock { dasher_get_bool_parameter(ctx, Int32(dasher_find_parameter_key(name))) != 0 }
+    }
+
+    func setBoolParam(_ name: String, _ value: Bool) {
+        guard let ctx = ctx else { return }
+        engineLock.withLock {
+            dasher_set_bool_parameter(ctx, Int32(dasher_find_parameter_key(name)), value ? 1 : 0)
+        }
+    }
+
+    func stringParam(_ name: String) -> String {
+        guard let ctx = ctx else { return "" }
+        return engineLock.withLock {
+            guard let cStr = dasher_get_string_parameter(ctx, Int32(dasher_find_parameter_key(name))) else { return "" }
+            return String(cString: cStr)
+        }
+    }
+
+    func setStringParam(_ name: String, _ value: String) {
+        guard let ctx = ctx else { return }
+        engineLock.withLock {
+            dasher_set_string_parameter(ctx, Int32(dasher_find_parameter_key(name)), value)
+        }
+    }
+
+    /// Permitted string values for a parameter (e.g. SP_INPUT_FILTER) —
+    /// probe-then-fetch, engine-locked.
+    func permittedValues(forParam name: String) -> [String] {
+        guard let ctx = ctx else { return [] }
+        return engineLock.withLock {
+            let key = Int32(dasher_find_parameter_key(name))
+            let count = Int(dasher_get_parameter_string_values(ctx, key, nil, 0))
+            guard count > 0 else { return [] }
+            var buffer: [UnsafePointer<CChar>?] = Array(repeating: nil, count: count)
+            let actual = Int(dasher_get_parameter_string_values(ctx, key, &buffer, Int32(count)))
+            return (0..<min(actual, count)).compactMap { ptr in
+                guard let p = buffer[ptr] else { return nil }
+                return String(cString: p)
+            }
+        }
+    }
+
+    /// Factory-reset the engine: delete the persisted settings files, then
+    /// reset every parameter to its built-in default (notifications fire, so a
+    /// live engine reconfigures itself). Mirrors the app targets'
+    /// ResetSettingsSection contract.
+    func resetAllSettings() {
+        guard let ctx = ctx else { return }
+        for file in ["dasher_settings.xml", "appearance_settings.xml"] {
+            try? FileManager.default.removeItem(atPath: URL(fileURLWithPath: userDir).appendingPathComponent(file).path)
+        }
+        engineLock.withLock { dasher_reset_settings(ctx) }
+    }
+
     // MARK: - Label measurement (dasher.h contract: 0 on success)
 
     func measureLabel(_ text: String, fontSize: Int32,
