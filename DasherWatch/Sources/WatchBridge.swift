@@ -118,13 +118,19 @@ final class WatchBridge {
         ctx = created.0
     }
 
-    /// Vertical layout for the tall watch canvas ("Dasher going down"):
-    /// TopToBottom = 2 per ScreenOrientations. MUST be called after the first
-    /// realize (see the note in bootstrap()).
-    func setVerticalOrientation() {
+    /// Canvas orientation. MUST be applied after the first realize — see the
+    /// note in bootstrap() (pre-realize parameter changes segfault ChangeView).
+    /// ScreenOrientations: LeftToRight=0, RightToLeft=1, TopToBottom=2.
+    func applyOrientation(_ orientation: WatchOrientation) {
         guard let ctx = ctx else { return }
+        let value: Int
+        switch orientation {
+        case .vertical: value = 2
+        case .leftToRight: value = 0
+        case .rightToLeft: value = 1
+        }
         engineLock.withLock {
-            dasher_set_long_parameter(ctx, dasher_find_parameter_key("LP_ORIENTATION"), 2)
+            dasher_set_long_parameter(ctx, dasher_find_parameter_key("LP_ORIENTATION"), value)
         }
     }
 

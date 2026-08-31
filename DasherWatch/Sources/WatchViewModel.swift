@@ -46,6 +46,16 @@ final class WatchViewModel: ObservableObject {
         }
     }
 
+    /// Canvas orientation (persisted; applied post-realize — see the LP_ORIENTATION
+    /// note in WatchBridge). Vertical was the spike default; horizontal is the
+    /// classic layout. User's call now.
+    @Published var orientation: WatchOrientation {
+        didSet {
+            UserDefaults.standard.set(orientation.rawValue, forKey: "watch_orientation")
+            bridge.applyOrientation(orientation)
+        }
+    }
+
     // MARK: - Crown state (0...1, 0.5 = centreline)
 
     @Published var crownPosition: Double = 0.5 {
@@ -72,6 +82,9 @@ final class WatchViewModel: ObservableObject {
         let saved = UserDefaults.standard.string(forKey: "watch_input_method")
             .flatMap(WatchInputMethod.init(rawValue:)) ?? .touch
         self.inputMethod = saved
+        let savedOrientation = UserDefaults.standard.string(forKey: "watch_orientation")
+            .flatMap(WatchOrientation.init(rawValue:)) ?? .vertical
+        self.orientation = savedOrientation
 
         bridge.onOutput = { [weak self] _ in
             self?.outputText = self?.bridge.outputText ?? ""
@@ -95,7 +108,7 @@ final class WatchViewModel: ObservableObject {
                 self.engineErrorMessage = "The engine could not start (data scan failed). Try reinstalling the app."
                 return
             }
-            bridge.setVerticalOrientation()
+            bridge.applyOrientation(self.orientation)
             self.applyInputFilter()
             self.isEngineReady = true
         }
@@ -218,7 +231,7 @@ final class WatchViewModel: ObservableObject {
     // MARK: - Output
 
     var recentOutput: String {
-        String(outputText.suffix(24))
+        String(outputText.suffix(90))
     }
 
     /// watchOS has no UIPasteboard — the platform-native "copy" is Handoff:

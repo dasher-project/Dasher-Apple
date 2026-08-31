@@ -11,16 +11,31 @@ struct DasherWatchApp: App {
     }
 }
 
+enum WatchOrientation: String, CaseIterable, Identifiable {
+    case vertical      // TopToBottom
+    case leftToRight   // classic horizontal
+    case rightToLeft   // horizontal, tree on the right
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .vertical: return "Vertical"
+        case .leftToRight: return "Horizontal L→R"
+        case .rightToLeft: return "Horizontal R→L"
+        }
+    }
+}
+
 struct WatchContentView: View {
     @StateObject private var viewModel = WatchViewModel()
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 2) {
             canvasArea
-            bottomBar
+            outputBar
         }
-        .navigationTitle("Dasher")
-        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(true)
     }
 
     // MARK: - Canvas
@@ -95,53 +110,68 @@ struct WatchContentView: View {
         .padding(.horizontal, 8)
     }
 
-    // MARK: - Bottom bar
+    // MARK: - Output bar
 
-    private var bottomBar: some View {
-        HStack(spacing: 6) {
-            Text(viewModel.recentOutput.isEmpty ? "—" : viewModel.recentOutput)
-                .font(.caption2.monospaced())
-                .foregroundColor(.white)
-                .lineLimit(1)
-                .truncationMode(.head)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .minimumScaleFactor(0.6)
+    /// Everything the user has typed, tail-visible in two lines; tapping the
+    /// text (or the text button, both full-size targets) opens the full-text
+    /// view. Writing is no longer blind.
+    private var outputBar: some View {
+        HStack(spacing: 4) {
+            NavigationLink {
+                WatchTextView(viewModel: viewModel)
+            } label: {
+                Text(viewModel.recentOutput.isEmpty ? "Start typing…" : viewModel.recentOutput)
+                    .font(.caption2.monospaced())
+                    .foregroundColor(viewModel.outputText.isEmpty ? .gray : .white)
+                    .lineLimit(2)
+                    .truncationMode(.head)
+                    .minimumScaleFactor(0.5)
+                    .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+            }
+            .buttonStyle(.plain)
 
             NavigationLink {
                 WatchTextView(viewModel: viewModel)
             } label: {
-                Image(systemName: "text.quote")
-                    .font(.caption)
+                Image(systemName: "text.alignleft")
+                    .font(.body.weight(.medium))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
             .disabled(viewModel.outputText.isEmpty)
 
             NavigationLink {
                 WatchSettingsView(viewModel: viewModel)
             } label: {
                 Image(systemName: "gearshape")
-                    .font(.caption)
+                    .font(.body.weight(.medium))
+                    .frame(width: 40, height: 40)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 2)
+        .background(Color.black.opacity(0.85))
     }
 }
 
-// MARK: - Full text (read + Handoff)
+// MARK: - Full text (read what you wrote)
 
 struct WatchTextView: View {
     @ObservedObject var viewModel: WatchViewModel
 
     var body: some View {
         ScrollView {
-            Text(viewModel.outputText.isEmpty ? " " : viewModel.outputText)
+            Text(viewModel.outputText.isEmpty ? "Nothing typed yet." : viewModel.outputText)
                 .font(.caption2)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("Text")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Handoff") {
-                    viewModel.handoff()
+                Button("Clear") {
+                    viewModel.clearOutput()
                 }
                 .disabled(viewModel.outputText.isEmpty)
             }
@@ -173,10 +203,26 @@ struct WatchSettingsView: View {
                     .foregroundColor(.secondary)
             }
 
+            Section("Canvas") {
+                Picker("Orientation", selection: $viewModel.orientation) {
+                    ForEach(WatchOrientation.allCases) { o in
+                        Text(o.label).tag(o)
+                    }
+                }
+            }
+
             Section("Alphabet") {
                 Picker("Alphabet", selection: alphabetBinding) {
                     ForEach(viewModel.bridge.allAlphabetNames.sorted(), id: \.self) { name in
                         Text(name).tag(name)
+                    }
+                }
+            }
+
+            Section("Speed") {
+                Picker("Speed", selection: speedBinding) {
+                    ForEach([80, 100, 130, 160, 200, 260], id: \.self) { s in
+                        Text("\(s)%").tag(s)
                     }
                 }
             }
@@ -194,6 +240,13 @@ struct WatchSettingsView: View {
         Binding(
             get: { viewModel.bridge.alphabetId },
             set: { viewModel.bridge.setAlphabetId($0); viewModel.bridge.saveSettings() }
+        )
+    }
+
+    private var speedBinding: Binding<Int> {
+        Binding(
+            get: { viewModel.bridge.speedPercent },
+            set: { viewModel.bridge.setSpeedPercent($0); viewModel.bridge.saveSettings() }
         )
     }
 }
