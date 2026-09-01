@@ -448,6 +448,7 @@ targets:
       - path: DasherWatch
         excludes:
           - "**/.gitkeep"
+      - path: DasherWatch/Assets.xcassets
       - path: DasherWatchData
         buildPhase: resources
         type: folder
@@ -481,7 +482,7 @@ targets:
         PRODUCT_NAME: "Dasher"
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.watch
         INFOPLIST_FILE: DasherWatch/Info.plist
-        ASSETCATALOG_COMPILER_APPICON_NAME: "" # spike: no watch icon set yet
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "Apple Development"
