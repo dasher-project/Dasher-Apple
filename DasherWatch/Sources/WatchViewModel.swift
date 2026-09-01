@@ -393,6 +393,10 @@ final class WatchViewModel: ObservableObject {
     /// CoreGraphics rendering path (WatchCanvasView) — same command-walking
     /// as the SwiftUI render but drawing into a CGContext via UIView.draw(_:).
     func renderCG(in ctx: CGContext, bounds: CGRect, timeMs: Int64) {
+        // Raw CGContext origin is bottom-left; the engine's command buffer is
+        // in screen coordinates (top-left origin). Flip vertically.
+        ctx.translateBy(x: 0, y: bounds.height)
+        ctx.scaleBy(x: 1, y: -1)
         guard let cmds = bridge.frame(timeMs: timeMs) else {
             ctx.setFillColor(UIColor.black.cgColor)
             ctx.fill(bounds)
