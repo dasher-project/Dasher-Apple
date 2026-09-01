@@ -390,6 +390,73 @@ final class WatchViewModel: ObservableObject {
         }
     }
 
+    /// CoreGraphics rendering path (WatchCanvasView) — same command-walking
+    /// as the SwiftUI render but drawing into a CGContext via UIView.draw(_:).
+    func renderCG(in ctx: CGContext, bounds: CGRect, timeMs: Int64) {
+        guard let cmds = bridge.frame(timeMs: timeMs) else {
+            ctx.setFillColor(UIColor.black.cgColor)
+            ctx.fill(bounds)
+            return
+        }
+        let count = cmds.commandCount / 6
+        for i in 0..<count {
+            let base = i * 6
+            let op = Int(cmds.commands[base + 0])
+            let a = CGFloat(cmds.commands[base + 1])
+            let b = CGFloat(cmds.commands[base + 2])
+            let c = CGFloat(cmds.commands[base + 3])
+            let d = CGFloat(cmds.commands[base + 4])
+            let argb = Int32(cmds.commands[base + 5])
+            let color = argbUIColor(argb)
+
+            switch op {
+            case 0:
+                ctx.setFillColor(color)
+                ctx.fill(bounds)
+            case 1:
+                let radius = c
+                let rect = CGRect(x: a - radius, y: b - radius, width: radius * 2, height: radius * 2)
+                ctx.setFillColor(color)
+                ctx.fillEllipse(in: rect)
+            case 2:
+                ctx.setStrokeColor(color)
+                ctx.setLineWidth(2)
+                ctx.move(to: CGPoint(x: a, y: b))
+                ctx.addLine(to: CGPoint(x: c, y: d))
+                ctx.strokePath()
+            case 3:
+                let rect = CGRect(x: a, y: b, width: c - a, height: d - b)
+                ctx.setStrokeColor(color)
+                ctx.setLineWidth(1)
+                ctx.stroke(rect)
+            case 4:
+                let rect = CGRect(x: a, y: b, width: c - a, height: d - b)
+                ctx.setFillColor(color)
+                ctx.fill(rect)
+            case 5:
+                let fontSize = c > 0 ? c : 14
+                let stringIndex = Int(d)
+                if let strings = cmds.strings, stringIndex >= 0, stringIndex < cmds.stringCount,
+                   let strPtr = strings[stringIndex] {
+                    let text = String(cString: strPtr) as NSString
+                    let font = UIFont.systemFont(ofSize: fontSize)
+                    let attrs: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: UIColor(cgColor: color)]
+                    text.draw(at: CGPoint(x: a, y: b), withAttributes: attrs)
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    private func argbUIColor(_ argb: Int32) -> CGColor {
+        let a = CGFloat((argb >> 24) & 0xFF) / 255.0
+        let r = CGFloat((argb >> 16) & 0xFF) / 255.0
+        let g = CGFloat((argb >> 8) & 0xFF) / 255.0
+        let b = CGFloat(argb & 0xFF) / 255.0
+        return CGColor(red: r, green: g, blue: b, alpha: a)
+    }
+
     private func argbColor(_ argb: Int32) -> Color {
         let a = Double((argb >> 24) & 0xFF) / 255.0
         let r = Double((argb >> 16) & 0xFF) / 255.0

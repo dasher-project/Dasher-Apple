@@ -41,31 +41,11 @@ struct WatchContentView: View {
     // MARK: - Canvas
 
     private var canvasArea: some View {
-        GeometryReader { geo in
-            ZStack {
-                Color.black
-                // Explicit 30 Hz periodic schedule: TimelineView(.animation)
-                // proved unreliable on watchOS (degraded/never ticking in
-                // practice — the render closure ran zero times in a logged
-                // session). Periodic ticks deterministically.
-                TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { timeline in
-                    Canvas { context, size in
-                        viewModel.render(in: context, size: size,
-                                         timeMs: Int64(timeline.date.timeIntervalSince1970 * 1000))
-                    }
-                }
-                if let error = viewModel.engineErrorMessage {
-                    errorOverlay(error)
-                } else if !viewModel.isEngineReady {
-                    ProgressView("Starting…")
-                        .tint(.white)
-                }
-            }
-            .onGeometryChange(for: CGSize.self) { proxy in
-                proxy.size
-            } action: { size in
-                viewModel.setCanvasSize(size)
-            }
+        // CoreGraphics bitmap rendering — SwiftUI Canvas creates a Metal-backed
+        // surface (MTLCreateSystemDefaultDevice) that crashes on watch sims
+        // without GPU passthrough. WatchCanvasView renders offscreen via raw
+        // CGContext → CGImage → Image, pure CPU, no Metal dependency.
+        WatchCanvasView(viewModel: viewModel)
             .gesture(dragGesture)
             .focusable(viewModel.inputMethod == .crown)
             .digitalCrownRotation(
@@ -85,7 +65,6 @@ struct WatchContentView: View {
                     viewModel.startTilt()
                 }
             }
-        }
     }
 
     private var dragGesture: some Gesture {
@@ -97,21 +76,6 @@ struct WatchContentView: View {
             .onEnded { _ in
                 viewModel.touchEnded()
             }
-    }
-
-    private func errorOverlay(_ message: String) -> some View {
-        VStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle")
-                .foregroundColor(.orange)
-            Text("Dasher could not start")
-                .font(.headline)
-                .foregroundColor(.white)
-            Text(message)
-                .font(.caption2)
-                .foregroundColor(.gray)
-                .lineLimit(4)
-        }
-        .padding(.horizontal, 8)
     }
 
     // MARK: - Output bar
@@ -288,5 +252,94 @@ struct WatchSettingsView: View {
             get: { viewModel.bridge.alphabetId },
             set: { viewModel.bridge.setAlphabetId($0); viewModel.bridge.saveSettings() }
         )
+    }
+}
+
+// MARK: - Canvas (offscreen CoreGraphics, no Metal)
+
+/// SwiftUI's Canvas view creates a Metal-backed render surface via
+/// MTLCreateSystemDefaultDevice — which returns nil (and crashes inside
+/// the Metal device array) on watchOS simulators without GPU passthrough.
+/// This replacement renders offscreen with UIGraphicsImageRenderer
+/// (pure CoreGraphics) and publishes the resulting UIImage for SwiftUI
+/// to display, driven at 30 Hz by a Timer.
+struct WatchCanvasView: View {
+    @ObservedObject var viewModel: WatchViewModel
+    @State private var frameImage: UIImage?
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                Color.black
+                if let image = frameImage {
+                    Image(uiImage: image)
+                        .resizable()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                }
+                if let error = viewModel.engineErrorMessage {
+                    errorOverlayText(error)
+                } else if !viewModel.isEngineReady {
+                    ProgressView("Starting…")
+                        .tint(.white)
+                }
+            }
+            .onAppear {
+                viewModel.setCanvasSize(geo.size)
+                startRendering(size: geo.size)
+            }
+            .onDisappear { stopRendering() }
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { size in
+                viewModel.setCanvasSize(size)
+                restartRendering(size: size)
+            }
+        }
+    }
+
+    @State private var renderTimer: Timer?
+
+    private func startRendering(size: CGSize) {
+        stopRendering()
+        renderTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 30.0, repeats: true) { _ in
+            renderFrame(size: size)
+        }
+    }
+
+    private func restartRendering(size: CGSize) {
+        startRendering(size: size)
+    }
+
+    private func stopRendering() {
+        renderTimer?.invalidate()
+        renderTimer = nil
+    }
+
+    private func renderFrame(size: CGSize) {
+        guard size.width > 0, size.height > 0 else { return }
+        let w = Int(size.width), h = Int(size.height)
+        let timeMs = Int64(Date().timeIntervalSince1970 * 1000)
+        guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8,
+                                  bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+        viewModel.renderCG(in: ctx, bounds: CGRect(origin: .zero, size: size), timeMs: timeMs)
+        if let cgImage = ctx.makeImage() {
+            frameImage = UIImage(cgImage: cgImage)
+        }
+    }
+
+    private func errorOverlayText(_ message: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundColor(.orange)
+            Text("Dasher could not start")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text(message)
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .lineLimit(4)
+        }
+        .padding(.horizontal, 8)
     }
 }
