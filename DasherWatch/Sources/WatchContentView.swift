@@ -322,7 +322,12 @@ struct WatchCanvasView: View {
         guard let ctx = CGContext(data: nil, width: w, height: h, bitsPerComponent: 8,
                                   bytesPerRow: 0, space: CGColorSpaceCreateDeviceRGB(),
                                   bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return }
+        // NSString.draw() reads UIGraphicsGetCurrentContext(), which is nil in
+        // a raw CGContext — every CG call logs "invalid context 0x0" and text
+        // never renders. Push it as the current UIKit context for the draw.
+        UIGraphicsPushContext(ctx)
         viewModel.renderCG(in: ctx, bounds: CGRect(origin: .zero, size: size), timeMs: timeMs)
+        UIGraphicsPopContext()
         if let cgImage = ctx.makeImage() {
             frameImage = UIImage(cgImage: cgImage)
         }
