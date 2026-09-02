@@ -22,8 +22,8 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>WKApplication</key>
 	<true/>
-	<key>WKWatchOnly</key>
-	<true/>
+	<key>WKCompanionAppBundleIdentifier</key>
+	<string>at.dasher.Dasher</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Dasher uses wrist motion to allow steering by tilting your arm.</string>
 </dict>

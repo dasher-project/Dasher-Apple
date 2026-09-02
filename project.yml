@@ -138,6 +138,8 @@ targets:
         link: true
       - target: DasherKeyboard
         embed: true
+      - target: DasherWatch
+        embed: true
       - package: DasherShared
         product: DasherShared
       - package: DasherSpeech
