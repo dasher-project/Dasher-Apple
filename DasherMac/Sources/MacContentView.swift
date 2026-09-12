@@ -937,13 +937,67 @@ struct MacEditableOutputText: View {
     @ObservedObject var viewModel: MacDasherViewModel
 
     var body: some View {
-        TextEditor(text: $viewModel.editorText)
-            .font(OutputFontSettings.font)
-            .scrollContentBackground(.hidden)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .onChange(of: viewModel.editorText) { _, newText in
-                viewModel.editorCaretOffset = newText.utf16.count
-            }
+        MacEditableTextViewWrapper(viewModel: viewModel)
+    }
+}
+
+/// NSTextView wrapper reporting text + selection changes (RFC 0019 clause 3:
+/// caret placement re-anchors the model — v5's click-a-word behaviour).
+struct MacEditableTextViewWrapper: NSViewRepresentable {
+    @ObservedObject var viewModel: MacDasherViewModel
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let tv = NSTextView()
+        tv.delegate = context.coordinator
+        tv.font = NSFont.systemFont(ofSize: 14)
+        tv.drawsBackground = false
+        tv.isEditable = true
+        tv.isSelectable = true
+        tv.isRichText = false
+        tv.allowsUndo = false
+        tv.textContainer?.lineFragmentPadding = 8
+        tv.textContainerInset = NSSize(width: 0, height: 8)
+        tv.string = viewModel.editorText
+
+        let scroll = NSScrollView()
+        scroll.documentView = tv
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.drawsBackground = false
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let tv = scroll.documentView as? NSTextView else { return }
+        if tv.string != viewModel.editorText {
+            let selected = tv.selectedRange()
+            tv.string = viewModel.editorText
+            let newLen = (viewModel.editorText as NSString).length
+            let caret = min(selected.location, newLen)
+            tv.setSelectedRange(NSRange(location: caret, length: 0))
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(viewModel: viewModel)
+    }
+
+    class Coordinator: NSObject, NSTextViewDelegate {
+        let viewModel: MacDasherViewModel
+
+        init(viewModel: MacDasherViewModel) {
+            self.viewModel = viewModel
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            viewModel.editorText = tv.string
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let tv = notification.object as? NSTextView else { return }
+            let caretUTF16 = tv.selectedRange().location
+            viewModel.editorCaretOffset = caretUTF16
+        }
     }
 }

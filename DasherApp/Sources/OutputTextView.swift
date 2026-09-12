@@ -512,17 +512,63 @@ struct EditableOutputText: View {
     @ObservedObject var viewModel: DasherViewModel
 
     var body: some View {
-        TextEditor(text: $viewModel.editorText)
-            .font(OutputFontSettings.font)
-            .foregroundColor(.primary)
-            .scrollContentBackground(.hidden)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 8)
-            .onChange(of: viewModel.editorText) { _, newText in
-                // The viewModel's didSet handles the engine seed.
-                // Update the caret to end (TextEditor doesn't expose position
-                // directly; the viewModel tracks it from selection changes).
-                viewModel.editorCaretOffset = newText.utf16.count
-            }
+        EditableTextViewWrapper(viewModel: viewModel)
+    }
+}
+
+/// UITextView wrapper that reports BOTH text changes and selection (caret)
+/// moves — SwiftUI's TextEditor can't do the latter, which is why pure caret
+/// placement (tap mid-text without editing) never re-anchored the model.
+/// RFC 0019 clause 3: the v5 "click a word, the canvas re-targets" behaviour.
+struct EditableTextViewWrapper: UIViewRepresentable {
+    @ObservedObject var viewModel: DasherViewModel
+
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.delegate = context.coordinator
+        tv.font = UIFont.systemFont(ofSize: 16)
+        tv.backgroundColor = .clear
+        tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
+        tv.text = viewModel.editorText
+        tv.isEditable = true
+        tv.isSelectable = true
+        return tv
+    }
+
+    func updateUIView(_ tv: UITextView, context: Context) {
+        // Engine pushes arrive here — set text without scrolling the caret
+        if tv.text != viewModel.editorText {
+            let selectedRange = tv.selectedRange
+            tv.text = viewModel.editorText
+            // Preserve caret (advance if text grew at end, else clamp)
+            let newLen = (viewModel.editorText as NSString).length
+            let caret = min(selectedRange.location, newLen)
+            tv.selectedRange = NSRange(location: caret, length: 0)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(viewModel: viewModel)
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        let viewModel: DasherViewModel
+
+        init(viewModel: DasherViewModel) {
+            self.viewModel = viewModel
+        }
+
+        /// Text changed (user typed/pasted/deleted) — seed the engine.
+        func textViewDidChange(_ tv: UITextView) {
+            viewModel.editorText = tv.text
+        }
+
+        /// Selection/caret changed — this is the critical one for RFC 0019
+        /// clause 3. A pure tap in the middle of the text fires this without
+        /// textViewDidChange, so we re-anchor the model at the caret.
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            let caretUTF16 = tv.selectedRange.location
+            viewModel.editorCaretOffset = caretUTF16
+        }
     }
 }
