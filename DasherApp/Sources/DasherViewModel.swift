@@ -46,19 +46,17 @@ class DasherViewModel: ObservableObject {
     func pushEngineText(_ text: String) {
         let oldCaret = editorCaretOffset
         let oldLen = editorText.utf16.count
+        let newLen = text.utf16.count
+        let newCaret = (newLen > oldLen && oldCaret >= oldLen) ? newLen : min(oldCaret, newLen)
+
+        // Set BOTH text and caret while the suppress flag is up — if the caret
+        // update happens after the flag drops, its didSet fires setOffset on
+        // every engine push (re-anchoring the model each frame = erratic canvas).
         isEnginePushingText = true
         editorText = text
+        editorCaretOffset = newCaret
         outputText = text
         isEnginePushingText = false
-
-        // Caret preservation: if text grew at the end, advance caret past the
-        // new content; otherwise clamp to the new length (never strand at 0).
-        let newLen = text.utf16.count
-        if newLen > oldLen && oldCaret >= oldLen {
-            editorCaretOffset = newLen
-        } else {
-            editorCaretOffset = min(oldCaret, newLen)
-        }
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false

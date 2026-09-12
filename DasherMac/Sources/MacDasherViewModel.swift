@@ -32,17 +32,14 @@ class MacDasherViewModel: ObservableObject {
     func pushEngineText(_ text: String) {
         let oldCaret = editorCaretOffset
         let oldLen = editorText.utf16.count
+        let newLen = text.utf16.count
+        let newCaret = (newLen > oldLen && oldCaret >= oldLen) ? newLen : min(oldCaret, newLen)
+
         isEnginePushingText = true
         editorText = text
+        editorCaretOffset = newCaret
         outputText = text
         isEnginePushingText = false
-
-        let newLen = text.utf16.count
-        if newLen > oldLen && oldCaret >= oldLen {
-            editorCaretOffset = newLen
-        } else {
-            editorCaretOffset = min(oldCaret, newLen)
-        }
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
