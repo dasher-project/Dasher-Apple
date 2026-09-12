@@ -970,11 +970,13 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let tv = scroll.documentView as? NSTextView else { return }
         if tv.string != viewModel.editorText {
+            context.coordinator.isProgrammaticUpdate = true
             let selected = tv.selectedRange()
             tv.string = viewModel.editorText
             let newLen = (viewModel.editorText as NSString).length
             let caret = min(selected.location, newLen)
             tv.setSelectedRange(NSRange(location: caret, length: 0))
+            context.coordinator.isProgrammaticUpdate = false
         }
     }
 
@@ -984,12 +986,14 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
 
     class Coordinator: NSObject, NSTextViewDelegate {
         let viewModel: MacDasherViewModel
+        var isProgrammaticUpdate = false
 
         init(viewModel: MacDasherViewModel) {
             self.viewModel = viewModel
         }
 
         func textDidChange(_ notification: Notification) {
+            guard !isProgrammaticUpdate else { return }
             guard let tv = notification.object as? NSTextView else { return }
             viewModel.editorText = tv.string
         }

@@ -536,14 +536,16 @@ struct EditableTextViewWrapper: UIViewRepresentable {
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
-        // Engine pushes arrive here — set text without scrolling the caret
+        // Engine pushes arrive here — set text without triggering the
+        // user-edit path (RFC 0019 clause 4: origin comparison).
         if tv.text != viewModel.editorText {
+            context.coordinator.isProgrammaticUpdate = true
             let selectedRange = tv.selectedRange
             tv.text = viewModel.editorText
-            // Preserve caret (advance if text grew at end, else clamp)
             let newLen = (viewModel.editorText as NSString).length
             let caret = min(selectedRange.location, newLen)
             tv.selectedRange = NSRange(location: caret, length: 0)
+            context.coordinator.isProgrammaticUpdate = false
         }
     }
 
@@ -553,13 +555,19 @@ struct EditableTextViewWrapper: UIViewRepresentable {
 
     class Coordinator: NSObject, UITextViewDelegate {
         let viewModel: DasherViewModel
+        var isProgrammaticUpdate = false
 
         init(viewModel: DasherViewModel) {
             self.viewModel = viewModel
         }
 
         /// Text changed (user typed/pasted/deleted) — seed the engine.
+        /// The isProgrammaticUpdate flag suppresses engine-origin pushes
+        /// (updateUIView setting text fires this delegate synchronously;
+        /// without the flag, every engine output would re-seed the buffer,
+        /// dropping model context — felt like hitting New on every letter).
         func textViewDidChange(_ tv: UITextView) {
+            guard !isProgrammaticUpdate else { return }
             viewModel.editorText = tv.text
         }
 
