@@ -126,7 +126,7 @@ struct OutputTextView: View {
                         .frame(maxWidth: .infinity)
                         .id("outputText")
                 }
-                .onChange(of: viewModel.editorText) { _, _ in
+                .onChange(of: viewModel.outputText) { _, _ in
                     withAnimation {
                         proxy.scrollTo("outputText", anchor: .bottom)
                     }
@@ -440,7 +440,9 @@ struct OutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
-            viewModel.editorText += clipboardString
+            let newText = viewModel.outputText + clipboardString
+            viewModel.bridge.seedBuffer(newText, caretOffset: newText.utf8.count)
+            viewModel.outputText = newText
         }
     }
 }
@@ -516,10 +518,10 @@ struct EditableOutputText: View {
     }
 }
 
-/// UITextView wrapper that reports BOTH text changes and selection (caret)
-/// moves — SwiftUI's TextEditor can't do the latter, which is why pure caret
-/// placement (tap mid-text without editing) never re-anchored the model.
-/// RFC 0019 clause 3: the v5 "click a word, the canvas re-targets" behaviour.
+/// UITextView wrapper — the Coordinator is the sole sync point between the
+/// text view and the engine (RFC 0019). No intermediate @Published bindings;
+/// the delegate calls bridge APIs directly on user interaction, and SwiftUI
+/// renders engine pushes via updateUIView with the programmatic flag.
 struct EditableTextViewWrapper: UIViewRepresentable {
     @ObservedObject var viewModel: DasherViewModel
 
@@ -529,24 +531,24 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         tv.font = UIFont.systemFont(ofSize: 16)
         tv.backgroundColor = .clear
         tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
-        tv.text = viewModel.editorText
         tv.isEditable = true
         tv.isSelectable = true
+        tv.text = viewModel.outputText
         return tv
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
-        // Engine pushes arrive here — set text without triggering the
-        // user-edit path (RFC 0019 clause 4: origin comparison).
-        if tv.text != viewModel.editorText {
-            context.coordinator.isProgrammaticUpdate = true
-            let selectedRange = tv.selectedRange
-            tv.text = viewModel.editorText
-            let newLen = (viewModel.editorText as NSString).length
-            let caret = min(selectedRange.location, newLen)
-            tv.selectedRange = NSRange(location: caret, length: 0)
-            context.coordinator.isProgrammaticUpdate = false
+        // Engine push: only update if the text actually differs (user edits
+        // already seeded the buffer, so tv.text == engine text there).
+        if !context.coordinator.isUserEditing && tv.text != viewModel.outputText {
+            context.coordinator.setProgrammatic {
+                let selected = tv.selectedRange
+                tv.text = viewModel.outputText
+                let newLen = (viewModel.outputText as NSString).length
+                tv.selectedRange = NSRange(location: min(selected.location, newLen), length: 0)
+            }
         }
+        context.coordinator.isUserEditing = false
     }
 
     func makeCoordinator() -> Coordinator {
@@ -555,28 +557,36 @@ struct EditableTextViewWrapper: UIViewRepresentable {
 
     class Coordinator: NSObject, UITextViewDelegate {
         let viewModel: DasherViewModel
-        var isProgrammaticUpdate = false
+        var isProgrammatic = false
+        var isUserEditing = false
 
         init(viewModel: DasherViewModel) {
             self.viewModel = viewModel
         }
 
-        /// Text changed (user typed/pasted/deleted) — seed the engine.
-        /// The isProgrammaticUpdate flag suppresses engine-origin pushes
-        /// (updateUIView setting text fires this delegate synchronously;
-        /// without the flag, every engine output would re-seed the buffer,
-        /// dropping model context — felt like hitting New on every letter).
-        func textViewDidChange(_ tv: UITextView) {
-            guard !isProgrammaticUpdate else { return }
-            viewModel.editorText = tv.text
+        func setProgrammatic(_ block: () -> Void) {
+            isProgrammatic = true
+            block()
+            isProgrammatic = false
         }
 
-        /// Selection/caret changed — this is the critical one for RFC 0019
-        /// clause 3. A pure tap in the middle of the text fires this without
-        /// textViewDidChange, so we re-anchor the model at the caret.
-        func textViewDidChangeSelection(_ tv: UITextView) {
+        /// User typed/pasted/deleted — seed the engine buffer.
+        func textViewDidChange(_ tv: UITextView) {
+            guard !isProgrammatic else { return }
+            isUserEditing = true
             let caretUTF16 = tv.selectedRange.location
-            viewModel.editorCaretOffset = caretUTF16
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(tv.text, caretOffset: byteOffset)
+            viewModel.outputText = tv.text
+        }
+
+        /// Caret/selection changed — re-anchor the model (RFC 0019 clause 3).
+        /// A pure tap in the middle of text fires this without textViewDidChange.
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            guard !isProgrammatic else { return }
+            let caretUTF16 = tv.selectedRange.location
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
+            viewModel.bridge.setOffset(byteOffset)
         }
     }
 }

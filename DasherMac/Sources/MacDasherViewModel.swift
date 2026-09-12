@@ -7,39 +7,10 @@ import UniformTypeIdentifiers
 class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
 
-    // MARK: - RFC 0019: Editor contract sync
-
-    @Published var editorText: String = "" {
-        didSet {
-            guard !isEnginePushingText else { return }
-            let caretUTF16 = editorCaretOffset
-            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: caretUTF16)
-            bridge.seedBuffer(editorText, caretOffset: byteOffset)
-        }
-    }
-
-    @Published var editorCaretOffset: Int = 0 {
-        didSet {
-            guard !isEnginePushingText else { return }
-            guard editorText == outputText else { return }
-            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: editorCaretOffset)
-            bridge.setOffset(byteOffset)
-        }
-    }
-
-    private var isEnginePushingText = false
-
+    // MARK: - RFC 0019: Editor contract
+    // The NSTextView Coordinator owns the sync directly.
     func pushEngineText(_ text: String) {
-        let oldCaret = editorCaretOffset
-        let oldLen = editorText.utf16.count
-        let newLen = text.utf16.count
-        let newCaret = (newLen > oldLen && oldCaret >= oldLen) ? newLen : min(oldCaret, newLen)
-
-        isEnginePushingText = true
-        editorText = text
-        editorCaretOffset = newCaret
         outputText = text
-        isEnginePushingText = false
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
@@ -313,21 +284,13 @@ class MacDasherViewModel: ObservableObject {
 
     func newMessage() {
         bridge.reset()
-        isEnginePushingText = true
-        editorText = ""
         outputText = ""
-        isEnginePushingText = false
-        editorCaretOffset = 0
         resetTypingStats()
     }
 
     func openText(_ text: String) {
         bridge.reset()
-        isEnginePushingText = true
-        editorText = text
         outputText = text
-        isEnginePushingText = false
-        editorCaretOffset = text.utf16.count
     }
 
     var shareText: String {

@@ -7,56 +7,15 @@ import UniformTypeIdentifiers
 class DasherViewModel: ObservableObject {
     @Published var outputText: String = ""
 
-    // MARK: - RFC 0019: Editor contract sync
+    // MARK: - RFC 0019: Editor contract
+    // The UITextView Coordinator owns the sync directly (no intermediate
+    // @Published properties — those fought SwiftUI's render cycle). The
+    // Coordinator calls bridge.seedBuffer / bridge.setOffset directly.
 
-    /// Editor text binding for the output pane. Changes here are user edits
-    /// (seeded to the engine) or engine pushes (suppressed from re-seeding).
-    @Published var editorText: String = "" {
-        didSet {
-            guard !isEnginePushingText else { return }
-            // User edit: seed the engine buffer with the new text + caret
-            let caretUTF16 = editorCaretOffset
-            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: caretUTF16)
-            bridge.seedBuffer(editorText, caretOffset: byteOffset)
-        }
-    }
-
-    /// Caret position in UTF-16 units (SwiftUI TextEditor's unit).
-    /// Updated by the view's selection change handler; a pure move re-anchors.
-    @Published var editorCaretOffset: Int = 0 {
-        didSet {
-            guard !isEnginePushingText else { return }
-            guard editorText == outputText else {
-                // Text also changed — the editorText didSet handles the combined
-                // seed; don't double-fire setOffset
-                return
-            }
-            // Pure caret move: re-anchor immediately (RFC 0019 clause 3)
-            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: editorCaretOffset)
-            bridge.setOffset(byteOffset)
-        }
-    }
-
-    /// Suppresses the editorText didSet from seeding while the engine pushes
-    /// its own text into the pane (RFC 0019 clause 4 — no feedback loop).
-    private var isEnginePushingText = false
-
-    /// Engine-origin text push: update the editor pane without re-seeding,
-    /// preserving the caret position (advance if text grew at/before caret).
+    /// Engine-origin text push: update outputText (for toolbar bindings)
+    /// without re-seeding. The text view updates on the next SwiftUI render.
     func pushEngineText(_ text: String) {
-        let oldCaret = editorCaretOffset
-        let oldLen = editorText.utf16.count
-        let newLen = text.utf16.count
-        let newCaret = (newLen > oldLen && oldCaret >= oldLen) ? newLen : min(oldCaret, newLen)
-
-        // Set BOTH text and caret while the suppress flag is up — if the caret
-        // update happens after the flag drops, its didSet fires setOffset on
-        // every engine push (re-anchoring the model each frame = erratic canvas).
-        isEnginePushingText = true
-        editorText = text
-        editorCaretOffset = newCaret
         outputText = text
-        isEnginePushingText = false
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
@@ -295,22 +254,14 @@ class DasherViewModel: ObservableObject {
 
     func newMessage() {
         bridge.reset()
-        isEnginePushingText = true
-        editorText = ""
         outputText = ""
-        isEnginePushingText = false
-        editorCaretOffset = 0
         lastSpokenText = ""
         resetTypingStats()
     }
 
     func openText(_ text: String) {
         bridge.reset()
-        isEnginePushingText = true
-        editorText = text
         outputText = text
-        isEnginePushingText = false
-        editorCaretOffset = text.utf16.count
         lastSpokenText = ""
     }
 

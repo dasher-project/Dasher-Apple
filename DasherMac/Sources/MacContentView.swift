@@ -722,7 +722,7 @@ struct MacOutputTextView: View {
                         .frame(maxWidth: .infinity)
                         .id("outputText")
                 }
-                .onChange(of: viewModel.editorText) { _, _ in
+                .onChange(of: viewModel.outputText) { _, _ in
                     withAnimation {
                         proxy.scrollTo("outputText", anchor: .bottom)
                     }
@@ -738,7 +738,9 @@ struct MacOutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
-            viewModel.editorText += clipboardString
+            let newText = viewModel.outputText + clipboardString
+            viewModel.bridge.seedBuffer(newText, caretOffset: newText.utf8.count)
+            viewModel.outputText = newText
         }
     }
 
@@ -941,8 +943,7 @@ struct MacEditableOutputText: View {
     }
 }
 
-/// NSTextView wrapper reporting text + selection changes (RFC 0019 clause 3:
-/// caret placement re-anchors the model — v5's click-a-word behaviour).
+/// NSTextView wrapper — Coordinator is the sole engine sync point (RFC 0019).
 struct MacEditableTextViewWrapper: NSViewRepresentable {
     @ObservedObject var viewModel: MacDasherViewModel
 
@@ -957,7 +958,7 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
         tv.allowsUndo = false
         tv.textContainer?.lineFragmentPadding = 8
         tv.textContainerInset = NSSize(width: 0, height: 8)
-        tv.string = viewModel.editorText
+        tv.string = viewModel.outputText
 
         let scroll = NSScrollView()
         scroll.documentView = tv
@@ -969,15 +970,15 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let tv = scroll.documentView as? NSTextView else { return }
-        if tv.string != viewModel.editorText {
-            context.coordinator.isProgrammaticUpdate = true
-            let selected = tv.selectedRange()
-            tv.string = viewModel.editorText
-            let newLen = (viewModel.editorText as NSString).length
-            let caret = min(selected.location, newLen)
-            tv.setSelectedRange(NSRange(location: caret, length: 0))
-            context.coordinator.isProgrammaticUpdate = false
+        if !context.coordinator.isUserEditing && tv.string != viewModel.outputText {
+            context.coordinator.setProgrammatic {
+                let selected = tv.selectedRange()
+                tv.string = viewModel.outputText
+                let newLen = (viewModel.outputText as NSString).length
+                tv.setSelectedRange(NSRange(location: min(selected.location, newLen), length: 0))
+            }
         }
+        context.coordinator.isUserEditing = false
     }
 
     func makeCoordinator() -> Coordinator {
@@ -986,22 +987,35 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
 
     class Coordinator: NSObject, NSTextViewDelegate {
         let viewModel: MacDasherViewModel
-        var isProgrammaticUpdate = false
+        var isProgrammatic = false
+        var isUserEditing = false
 
         init(viewModel: MacDasherViewModel) {
             self.viewModel = viewModel
         }
 
+        func setProgrammatic(_ block: () -> Void) {
+            isProgrammatic = true
+            block()
+            isProgrammatic = false
+        }
+
         func textDidChange(_ notification: Notification) {
-            guard !isProgrammaticUpdate else { return }
+            guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
-            viewModel.editorText = tv.string
+            isUserEditing = true
+            let caretUTF16 = tv.selectedRange().location
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(tv.string, caretOffset: byteOffset)
+            viewModel.outputText = tv.string
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
+            guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
             let caretUTF16 = tv.selectedRange().location
-            viewModel.editorCaretOffset = caretUTF16
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
+            viewModel.bridge.setOffset(byteOffset)
         }
     }
 }
