@@ -717,15 +717,12 @@ struct MacOutputTextView: View {
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    Text(viewModel.outputText)
-                        .font(OutputFontSettings.font)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
+                    // RFC 0019: editable output pane with engine sync.
+                    MacEditableOutputText(viewModel: viewModel)
+                        .frame(maxWidth: .infinity)
                         .id("outputText")
                 }
-                .onChange(of: viewModel.outputText) { _, _ in
+                .onChange(of: viewModel.editorText) { _, _ in
                     withAnimation {
                         proxy.scrollTo("outputText", anchor: .bottom)
                     }
@@ -741,7 +738,7 @@ struct MacOutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
-            viewModel.outputText += clipboardString
+            viewModel.editorText += clipboardString
         }
     }
 
@@ -909,7 +906,7 @@ final class MacDasherCanvas: NSView {
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])
         }
-        vm.outputText = vm.bridge.getOutputText()
+        vm.pushEngineText(vm.bridge.getOutputText())
         vm.syncGameModeState()
     }
 }
@@ -930,5 +927,23 @@ struct VisualEffectBlur: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+    }
+}
+
+
+// MARK: - RFC 0019: Editable output text (macOS)
+
+struct MacEditableOutputText: View {
+    @ObservedObject var viewModel: MacDasherViewModel
+
+    var body: some View {
+        TextEditor(text: $viewModel.editorText)
+            .font(OutputFontSettings.font)
+            .scrollContentBackground(.hidden)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .onChange(of: viewModel.editorText) { _, newText in
+                viewModel.editorCaretOffset = newText.utf16.count
+            }
     }
 }

@@ -205,7 +205,7 @@ final class DasherCanvas: UIView {
             if let cmds = vm.bridge.frame(timeMs: timeMs) {
                 cmds.render(in: ctx, bounds: bounds)
             }
-            vm.outputText = vm.bridge.getOutputText()
+            vm.pushEngineText(vm.bridge.getOutputText())
             vm.syncGameModeState()
         } else {
             if let cmds = vm.bridge.frame(timeMs: Int64(Date().timeIntervalSince1970 * 1000.0)) {

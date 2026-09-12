@@ -120,16 +120,13 @@ struct OutputTextView: View {
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    Text(viewModel.outputText)
-                        .font(OutputFontSettings.font)
-                        .foregroundColor(.primary)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
+                    // RFC 0019: editable output pane — user edits seed the engine,
+                    // caret placement re-anchors the model.
+                    EditableOutputText(viewModel: viewModel)
+                        .frame(maxWidth: .infinity)
                         .id("outputText")
                 }
-                .onChange(of: viewModel.outputText) { _, _ in
+                .onChange(of: viewModel.editorText) { _, _ in
                     withAnimation {
                         proxy.scrollTo("outputText", anchor: .bottom)
                     }
@@ -443,7 +440,7 @@ struct OutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
-            viewModel.outputText += clipboardString
+            viewModel.editorText += clipboardString
         }
     }
 }
@@ -502,4 +499,30 @@ private extension View {
         availableSpace: 500
     )
     .frame(width: 120, height: 400)
+}
+
+
+// MARK: - RFC 0019: Editable output text
+
+/// Editable output pane using TextEditor, with caret tracking for engine
+/// re-anchoring. The viewModel's editorText binding handles the sync loop
+/// (user edits seed the engine; engine pushes update the text without
+/// re-seeding).
+struct EditableOutputText: View {
+    @ObservedObject var viewModel: DasherViewModel
+
+    var body: some View {
+        TextEditor(text: $viewModel.editorText)
+            .font(OutputFontSettings.font)
+            .foregroundColor(.primary)
+            .scrollContentBackground(.hidden)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 8)
+            .onChange(of: viewModel.editorText) { _, newText in
+                // The viewModel's didSet handles the engine seed.
+                // Update the caret to end (TextEditor doesn't expose position
+                // directly; the viewModel tracks it from selection changes).
+                viewModel.editorCaretOffset = newText.utf16.count
+            }
+    }
 }

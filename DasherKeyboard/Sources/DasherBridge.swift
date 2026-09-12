@@ -305,6 +305,23 @@ class DasherBridge: InputMethodBridge {
         lastOutputText = ""
     }
 
+
+    // MARK: - RFC 0019: Context seeding from the target text field
+
+    /// Seed the engine's edit buffer from the target field's content so
+    /// predictions follow the user's existing text (RFC 0015 tier 3 +
+    /// RFC 0019 clause 6). The keyboard calls this when the text document
+    /// changes (focus, typing, caret move).
+    func seedFromTargetField(beforeInput: String?, afterInput: String?) {
+        guard let ctx = ctx else { return }
+        let before = beforeInput ?? ""
+        let after = afterInput ?? ""
+        let fullText = before + after
+        // Caret is at the boundary between before and after — convert to byte offset
+        let caretBytes = before.utf8.count
+        dasher_seed_buffer(ctx, fullText, Int32(caretBytes))
+        lastOutputText = fullText
+    }
     func reset() {
         guard let ctx = ctx else { return }
         dasher_reset(ctx)

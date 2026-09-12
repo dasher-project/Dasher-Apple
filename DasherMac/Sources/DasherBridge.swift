@@ -485,6 +485,35 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         lastOutputText = ""
     }
 
+    // MARK: - RFC 0019: Editor contract
+
+    /// Replace the edit buffer with user-edited text and anchor the model at
+    /// the caret (RFC 0019 clause 2). Emits buffer-cleared (event 2) first so
+    /// subscribers resync without injecting.
+    func seedBuffer(_ text: String, caretOffset: Int) {
+        guard let ctx = ctx else { return }
+        dasher_seed_buffer(ctx, text, Int32(caretOffset))
+        lastOutputText = text
+    }
+
+    /// Re-anchor the model at a buffer position — pure caret move, no text
+    /// change (RFC 0019 clause 3). v5's SetOffset.
+    func setOffset(_ offset: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_offset(ctx, Int32(offset))
+    }
+
+    /// Convert a UTF-16 caret offset (SwiftUI/NSTextView unit) into the
+    /// engine's UTF-8 byte offset for seedBuffer/setOffset.
+    func byteOffsetFromUTF16(_ text: String, utf16Offset: Int) -> Int {
+        Int(dasher_byte_offset_from_utf16(text, Int32(utf16Offset)))
+    }
+
+    /// Codepoint-unit variant (AX APIs report character counts).
+    func byteOffsetFromCodepoints(_ text: String, codepointOffset: Int) -> Int {
+        Int(dasher_byte_offset_from_codepoints(text, Int32(codepointOffset)))
+    }
+
     // MARK: - Convenience getters/setters
 
     var alphabetId: String {

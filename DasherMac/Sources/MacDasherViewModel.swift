@@ -6,6 +6,44 @@ import UniformTypeIdentifiers
 @MainActor
 class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
+
+    // MARK: - RFC 0019: Editor contract sync
+
+    @Published var editorText: String = "" {
+        didSet {
+            guard !isEnginePushingText else { return }
+            let caretUTF16 = editorCaretOffset
+            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: caretUTF16)
+            bridge.seedBuffer(editorText, caretOffset: byteOffset)
+        }
+    }
+
+    @Published var editorCaretOffset: Int = 0 {
+        didSet {
+            guard !isEnginePushingText else { return }
+            guard editorText == outputText else { return }
+            let byteOffset = bridge.byteOffsetFromUTF16(editorText, utf16Offset: editorCaretOffset)
+            bridge.setOffset(byteOffset)
+        }
+    }
+
+    private var isEnginePushingText = false
+
+    func pushEngineText(_ text: String) {
+        let oldCaret = editorCaretOffset
+        let oldLen = editorText.utf16.count
+        isEnginePushingText = true
+        editorText = text
+        outputText = text
+        isEnginePushingText = false
+
+        let newLen = text.utf16.count
+        if newLen > oldLen && oldCaret >= oldLen {
+            editorCaretOffset = newLen
+        } else {
+            editorCaretOffset = min(oldCaret, newLen)
+        }
+    }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
     @Published var isControlModeActive: Bool = false
@@ -81,7 +119,7 @@ class MacDasherViewModel: ObservableObject {
             if self.directMode {
                 self.directService.injectText(text)
             }
-            self.outputText = self.bridge.getOutputText()
+            self.pushEngineText(self.bridge.getOutputText())
         }
 
         bridge.onDelete = { [weak self] text in
@@ -278,13 +316,21 @@ class MacDasherViewModel: ObservableObject {
 
     func newMessage() {
         bridge.reset()
+        isEnginePushingText = true
+        editorText = ""
         outputText = ""
+        isEnginePushingText = false
+        editorCaretOffset = 0
         resetTypingStats()
     }
 
     func openText(_ text: String) {
         bridge.reset()
+        isEnginePushingText = true
+        editorText = text
         outputText = text
+        isEnginePushingText = false
+        editorCaretOffset = text.utf16.count
     }
 
     var shareText: String {

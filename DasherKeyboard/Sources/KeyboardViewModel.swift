@@ -77,6 +77,11 @@ class KeyboardViewModel {
         // the keyboard attaches to a text field — reload is cheap and a no-op
         // when nothing changed (differing values only; edit buffer preserved).
         bridge.reloadSettings()
+        // RFC 0019 clause 6: seed the engine from the target field so
+        // predictions follow the user's existing text (focus change trigger).
+        bridge.seedFromTargetField(
+            beforeInput: proxy.documentContextBeforeInput,
+            afterInput: proxy.documentContextAfterInput)
     }
 
     func setCanvasSize(_ size: CGSize) {
