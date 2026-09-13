@@ -974,15 +974,14 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
 
 #if canImport(UIKit)
 extension DrawCommands {
-        private var currentLineWidth: CGFloat = 1
-
-    func render(in context: CGContext, bounds: CGRect) {
+        func render(in context: CGContext, bounds: CGRect) {
         let count = commandCount / 6
         // Adjacent node rectangles tile edge-to-edge. Anti-aliased edges blend
         // with the background, creating visible thin white lines between nodes
-        // that Windows/GTK don't show (they snap or don't AA). Disable AA for
-        // fills and strokes; text drawing re-enables it (text needs AA).
+        // that Windows/GTK don't show. Disable AA for fills and strokes;
+        // text drawing re-enables it (text needs AA).
         context.setShouldAntialias(false)
+        var currentLineWidth: CGFloat = 1
         for i in 0..<count {
             let base = i * 6
             let op = Int(commands[base + 0])
