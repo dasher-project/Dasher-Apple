@@ -77,11 +77,44 @@ class KeyboardViewModel {
         // the keyboard attaches to a text field — reload is cheap and a no-op
         // when nothing changed (differing values only; edit buffer preserved).
         bridge.reloadSettings()
-        // RFC 0019 clause 6: seed the engine from the target field so
-        // predictions follow the user's existing text (focus change trigger).
-        bridge.seedFromTargetField(
-            beforeInput: proxy.documentContextBeforeInput,
-            afterInput: proxy.documentContextAfterInput)
+        // RFC 0019 clause 6: seed from the target field (focus-change trigger)
+        // and start the context poller for text-changes / caret-moves.
+        seedFromField(proxy)
+        startContextPoller()
+    }
+
+    // MARK: - RFC 0019: target-field context poller
+
+    /// Keyboard extensions have no text-changed or caret-moved notifications
+    /// for the target field. Poll documentContextBeforeInput on a light timer
+    /// (400 ms) and re-seed when it changes — covers the user typing with the
+    /// system keyboard then switching to Dasher, and caret moves within the
+    /// field. The hash check makes the no-change case essentially free.
+    private var contextPollTimer: Timer?
+    private var lastContextHash: Int = 0
+
+    private func startContextPoller() {
+        stopContextPoller()
+        contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            guard let self, let proxy = self.textDocumentProxy else { return }
+            self.seedFromField(proxy)
+        }
+    }
+
+    private func stopContextPoller() {
+        contextPollTimer?.invalidate()
+        contextPollTimer = nil
+    }
+
+    private func seedFromField(_ proxy: UITextDocumentProxy) {
+        let before = proxy.documentContextBeforeInput ?? ""
+        let after = proxy.documentContextAfterInput ?? ""
+        // Re-seed only when the context actually changed (typing before the
+        // cursor changes "before"; caret moves change the before/after split).
+        let hash = before.hashValue ^ (after.hashValue &+ before.count)
+        guard hash != lastContextHash else { return }
+        lastContextHash = hash
+        bridge.seedFromTargetField(beforeInput: before, afterInput: after)
     }
 
     func setCanvasSize(_ size: CGSize) {
