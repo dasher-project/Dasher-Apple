@@ -12,6 +12,19 @@ class DirectModeService: ObservableObject {
     /// field's content at the new caret position.
     var onTargetCaretChanged: (() -> Void)?
 
+    /// Self-injection echo suppression (Windows #58/#61): when Dasher types
+    /// into the target, the AX caret watcher fires for our own injected text.
+    /// The engine already knows — don't re-seed from our own output.
+    private var echoSuppressionUntil = Date.distantPast
+
+    func suppressEchoes(for interval: TimeInterval = 0.3) {
+        echoSuppressionUntil = Date().addingTimeInterval(interval)
+    }
+
+    private var isEchoSuppressed: Bool {
+        Date() < echoSuppressionUntil
+    }
+
     private var frontmostObserver: Any?
     private var pollTimer: Timer?
     private var lastTargetApp: NSRunningApplication?
@@ -36,6 +49,8 @@ class DirectModeService: ObservableObject {
                 guard let self else { return }
                 guard let front = NSWorkspace.shared.frontmostApplication,
                       front.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+                // Drop self-injection echoes (our own typing just changed the caret).
+                guard !self.isEchoSuppressed else { return }
                 self.onTargetCaretChanged?()
             }
         }
@@ -49,12 +64,16 @@ class DirectModeService: ObservableObject {
     }
 
     /// Reads the focused text field's content + caret via AX, for engine
-    /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3).
+    /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3). A 300 ms timeout on
+    /// the AX messages prevents an unresponsive target from stalling the
+    /// caret watcher (Windows' hard budget, PR #52).
     func readTargetFieldContext() -> (before: String, after: String)? {
         guard hasAccessibilityPermission,
               let pid = lastTargetApp?.processIdentifier else { return nil }
 
         let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.3)
+
         var focusedRef: CFTypeRef?
         let focusErr = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef)
         guard focusErr == .success,
@@ -157,6 +176,7 @@ class DirectModeService: ObservableObject {
 
     func injectText(_ text: String) {
         guard hasAccessibilityPermission else { return }
+        suppressEchoes()
 
         if text == "\u{08}" {
             postKeycode(51)
@@ -182,6 +202,7 @@ class DirectModeService: ObservableObject {
 
     func injectDelete(count: Int) {
         guard hasAccessibilityPermission else { return }
+        suppressEchoes()
         for _ in 0..<count {
             let down = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: true)
             postEvent(down)

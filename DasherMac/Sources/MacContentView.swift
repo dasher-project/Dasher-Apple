@@ -1048,9 +1048,11 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
             guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
             isUserEditing = true
-            let caretUTF16 = tv.selectedRange().location
-            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
-            viewModel.bridge.seedBuffer(tv.string, caretOffset: byteOffset)
+            // RFC 0019 clause 7: seed cap — trailing 100k UTF-16 window.
+            let (text, caretUTF16) = MacEditorSeedPolicy.apply(
+                to: tv.string, caretUTF16: tv.selectedRange().location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
             viewModel.outputText = tv.string
         }
 
@@ -1061,5 +1063,23 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
             viewModel.bridge.setOffset(byteOffset)
         }
+    }
+}
+
+
+// MARK: - RFC 0019 clause 7: seed cap (macOS)
+
+enum MacEditorSeedPolicy {
+    static let maxUTF16Units = 100_000
+
+    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
+        let len = text.utf16.count
+        guard len > maxUTF16Units else { return (text, caretUTF16) }
+
+        let dropCount = len - maxUTF16Units
+        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
+        let windowed = String(text[startIndex...])
+        let newCaret = max(0, caretUTF16 - dropCount)
+        return (windowed, newCaret)
     }
 }

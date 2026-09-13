@@ -562,12 +562,16 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         }
 
         /// User typed/pasted/deleted — seed the engine buffer.
+        /// RFC 0019 clause 7: over-long text seeds only a trailing 100k
+        /// UTF-16 window (full model rebuild per keystroke is not acceptable
+        /// at extreme sizes). Mirrors Windows EditorSeedPolicy.
         func textViewDidChange(_ tv: UITextView) {
             guard !isProgrammatic else { return }
             isUserEditing = true
-            let caretUTF16 = tv.selectedRange.location
-            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
-            viewModel.bridge.seedBuffer(tv.text, caretOffset: byteOffset)
+            let (text, caretUTF16) = EditorSeedPolicy.apply(
+                to: tv.text, caretUTF16: tv.selectedRange.location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
             viewModel.outputText = tv.text
         }
 
@@ -579,5 +583,25 @@ struct EditableTextViewWrapper: UIViewRepresentable {
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
             viewModel.bridge.setOffset(byteOffset)
         }
+    }
+}
+
+
+// MARK: - RFC 0019 clause 7: seed cap
+
+/// Caps the text seeded to the engine at a trailing window of 100k UTF-16
+/// units. Mirrors Dasher-Windows EditorSeedPolicy.
+enum EditorSeedPolicy {
+    static let maxUTF16Units = 100_000
+
+    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
+        let len = text.utf16.count
+        guard len > maxUTF16Units else { return (text, caretUTF16) }
+
+        let dropCount = len - maxUTF16Units
+        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
+        let windowed = String(text[startIndex...])
+        let newCaret = max(0, caretUTF16 - dropCount)
+        return (windowed, newCaret)
     }
 }

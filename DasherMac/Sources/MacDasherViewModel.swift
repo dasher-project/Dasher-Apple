@@ -212,11 +212,14 @@ class MacDasherViewModel: ObservableObject {
 
     /// RFC 0019 clause 6: caret moved in the target app's text field —
     /// re-seed the engine from the field's content at the new caret position.
+    /// Applies the clause-7 seed cap (trailing 100k UTF-16 window).
     private func handleTargetCaretChanged() {
         guard directMode, let context = directService.readTargetFieldContext() else { return }
         let fullText = context.before + context.after
-        let caretBytes = context.before.utf8.count
-        bridge.seedBuffer(fullText, caretOffset: caretBytes)
+        let (cappedText, cappedCaret) = MacEditorSeedPolicy.apply(
+            to: fullText, caretUTF16: context.before.utf16.count)
+        let caretBytes = String(fullText.prefix(cappedCaret)).utf8.count
+        bridge.seedBuffer(cappedText, caretOffset: caretBytes)
     }
 
     /// Buffered: canvas layout can precede startEngine (migration prompt), in
