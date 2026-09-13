@@ -73,6 +73,13 @@ class DasherViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
+        bridge.onOutput = { [weak self] _ in
+            // Engine produced text — push to the editor pane (NOT from draw()).
+            // Setting @Published inside draw() caused SwiftUI to silently
+            // defer the update — the text view never received engine output.
+            self?.pushEngineText(self?.bridge.getOutputText() ?? "")
+        }
+
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)
