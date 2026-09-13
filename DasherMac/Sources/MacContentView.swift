@@ -315,6 +315,59 @@ struct MacContentView: View {
             }
             .buttonStyle(.plain)
 
+            // ── Direct-mode text actions (RFC 0019, mirrors Windows mini-bar) ──
+
+            // New session: clear text + model context (clause 5)
+            Button {
+                viewModel.newMessage()
+            } label: {
+                LucideIcon(DasherIcon.close, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("New session (clear text and context)")
+
+            // Copy all typed text to clipboard
+            Button {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(viewModel.outputText, forType: .string)
+            } label: {
+                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Copy all text")
+
+            // Cut selection in target app (Cmd+X)
+            Button {
+                viewModel.directService.sendCmdChord("x")
+            } label: {
+                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Cut selection in target app")
+
+            // Paste into target app (Cmd+V)
+            Button {
+                viewModel.directService.sendCmdChord("v")
+            } label: {
+                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Paste into target app")
+
+            // Select all in target app (Cmd+A)
+            Button {
+                viewModel.directService.sendCmdChord("a")
+            } label: {
+                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Select all in target app")
+
             // Live typing rate in Direct Mode (RFC 0012 direct-entry clause,
             // mirrors Dasher-Windows #39): the bottom bar is hidden here, so
             // users who enable the typing-rate display would otherwise lose

@@ -26,7 +26,7 @@ class DirectModeService: ObservableObject {
         // changes in ANY accessible text element — we scope it to the
         // focused app via the frontmost check in the handler.
         caretObserver = NotificationCenter.default.addObserver(
-            forName: NSAccessibility.selectedTextChangedNotification,
+            forName: Notification.Name(kAXSelectedTextChangedNotification as String),
             object: nil, queue: .main
         ) { [weak self] note in
             DispatchQueue.main.async {
@@ -57,7 +57,10 @@ class DirectModeService: ObservableObject {
         let app = AXUIElementCreateApplication(pid)
         var focusedRef: CFTypeRef?
         let focusErr = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef)
-        guard focusErr == .success, let focused = focusedRef else { return nil }
+        guard focusErr == .success,
+              let focusedCF = focusedRef,
+              CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else { return nil }
+        let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
 
         var valueRef: CFTypeRef?
         let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
@@ -67,7 +70,9 @@ class DirectModeService: ObservableObject {
         var rangeRef: CFTypeRef?
         let rangeErr = AXUIElementCopyAttributeValue(focused, kAXSelectedTextRangeAttribute as CFString, &rangeRef)
         var caretOffset = (value as NSString).length
-        if rangeErr == .success, let range = rangeRef {
+        if rangeErr == .success, let rangeCF = rangeRef,
+              CFGetTypeID(rangeCF) == AXValueGetTypeID() {
+            let range = unsafeBitCast(rangeCF, to: AXValue.self)
             var loc = CFRange()
             if AXValueGetValue(range, .cfRange, &loc) {
                 caretOffset = loc.location
@@ -191,6 +196,32 @@ class DirectModeService: ObservableObject {
             event.postToPid(pid)
         } else {
             event.post(tap: .cghidEventTap)
+        }
+    }
+
+    /// Send a Cmd+<key> chord to the target app (Select All = "a", Copy = "c",
+    /// Cut = "x", Paste = "v"). Used by the direct-mode mini-bar buttons
+    /// (RFC 0019, mirrors the Windows keyboard mini-bar).
+    func sendCmdChord(_ key: String) {
+        guard hasAccessibilityPermission else { return }
+        guard let keyCode = key.first?.utf16.first else { return }
+        // Map lowercase ASCII to virtual key (a=0, b=11, c=8, v=9, x=7...)
+        let virtualKey: CGKeyCode
+        switch key.lowercased() {
+        case "a": virtualKey = 0    // kVK_ANSI_A
+        case "c": virtualKey = 8    // kVK_ANSI_C
+        case "v": virtualKey = 9    // kVK_ANSI_V
+        case "x": virtualKey = 7    // kVK_ANSI_X
+        default: return
+        }
+        let cmdFlag: CGEventFlags = .maskCommand
+        if let down = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: true) {
+            down.flags = cmdFlag
+            postEvent(down)
+        }
+        if let up = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: false) {
+            up.flags = cmdFlag
+            postEvent(up)
         }
     }
 
