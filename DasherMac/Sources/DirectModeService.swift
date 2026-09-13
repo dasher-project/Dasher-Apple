@@ -7,9 +7,78 @@ class DirectModeService: ObservableObject {
     @Published var hasAccessibilityPermission = false
     @Published var targetAppName: String = ""
 
+    /// RFC 0019 clause 6: fires when the caret/selection changes in the target
+    /// app's focused text field. The view model re-seeds the engine from the
+    /// field's content at the new caret position.
+    var onTargetCaretChanged: (() -> Void)?
+
     private var frontmostObserver: Any?
     private var pollTimer: Timer?
     private var lastTargetApp: NSRunningApplication?
+
+    // MARK: - RFC 0019: caret watcher (AXSelectedTextChanged)
+
+    private var caretObserver: Any?
+
+    private func startCaretWatcher() {
+        stopCaretWatcher()
+        // NSAccessibilitySelectedTextChanged fires when the selection/caret
+        // changes in ANY accessible text element — we scope it to the
+        // focused app via the frontmost check in the handler.
+        caretObserver = NotificationCenter.default.addObserver(
+            forName: NSAccessibility.selectedTextChangedNotification,
+            object: nil, queue: .main
+        ) { [weak self] note in
+            DispatchQueue.main.async {
+                // Only react when a non-Dasher app is frontmost (the user is
+                // moving the caret in a target field, not in our own pane —
+                // our own pane's caret is handled by the NSTextView delegate).
+                guard let self else { return }
+                guard let front = NSWorkspace.shared.frontmostApplication,
+                      front.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
+                self.onTargetCaretChanged?()
+            }
+        }
+    }
+
+    private func stopCaretWatcher() {
+        if let observer = caretObserver {
+            NotificationCenter.default.removeObserver(observer)
+            caretObserver = nil
+        }
+    }
+
+    /// Reads the focused text field's content + caret via AX, for engine
+    /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3).
+    func readTargetFieldContext() -> (before: String, after: String)? {
+        guard hasAccessibilityPermission,
+              let pid = lastTargetApp?.processIdentifier else { return nil }
+
+        let app = AXUIElementCreateApplication(pid)
+        var focusedRef: CFTypeRef?
+        let focusErr = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef)
+        guard focusErr == .success, let focused = focusedRef else { return nil }
+
+        var valueRef: CFTypeRef?
+        let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
+        guard valueErr == .success, let value = valueRef as? String else { return nil }
+
+        // Caret position (selectedTextRange gives (loc, len))
+        var rangeRef: CFTypeRef?
+        let rangeErr = AXUIElementCopyAttributeValue(focused, kAXSelectedTextRangeAttribute as CFString, &rangeRef)
+        var caretOffset = (value as NSString).length
+        if rangeErr == .success, let range = rangeRef {
+            var loc = CFRange()
+            if AXValueGetValue(range, .cfRange, &loc) {
+                caretOffset = loc.location
+            }
+        }
+
+        let nsValue = value as NSString
+        let before = nsValue.substring(to: min(caretOffset, nsValue.length))
+        let after = nsValue.substring(from: min(caretOffset, nsValue.length))
+        return (before, after)
+    }
 
     func checkAccessibility() {
         hasAccessibilityPermission = AXIsProcessTrustedWithOptions(
@@ -45,6 +114,7 @@ class DirectModeService: ObservableObject {
     }
 
     func startWatching() {
+        startCaretWatcher()
         frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil, queue: .main
@@ -72,6 +142,7 @@ class DirectModeService: ObservableObject {
     }
 
     func stopWatching() {
+        stopCaretWatcher()
         if let observer = frontmostObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
             frontmostObserver = nil

@@ -201,10 +201,22 @@ class MacDasherViewModel: ObservableObject {
         if directMode {
             directService.startPolling()
             directService.startWatching()
+            directService.onTargetCaretChanged = { [weak self] in
+                self?.handleTargetCaretChanged()
+            }
         } else {
             directService.stopPolling()
             directService.stopWatching()
         }
+    }
+
+    /// RFC 0019 clause 6: caret moved in the target app's text field —
+    /// re-seed the engine from the field's content at the new caret position.
+    private func handleTargetCaretChanged() {
+        guard directMode, let context = directService.readTargetFieldContext() else { return }
+        let fullText = context.before + context.after
+        let caretBytes = context.before.utf8.count
+        bridge.seedBuffer(fullText, caretOffset: caretBytes)
     }
 
     /// Buffered: canvas layout can precede startEngine (migration prompt), in
