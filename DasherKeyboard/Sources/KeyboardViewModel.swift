@@ -55,10 +55,12 @@ class KeyboardViewModel {
         os_log("KeyboardViewModel.init: wiring callbacks", log: keyboardLog)
         self.textDocumentProxy = textDocumentProxy
         bridge.onOutput = { [weak self] text in
+            self?.skipNextPoll = true
             self?.textDocumentProxy?.insertText(text)
         }
         bridge.onDelete = { [weak self] text in
             guard let proxy = self?.textDocumentProxy else { return }
+            self?.skipNextPoll = true
             let deleteCount = min(text.count, proxy.documentContextBeforeInput?.count ?? 0)
             for _ in 0..<deleteCount {
                 proxy.deleteBackward()
@@ -77,6 +79,61 @@ class KeyboardViewModel {
         // the keyboard attaches to a text field — reload is cheap and a no-op
         // when nothing changed (differing values only; edit buffer preserved).
         bridge.reloadSettings()
+        // RFC 0019 clause 6: seed from the target field (focus-change trigger)
+        // and start the context poller for text-changes / caret-moves.
+        seedFromField(proxy)
+        startContextPoller()
+    }
+
+    // MARK: - RFC 0019: target-field context poller
+
+    /// Keyboard extensions have no text-changed or caret-moved notifications
+    /// for the target field. Poll documentContextBeforeInput on a light timer
+    /// (400 ms) and re-seed when it changes — covers the user typing with the
+    /// system keyboard then switching to Dasher, and caret moves within the
+    /// field. The hash check makes the no-change case essentially free.
+    private var contextPollTimer: Timer?
+    private var lastContextHash: Int = 0
+    /// Skip the next poll cycle after Dasher injects text (our own typing
+    /// changes documentContextBeforeInput, which would trigger a pointless
+    /// model re-seed every 400ms during continuous Dasher input).
+    private var skipNextPoll = false
+
+    private func startContextPoller() {
+        stopContextPoller()
+        contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            guard let self, let proxy = self.textDocumentProxy else { return }
+            if self.skipNextPoll {
+                self.skipNextPoll = false
+                // Still update the hash so the next real change is detected
+                self.lastContextHash = self.contextHash(proxy)
+                return
+            }
+            self.seedFromField(proxy)
+        }
+    }
+
+    private func stopContextPoller() {
+        contextPollTimer?.invalidate()
+        contextPollTimer = nil
+    }
+
+    private func contextHash(_ proxy: UITextDocumentProxy) -> Int {
+        let before = proxy.documentContextBeforeInput ?? ""
+        let after = proxy.documentContextAfterInput ?? ""
+        return before.hashValue ^ (after.hashValue &+ before.count)
+    }
+
+    private func seedFromField(_ proxy: UITextDocumentProxy) {
+        let before = proxy.documentContextBeforeInput ?? ""
+        let after = proxy.documentContextAfterInput ?? ""
+        // Re-seed only when the context actually changed (typing before the
+        // cursor changes "before"; caret moves change the before/after split).
+        let hash = before.hashValue ^ (after.hashValue &+ before.count)
+        guard hash != lastContextHash else { return }
+        lastContextHash = hash
+
+        bridge.seedFromTargetField(beforeInput: before, afterInput: after)
     }
 
     func setCanvasSize(_ size: CGSize) {

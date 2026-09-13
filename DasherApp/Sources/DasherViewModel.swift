@@ -6,6 +6,33 @@ import UniformTypeIdentifiers
 @MainActor
 class DasherViewModel: ObservableObject {
     @Published var outputText: String = ""
+
+    // MARK: - RFC 0019: Editor contract
+    // The UITextView Coordinator owns the sync directly (no intermediate
+    // @Published properties — those fought SwiftUI's render cycle). The
+    // Coordinator calls bridge.seedBuffer / bridge.setOffset directly.
+
+    /// Engine-origin text push: update outputText (for toolbar bindings)
+    /// without re-seeding. The text view updates on the next SwiftUI render.
+    /// RFC 0019 clause 7: when the pane exceeds the seed cap, the pane keeps
+    /// the full text and the engine keeps the window — don't overwrite the
+    /// pane with the truncated engine buffer.
+    func pushEngineText(_ text: String) {
+        if outputText.utf16.count > EditorSeedPolicy.maxUTF16Units {
+            // Over-cap: engine sends the windowed text; the pane is longer.
+            // Only update if the engine is genuinely ahead of us (new chars).
+            let paneLen = outputText.utf16.count
+            let engineLen = text.utf16.count
+            if engineLen > paneLen {
+                // Engine grew (model expanded the window): accept but keep tail.
+                // This is rare (the window shifts as we type) — just accept it.
+                outputText = text
+            }
+            // Otherwise: engine sent the same windowed view — pane is authoritative.
+        } else {
+            outputText = text
+        }
+    }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
     @Published var isControlModeActive: Bool = false
@@ -62,6 +89,15 @@ class DasherViewModel: ObservableObject {
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
+        bridge.onOutput = { [weak self] _ in
+            // Engine produced text — push to the editor pane (NOT from draw()).
+            self?.pushEngineText(self?.bridge.getOutputText() ?? "")
+        }
+
+        bridge.onDelete = { [weak self] _ in
+            self?.pushEngineText(self?.bridge.getOutputText() ?? "")
+        }
+
         bridge.onMessage = { [weak self] isWarning, text in
             if text.contains("No user training text found") { return }
             self?.pendingMessage = (isWarning, text)

@@ -776,8 +776,14 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
 
 #if canImport(UIKit)
 extension DrawCommands {
-    func render(in context: CGContext, bounds: CGRect) {
+        func render(in context: CGContext, bounds: CGRect) {
         let count = commandCount / 6
+        // Adjacent node rectangles tile edge-to-edge. Anti-aliased edges blend
+        // with the background, creating visible thin white lines between nodes
+        // that Windows/GTK don't show. Disable AA for fills and strokes;
+        // text drawing re-enables it (text needs AA).
+        context.setShouldAntialias(false)
+        var currentLineWidth: CGFloat = 1
         for i in 0..<count {
             let base = i * 6
             let op = Int(commands[base + 0])
@@ -800,7 +806,7 @@ extension DrawCommands {
                                                 width: radius * 2, height: radius * 2))
             case 2:
                 context.setStrokeColor(cgColor)
-                context.setLineWidth(2)
+                context.setLineWidth(currentLineWidth)
                 context.move(to: CGPoint(x: a, y: b))
                 context.addLine(to: CGPoint(x: CGFloat(c), y: CGFloat(d)))
                 context.strokePath()
@@ -812,6 +818,7 @@ extension DrawCommands {
                 context.setFillColor(cgColor)
                 context.fill(CGRect(x: a, y: b, width: CGFloat(c) - a, height: CGFloat(d) - b))
             case 5:
+                context.setShouldAntialias(true)
                 let fontSize = CGFloat(c > 0 ? c : 14)
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
@@ -828,6 +835,8 @@ extension DrawCommands {
                     ]
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: b))
                 }
+            case 6:
+                currentLineWidth = a
             default:
                 break
             }

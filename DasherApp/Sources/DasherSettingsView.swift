@@ -310,7 +310,16 @@ struct DasherSettingsView: View {
             let alphabets = viewModel.bridge.allAlphabets
             if !alphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
-                    get: { viewModel.bridge.alphabetId },
+                    get: {
+                    let id = viewModel.bridge.alphabetId
+                    // DasherCore #88 removed the dead "Default" alphabet; old
+                    // saved settings may still hold it. Map to the first real
+                    // alphabet the engine offers so the Picker doesn't error.
+                    if id == "Default" || id.isEmpty {
+                        return viewModel.bridge.allAlphabets.first?.name ?? "English with limited punctuation"
+                    }
+                    return id
+                },
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)

@@ -118,23 +118,11 @@ struct OutputTextView: View {
                 gameTargetBar
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    Text(viewModel.outputText)
-                        .font(OutputFontSettings.font)
-                        .foregroundColor(.primary)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .id("outputText")
-                }
-                .onChange(of: viewModel.outputText) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("outputText", anchor: .bottom)
-                    }
-                }
-            }
+            // RFC 0019: editable output pane. UITextView handles its own
+            // scrolling — wrapping it in a SwiftUI ScrollView prevented the
+            // text from rendering (nested scroll views on iOS).
+            EditableOutputText(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -179,57 +167,6 @@ struct OutputTextView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .background(Color("BarBackground"))
-    }
-
-    // MARK: - Drag Handle
-
-    private var dragHandleStrip: some View {
-        Group {
-            switch handleEdge {
-            case .leading, .trailing:
-                sideDragHandle
-            case .top, .bottom:
-                topBottomDragHandle
-            }
-        }
-    }
-
-    private var sideDragHandle: some View {
-        VStack {
-            Spacer()
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color("MutedText").opacity(0.4))
-                .frame(width: 4, height: 28)
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .cursor(.resizeLeftRight)
-        .padding(.horizontal, 3)
-        .gesture(DragGesture(minimumDistance: 1).onChanged { value in
-            let delta: CGFloat = handleEdge == .leading
-                ? -value.translation.width
-                : value.translation.width
-            paneSize = min(maxPane, max(minPane, paneSize + delta))
-        })
-    }
-
-    private var topBottomDragHandle: some View {
-        HStack {
-            Spacer()
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color("MutedText").opacity(0.4))
-                .frame(width: 28, height: 4)
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .cursor(.resizeUpDown)
-        .padding(.vertical, 3)
-        .gesture(DragGesture(minimumDistance: 1).onChanged { value in
-            let delta: CGFloat = handleEdge == .top
-                ? -value.translation.height
-                : value.translation.height
-            paneSize = min(maxPane, max(minPane, paneSize + delta))
-        })
     }
 
     // MARK: - Adaptive Toolbar
@@ -443,7 +380,11 @@ struct OutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
-            viewModel.outputText += clipboardString
+            let newText = viewModel.outputText + clipboardString
+            let (capped, cappedCaret) = EditorSeedPolicy.apply(
+                to: newText, caretUTF16: newText.utf16.count)
+            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
+            viewModel.outputText = newText
         }
     }
 }
@@ -502,4 +443,120 @@ private extension View {
         availableSpace: 500
     )
     .frame(width: 120, height: 400)
+}
+
+
+// MARK: - RFC 0019: Editable output text
+
+/// Editable output pane using TextEditor, with caret tracking for engine
+/// re-anchoring. The viewModel's editorText binding handles the sync loop
+/// (user edits seed the engine; engine pushes update the text without
+/// re-seeding).
+struct EditableOutputText: View {
+    @ObservedObject var viewModel: DasherViewModel
+
+    var body: some View {
+        EditableTextViewWrapper(viewModel: viewModel)
+    }
+}
+
+/// UITextView wrapper — the Coordinator is the sole sync point between the
+/// text view and the engine (RFC 0019). No intermediate @Published bindings;
+/// the delegate calls bridge APIs directly on user interaction, and SwiftUI
+/// renders engine pushes via updateUIView with the programmatic flag.
+struct EditableTextViewWrapper: UIViewRepresentable {
+    @ObservedObject var viewModel: DasherViewModel
+
+    func makeUIView(context: Context) -> UITextView {
+        let tv = UITextView()
+        tv.delegate = context.coordinator
+        tv.font = UIFont.systemFont(ofSize: 16)
+        tv.backgroundColor = .clear
+        tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
+        tv.isEditable = true
+        tv.isSelectable = true
+        tv.text = viewModel.outputText
+        return tv
+    }
+
+    func updateUIView(_ tv: UITextView, context: Context) {
+        // Engine push: only update if the text actually differs (user edits
+        // already seeded the buffer, so tv.text == engine text there).
+        if !context.coordinator.isUserEditing && tv.text != viewModel.outputText {
+            context.coordinator.setProgrammatic {
+                let selected = tv.selectedRange
+                tv.text = viewModel.outputText
+                let newLen = (viewModel.outputText as NSString).length
+                tv.selectedRange = NSRange(location: min(selected.location, newLen), length: 0)
+            }
+        }
+        context.coordinator.isUserEditing = false
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(viewModel: viewModel)
+    }
+
+    class Coordinator: NSObject, UITextViewDelegate {
+        let viewModel: DasherViewModel
+        var isProgrammatic = false
+        var isUserEditing = false
+
+        init(viewModel: DasherViewModel) {
+            self.viewModel = viewModel
+        }
+
+        func setProgrammatic(_ block: () -> Void) {
+            isProgrammatic = true
+            block()
+            isProgrammatic = false
+        }
+
+        /// User typed/pasted/deleted — seed the engine buffer.
+        /// RFC 0019 clause 7: over-long text seeds only a trailing 100k
+        /// UTF-16 window (full model rebuild per keystroke is not acceptable
+        /// at extreme sizes). Mirrors Windows EditorSeedPolicy.
+        func textViewDidChange(_ tv: UITextView) {
+            guard !isProgrammatic else { return }
+            // RFC 0019 clause 2: defer seeding during IME composition —
+            // the marked text is not committed yet.
+            guard tv.markedTextRange == nil else { return }
+            isUserEditing = true
+            let (text, caretUTF16) = EditorSeedPolicy.apply(
+                to: tv.text, caretUTF16: tv.selectedRange.location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.outputText = tv.text
+        }
+
+        /// Caret/selection changed — re-anchor the model (RFC 0019 clause 3).
+        /// A pure tap in the middle of text fires this without textViewDidChange.
+        func textViewDidChangeSelection(_ tv: UITextView) {
+            guard !isProgrammatic else { return }
+            guard tv.markedTextRange == nil else { return }
+            let caretUTF16 = tv.selectedRange.location
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
+            viewModel.bridge.setOffset(byteOffset)
+        }
+    }
+}
+
+
+// MARK: - RFC 0019 clause 7: seed cap
+
+/// Caps the text seeded to the engine at a trailing window of 100k UTF-16
+/// units. Mirrors Dasher-Windows EditorSeedPolicy.
+enum EditorSeedPolicy {
+    static let maxUTF16Units = 100_000
+
+    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
+        let len = text.utf16.count
+        guard len > maxUTF16Units else { return (text, caretUTF16) }
+
+        let dropCount = len - maxUTF16Units
+        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
+        let windowed = String(text[startIndex...])
+        let newCaret = max(0, caretUTF16 - dropCount)
+        return (windowed, newCaret)
+    }
 }

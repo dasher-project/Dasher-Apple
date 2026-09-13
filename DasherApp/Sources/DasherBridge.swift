@@ -398,6 +398,35 @@ class DasherBridge: InputMethodBridge {
         lastOutputText = ""
     }
 
+    // MARK: - RFC 0019: Editor contract
+
+    /// Replace the edit buffer with user-edited text and anchor the model at
+    /// the caret (RFC 0019 clause 2). Emits buffer-cleared (event 2) first so
+    /// subscribers resync without injecting.
+    func seedBuffer(_ text: String, caretOffset: Int) {
+        guard let ctx = ctx else { return }
+        dasher_seed_buffer(ctx, text, Int32(caretOffset))
+        lastOutputText = text
+    }
+
+    /// Re-anchor the model at a buffer position — pure caret move, no text
+    /// change (RFC 0019 clause 3). v5's SetOffset.
+    func setOffset(_ offset: Int) {
+        guard let ctx = ctx else { return }
+        dasher_set_offset(ctx, Int32(offset))
+    }
+
+    /// Convert a UTF-16 caret offset (SwiftUI/NSTextView unit) into the
+    /// engine's UTF-8 byte offset for seedBuffer/setOffset.
+    func byteOffsetFromUTF16(_ text: String, utf16Offset: Int) -> Int {
+        Int(dasher_byte_offset_from_utf16(text, Int32(utf16Offset)))
+    }
+
+    /// Codepoint-unit variant (AX APIs report character counts).
+    func byteOffsetFromCodepoints(_ text: String, codepointOffset: Int) -> Int {
+        Int(dasher_byte_offset_from_codepoints(text, Int32(codepointOffset)))
+    }
+
     // MARK: - Convenience getters/setters
 
     var alphabetId: String {
@@ -945,8 +974,14 @@ private func argbToCGColor(_ argb: Int32) -> CGColor {
 
 #if canImport(UIKit)
 extension DrawCommands {
-    func render(in context: CGContext, bounds: CGRect) {
+        func render(in context: CGContext, bounds: CGRect) {
         let count = commandCount / 6
+        // Adjacent node rectangles tile edge-to-edge. Anti-aliased edges blend
+        // with the background, creating visible thin white lines between nodes
+        // that Windows/GTK don't show. Disable AA for fills and strokes;
+        // text drawing re-enables it (text needs AA).
+        context.setShouldAntialias(false)
+        var currentLineWidth: CGFloat = 1
         for i in 0..<count {
             let base = i * 6
             let op = Int(commands[base + 0])
@@ -969,7 +1004,7 @@ extension DrawCommands {
                                                 width: radius * 2, height: radius * 2))
             case 2:
                 context.setStrokeColor(cgColor)
-                context.setLineWidth(2)
+                context.setLineWidth(currentLineWidth)
                 context.move(to: CGPoint(x: a, y: b))
                 context.addLine(to: CGPoint(x: CGFloat(c), y: CGFloat(d)))
                 context.strokePath()
@@ -981,6 +1016,7 @@ extension DrawCommands {
                 context.setFillColor(cgColor)
                 context.fill(CGRect(x: a, y: b, width: CGFloat(c) - a, height: CGFloat(d) - b))
             case 5:
+                context.setShouldAntialias(true)
                 let fontSize = CGFloat(c > 0 ? c : 14)
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
@@ -997,6 +1033,8 @@ extension DrawCommands {
                     ]
                     NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: b))
                 }
+            case 6:
+                currentLineWidth = a
             default:
                 break
             }

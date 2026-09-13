@@ -418,7 +418,13 @@ struct MacDasherSettingsView: View {
                 : alphabets + [DasherAlphabet(name: currentId)]
             if !pickerAlphabets.isEmpty {
                 Picker("Alphabet", selection: Binding(
-                    get: { viewModel.bridge.alphabetId },
+                    get: {
+                    let id = viewModel.bridge.alphabetId
+                    if id == "Default" || id.isEmpty {
+                        return viewModel.bridge.allAlphabets.first?.name ?? "English with limited punctuation"
+                    }
+                    return id
+                },
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)

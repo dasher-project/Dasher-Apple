@@ -6,6 +6,20 @@ import UniformTypeIdentifiers
 @MainActor
 class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
+
+    // MARK: - RFC 0019: Editor contract
+    // The NSTextView Coordinator owns the sync directly.
+    // RFC 0019 clause 7: when over the seed cap, the pane keeps the full
+    // text — don't overwrite with the engine's truncated window buffer.
+    func pushEngineText(_ text: String) {
+        if outputText.utf16.count > MacEditorSeedPolicy.maxUTF16Units {
+            if text.utf16.count > outputText.utf16.count {
+                outputText = text
+            }
+        } else {
+            outputText = text
+        }
+    }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
     @Published var isControlModeActive: Bool = false
@@ -81,7 +95,7 @@ class MacDasherViewModel: ObservableObject {
             if self.directMode {
                 self.directService.injectText(text)
             }
-            self.outputText = self.bridge.getOutputText()
+            self.pushEngineText(self.bridge.getOutputText())
         }
 
         bridge.onDelete = { [weak self] text in
@@ -195,10 +209,25 @@ class MacDasherViewModel: ObservableObject {
         if directMode {
             directService.startPolling()
             directService.startWatching()
+            directService.onTargetCaretChanged = { [weak self] in
+                self?.handleTargetCaretChanged()
+            }
         } else {
             directService.stopPolling()
             directService.stopWatching()
         }
+    }
+
+    /// RFC 0019 clause 6: caret moved in the target app's text field —
+    /// re-seed the engine from the field's content at the new caret position.
+    /// Applies the clause-7 seed cap (trailing 100k UTF-16 window).
+    private func handleTargetCaretChanged() {
+        guard directMode, let context = directService.readTargetFieldContext() else { return }
+        let fullText = context.before + context.after
+        let (cappedText, cappedCaret) = MacEditorSeedPolicy.apply(
+            to: fullText, caretUTF16: context.before.utf16.count)
+        let caretBytes = bridge.byteOffsetFromUTF16(cappedText, utf16Offset: cappedCaret)
+        bridge.seedBuffer(cappedText, caretOffset: caretBytes)
     }
 
     /// Buffered: canvas layout can precede startEngine (migration prompt), in

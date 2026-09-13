@@ -205,7 +205,9 @@ final class DasherCanvas: UIView {
             if let cmds = vm.bridge.frame(timeMs: timeMs) {
                 cmds.render(in: ctx, bounds: bounds)
             }
-            vm.outputText = vm.bridge.getOutputText()
+            // Text updates arrive via bridge.onOutput callback (wired in the
+            // ViewModel init) — NOT from draw(), which caused SwiftUI to
+            // silently defer @Published updates.
             vm.syncGameModeState()
         } else {
             if let cmds = vm.bridge.frame(timeMs: Int64(Date().timeIntervalSince1970 * 1000.0)) {

@@ -315,6 +315,59 @@ struct MacContentView: View {
             }
             .buttonStyle(.plain)
 
+            // ── Direct-mode text actions (RFC 0019, mirrors Windows mini-bar) ──
+
+            // New session: clear text + model context (clause 5)
+            Button {
+                viewModel.newMessage()
+            } label: {
+                LucideIcon(DasherIcon.close, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("New session (clear text and context)")
+
+            // Copy all typed text to clipboard
+            Button {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(viewModel.outputText, forType: .string)
+            } label: {
+                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Copy all text")
+
+            // Cut selection in target app (Cmd+X)
+            Button {
+                viewModel.directService.sendCmdChord("x")
+            } label: {
+                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Cut selection in target app")
+
+            // Paste into target app (Cmd+V)
+            Button {
+                viewModel.directService.sendCmdChord("v")
+            } label: {
+                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Paste into target app")
+
+            // Select all in target app (Cmd+A)
+            Button {
+                viewModel.directService.sendCmdChord("a")
+            } label: {
+                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
+                    .frame(width: 28, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Select all in target app")
+
             // Live typing rate in Direct Mode (RFC 0012 direct-entry clause,
             // mirrors Dasher-Windows #39): the bottom bar is hidden here, so
             // users who enable the typing-rate display would otherwise lose
@@ -715,22 +768,10 @@ struct MacOutputTextView: View {
                 macGameTargetBar
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    Text(viewModel.outputText)
-                        .font(OutputFontSettings.font)
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 12)
-                        .id("outputText")
-                }
-                .onChange(of: viewModel.outputText) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("outputText", anchor: .bottom)
-                    }
-                }
-            }
+            // RFC 0019: editable output pane. NSTextView (in its own scroll
+            // view) handles scrolling — no SwiftUI ScrollView wrapper.
+            MacEditableOutputText(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -741,7 +782,11 @@ struct MacOutputTextView: View {
 
     private func pasteText() {
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
-            viewModel.outputText += clipboardString
+            let newText = viewModel.outputText + clipboardString
+            let (capped, _) = MacEditorSeedPolicy.apply(
+                to: newText, caretUTF16: newText.utf16.count)
+            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
+            viewModel.outputText = newText
         }
     }
 
@@ -909,7 +954,7 @@ final class MacDasherCanvas: NSView {
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])
         }
-        vm.outputText = vm.bridge.getOutputText()
+        // Text via bridge.onOutput — not draw() (60fps @Published re-renders).
         vm.syncGameModeState()
     }
 }
@@ -930,5 +975,129 @@ struct VisualEffectBlur: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
         nsView.material = material
         nsView.blendingMode = blendingMode
+    }
+}
+
+
+// MARK: - RFC 0019: Editable output text (macOS)
+
+struct MacEditableOutputText: View {
+    @ObservedObject var viewModel: MacDasherViewModel
+
+    var body: some View {
+        MacEditableTextViewWrapper(viewModel: viewModel)
+    }
+}
+
+/// NSTextView wrapper — Coordinator is the sole engine sync point (RFC 0019).
+struct MacEditableTextViewWrapper: NSViewRepresentable {
+    @ObservedObject var viewModel: MacDasherViewModel
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let tv = NSTextView()
+        tv.delegate = context.coordinator
+        tv.font = NSFont.systemFont(ofSize: 14)
+        tv.drawsBackground = false
+        tv.isEditable = true
+        tv.isSelectable = true
+        tv.isRichText = false
+        tv.allowsUndo = false
+        tv.textContainer?.lineFragmentPadding = 8
+        tv.textContainerInset = NSSize(width: 0, height: 8)
+        tv.string = viewModel.outputText
+
+        // Standard NSScrollView + NSTextView recipe so long content scrolls:
+        // without these the document view never grows past the viewport.
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.autoresizingMask = [.width]
+        tv.textContainer?.widthTracksTextView = true
+        tv.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+
+        let scroll = NSScrollView()
+        scroll.documentView = tv
+        scroll.hasVerticalScroller = true
+        scroll.autohidesScrollers = true
+        scroll.drawsBackground = false
+        scroll.hasHorizontalScroller = false
+        scroll.autoresizesSubviews = true
+        return scroll
+    }
+
+    func updateNSView(_ scroll: NSScrollView, context: Context) {
+        guard let tv = scroll.documentView as? NSTextView else { return }
+        if !context.coordinator.isUserEditing && tv.string != viewModel.outputText {
+            context.coordinator.setProgrammatic {
+                let selected = tv.selectedRange()
+                tv.string = viewModel.outputText
+                let newLen = (viewModel.outputText as NSString).length
+                tv.setSelectedRange(NSRange(location: min(selected.location, newLen), length: 0))
+            }
+        }
+        context.coordinator.isUserEditing = false
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(viewModel: viewModel)
+    }
+
+    class Coordinator: NSObject, NSTextViewDelegate {
+        let viewModel: MacDasherViewModel
+        var isProgrammatic = false
+        var isUserEditing = false
+
+        init(viewModel: MacDasherViewModel) {
+            self.viewModel = viewModel
+        }
+
+        func setProgrammatic(_ block: () -> Void) {
+            isProgrammatic = true
+            block()
+            isProgrammatic = false
+        }
+
+        func textDidChange(_ notification: Notification) {
+            guard !isProgrammatic else { return }
+            guard let tv = notification.object as? NSTextView else { return }
+            // RFC 0019 clause 2: defer during IME composition (marked text).
+            // Set isUserEditing first so concurrent engine pushes don't
+            // rewrite the text view mid-composition.
+            isUserEditing = true
+            guard tv.markedRange().length == 0 else { return }
+            // RFC 0019 clause 7: seed cap — trailing 100k UTF-16 window.
+            let (text, caretUTF16) = MacEditorSeedPolicy.apply(
+                to: tv.string, caretUTF16: tv.selectedRange().location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
+            viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.outputText = tv.string
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard !isProgrammatic else { return }
+            guard let tv = notification.object as? NSTextView else { return }
+            // RFC 0019 clause 2: no re-anchoring during IME composition.
+            guard tv.markedRange().length == 0 else { return }
+            let caretUTF16 = tv.selectedRange().location
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
+            viewModel.bridge.setOffset(byteOffset)
+        }
+    }
+}
+
+
+// MARK: - RFC 0019 clause 7: seed cap (macOS)
+
+enum MacEditorSeedPolicy {
+    static let maxUTF16Units = 100_000
+
+    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
+        let len = text.utf16.count
+        guard len > maxUTF16Units else { return (text, caretUTF16) }
+
+        let dropCount = len - maxUTF16Units
+        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
+        let windowed = String(text[startIndex...])
+        let newCaret = max(0, caretUTF16 - dropCount)
+        return (windowed, newCaret)
     }
 }
