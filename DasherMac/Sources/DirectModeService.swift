@@ -65,12 +65,18 @@ class DirectModeService: ObservableObject {
 
     private func registerCaretNotification(on observer: AXObserver, pid: pid_t) {
         let app = AXUIElementCreateApplication(pid)
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+
+        // Watch focus changes on the app element — tabbing between text fields
+        // within the same app fires this; re-register the caret notification
+        // on the newly focused element so clause-6 survives field switches.
+        AXObserverAddNotification(observer, app, kAXFocusedUIElementChangedNotification as CFString, refcon)
+
         var focusedRef: CFTypeRef?
         guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
               let focusedCF = focusedRef,
               CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else { return }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
-        let refcon = Unmanaged.passUnretained(self).toOpaque()
         AXObserverAddNotification(observer, focused, kAXSelectedTextChangedNotification as CFString, refcon)
     }
 
@@ -185,6 +191,8 @@ class DirectModeService: ObservableObject {
                 targetAppName = apps.first?.localizedName ?? ""
             }
         }
+        // Attach the caret watcher now that lastTargetApp is resolved.
+        startCaretWatcher()
     }
 
     func stopWatching() {
