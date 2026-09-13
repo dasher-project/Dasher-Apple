@@ -118,20 +118,11 @@ struct OutputTextView: View {
                 gameTargetBar
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    // RFC 0019: editable output pane — user edits seed the engine,
-                    // caret placement re-anchors the model.
-                    EditableOutputText(viewModel: viewModel)
-                        .frame(maxWidth: .infinity)
-                        .id("outputText")
-                }
-                .onChange(of: viewModel.outputText) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("outputText", anchor: .bottom)
-                    }
-                }
-            }
+            // RFC 0019: editable output pane. UITextView handles its own
+            // scrolling — wrapping it in a SwiftUI ScrollView prevented the
+            // text from rendering (nested scroll views on iOS).
+            EditableOutputText(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

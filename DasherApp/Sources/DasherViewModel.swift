@@ -75,9 +75,9 @@ class DasherViewModel: ObservableObject {
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         bridge.onOutput = { [weak self] _ in
             // Engine produced text — push to the editor pane (NOT from draw()).
-            // Setting @Published inside draw() caused SwiftUI to silently
-            // defer the update — the text view never received engine output.
-            self?.pushEngineText(self?.bridge.getOutputText() ?? "")
+            let text = self?.bridge.getOutputText() ?? ""
+            NSLog("[EDITOR] onOutput fired, text=[%@]", text)
+            self?.pushEngineText(text)
         }
 
         bridge.onMessage = { [weak self] isWarning, text in

@@ -715,19 +715,10 @@ struct MacOutputTextView: View {
                 macGameTargetBar
             }
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    // RFC 0019: editable output pane with engine sync.
-                    MacEditableOutputText(viewModel: viewModel)
-                        .frame(maxWidth: .infinity)
-                        .id("outputText")
-                }
-                .onChange(of: viewModel.outputText) { _, _ in
-                    withAnimation {
-                        proxy.scrollTo("outputText", anchor: .bottom)
-                    }
-                }
-            }
+            // RFC 0019: editable output pane. NSTextView (in its own scroll
+            // view) handles scrolling — no SwiftUI ScrollView wrapper.
+            MacEditableOutputText(viewModel: viewModel)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
