@@ -75,9 +75,7 @@ class DasherViewModel: ObservableObject {
         self.bridge = DasherBridge(dataDir: dataPath, userDir: sharedURL?.path)
         bridge.onOutput = { [weak self] _ in
             // Engine produced text — push to the editor pane (NOT from draw()).
-            let text = self?.bridge.getOutputText() ?? ""
-            NSLog("[EDITOR] onOutput fired, text=[%@]", text)
-            self?.pushEngineText(text)
+            self?.pushEngineText(self?.bridge.getOutputText() ?? "")
         }
 
         bridge.onMessage = { [weak self] isWarning, text in
