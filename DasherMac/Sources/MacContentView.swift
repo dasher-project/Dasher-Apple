@@ -783,7 +783,9 @@ struct MacOutputTextView: View {
     private func pasteText() {
         if let clipboardString = NSPasteboard.general.string(forType: .string) {
             let newText = viewModel.outputText + clipboardString
-            viewModel.bridge.seedBuffer(newText, caretOffset: newText.utf8.count)
+            let (capped, _) = MacEditorSeedPolicy.apply(
+                to: newText, caretUTF16: newText.utf16.count)
+            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
             viewModel.outputText = newText
         }
     }
@@ -952,7 +954,7 @@ final class MacDasherCanvas: NSView {
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])
         }
-        vm.pushEngineText(vm.bridge.getOutputText())
+        // Text via bridge.onOutput — not draw() (60fps @Published re-renders).
         vm.syncGameModeState()
     }
 }
@@ -1004,11 +1006,21 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
         tv.textContainerInset = NSSize(width: 0, height: 8)
         tv.string = viewModel.outputText
 
+        // Standard NSScrollView + NSTextView recipe so long content scrolls:
+        // without these the document view never grows past the viewport.
+        tv.isVerticallyResizable = true
+        tv.isHorizontallyResizable = false
+        tv.autoresizingMask = [.width]
+        tv.textContainer?.widthTracksTextView = true
+        tv.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+
         let scroll = NSScrollView()
         scroll.documentView = tv
         scroll.hasVerticalScroller = true
         scroll.autohidesScrollers = true
         scroll.drawsBackground = false
+        scroll.hasHorizontalScroller = false
+        scroll.autoresizesSubviews = true
         return scroll
     }
 
@@ -1047,7 +1059,11 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
+            // RFC 0019 clause 2: defer during IME composition (marked text).
+            // Set isUserEditing first so concurrent engine pushes don't
+            // rewrite the text view mid-composition.
             isUserEditing = true
+            guard tv.markedRange().length == 0 else { return }
             // RFC 0019 clause 7: seed cap — trailing 100k UTF-16 window.
             let (text, caretUTF16) = MacEditorSeedPolicy.apply(
                 to: tv.string, caretUTF16: tv.selectedRange().location)
@@ -1059,6 +1075,8 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
         func textViewDidChangeSelection(_ notification: Notification) {
             guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
+            // RFC 0019 clause 2: no re-anchoring during IME composition.
+            guard tv.markedRange().length == 0 else { return }
             let caretUTF16 = tv.selectedRange().location
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
             viewModel.bridge.setOffset(byteOffset)

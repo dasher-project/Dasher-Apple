@@ -9,8 +9,16 @@ class MacDasherViewModel: ObservableObject {
 
     // MARK: - RFC 0019: Editor contract
     // The NSTextView Coordinator owns the sync directly.
+    // RFC 0019 clause 7: when over the seed cap, the pane keeps the full
+    // text — don't overwrite with the engine's truncated window buffer.
     func pushEngineText(_ text: String) {
-        outputText = text
+        if outputText.utf16.count > MacEditorSeedPolicy.maxUTF16Units {
+            if text.utf16.count > outputText.utf16.count {
+                outputText = text
+            }
+        } else {
+            outputText = text
+        }
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
@@ -218,7 +226,7 @@ class MacDasherViewModel: ObservableObject {
         let fullText = context.before + context.after
         let (cappedText, cappedCaret) = MacEditorSeedPolicy.apply(
             to: fullText, caretUTF16: context.before.utf16.count)
-        let caretBytes = String(fullText.prefix(cappedCaret)).utf8.count
+        let caretBytes = bridge.byteOffsetFromUTF16(cappedText, utf16Offset: cappedCaret)
         bridge.seedBuffer(cappedText, caretOffset: caretBytes)
     }
 

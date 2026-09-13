@@ -1120,6 +1120,8 @@ extension DrawCommands {
 extension DrawCommands {
     func render(in context: CGContext, bounds: CGRect, viewHeight: CGFloat, imageMap: [String: NSImage] = [:]) {
         let count = commandCount / 6
+        context.setShouldAntialias(false)
+        var currentLineWidth: CGFloat = 1
         for i in 0..<count {
             let base = i * 6
             let op = Int(commands[base + 0])
@@ -1142,7 +1144,7 @@ extension DrawCommands {
                                                 width: radius * 2, height: radius * 2))
             case 2:
                 context.setStrokeColor(cgColor)
-                context.setLineWidth(2)
+                context.setLineWidth(currentLineWidth)
                 context.move(to: CGPoint(x: a, y: viewHeight - b))
                 context.addLine(to: CGPoint(x: CGFloat(c), y: viewHeight - CGFloat(d)))
                 context.strokePath()
@@ -1158,6 +1160,7 @@ extension DrawCommands {
                 let y2 = viewHeight - CGFloat(d)
                 context.fill(CGRect(x: a, y: min(y1, y2), width: CGFloat(c) - a, height: abs(y2 - y1)))
             case 5:
+                context.setShouldAntialias(true)
                 let fontSize = CGFloat(c > 0 ? c : 14)
                 let stringIndex = d
                 if let strings = strings, stringIndex >= 0, stringIndex < stringCount, let strPtr = strings[stringIndex] {
@@ -1181,6 +1184,8 @@ extension DrawCommands {
                         NSAttributedString(string: text, attributes: attrs).draw(at: CGPoint(x: a, y: flippedY))
                     }
                 }
+            case 6:
+                currentLineWidth = a
             default:
                 break
             }

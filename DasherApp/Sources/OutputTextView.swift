@@ -169,57 +169,6 @@ struct OutputTextView: View {
         .background(Color("BarBackground"))
     }
 
-    // MARK: - Drag Handle
-
-    private var dragHandleStrip: some View {
-        Group {
-            switch handleEdge {
-            case .leading, .trailing:
-                sideDragHandle
-            case .top, .bottom:
-                topBottomDragHandle
-            }
-        }
-    }
-
-    private var sideDragHandle: some View {
-        VStack {
-            Spacer()
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color("MutedText").opacity(0.4))
-                .frame(width: 4, height: 28)
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .cursor(.resizeLeftRight)
-        .padding(.horizontal, 3)
-        .gesture(DragGesture(minimumDistance: 1).onChanged { value in
-            let delta: CGFloat = handleEdge == .leading
-                ? -value.translation.width
-                : value.translation.width
-            paneSize = min(maxPane, max(minPane, paneSize + delta))
-        })
-    }
-
-    private var topBottomDragHandle: some View {
-        HStack {
-            Spacer()
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color("MutedText").opacity(0.4))
-                .frame(width: 28, height: 4)
-            Spacer()
-        }
-        .contentShape(Rectangle())
-        .cursor(.resizeUpDown)
-        .padding(.vertical, 3)
-        .gesture(DragGesture(minimumDistance: 1).onChanged { value in
-            let delta: CGFloat = handleEdge == .top
-                ? -value.translation.height
-                : value.translation.height
-            paneSize = min(maxPane, max(minPane, paneSize + delta))
-        })
-    }
-
     // MARK: - Adaptive Toolbar
 
     @ViewBuilder
@@ -432,7 +381,9 @@ struct OutputTextView: View {
     private func pasteText() {
         if let clipboardString = UIPasteboard.general.string {
             let newText = viewModel.outputText + clipboardString
-            viewModel.bridge.seedBuffer(newText, caretOffset: newText.utf8.count)
+            let (capped, cappedCaret) = EditorSeedPolicy.apply(
+                to: newText, caretUTF16: newText.utf16.count)
+            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
             viewModel.outputText = newText
         }
     }
@@ -567,6 +518,9 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         /// at extreme sizes). Mirrors Windows EditorSeedPolicy.
         func textViewDidChange(_ tv: UITextView) {
             guard !isProgrammatic else { return }
+            // RFC 0019 clause 2: defer seeding during IME composition —
+            // the marked text is not committed yet.
+            guard tv.markedTextRange == nil else { return }
             isUserEditing = true
             let (text, caretUTF16) = EditorSeedPolicy.apply(
                 to: tv.text, caretUTF16: tv.selectedRange.location)
@@ -579,6 +533,7 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         /// A pure tap in the middle of text fires this without textViewDidChange.
         func textViewDidChangeSelection(_ tv: UITextView) {
             guard !isProgrammatic else { return }
+            guard tv.markedTextRange == nil else { return }
             let caretUTF16 = tv.selectedRange.location
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
             viewModel.bridge.setOffset(byteOffset)

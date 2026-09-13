@@ -55,10 +55,12 @@ class KeyboardViewModel {
         os_log("KeyboardViewModel.init: wiring callbacks", log: keyboardLog)
         self.textDocumentProxy = textDocumentProxy
         bridge.onOutput = { [weak self] text in
+            self?.skipNextPoll = true
             self?.textDocumentProxy?.insertText(text)
         }
         bridge.onDelete = { [weak self] text in
             guard let proxy = self?.textDocumentProxy else { return }
+            self?.skipNextPoll = true
             let deleteCount = min(text.count, proxy.documentContextBeforeInput?.count ?? 0)
             for _ in 0..<deleteCount {
                 proxy.deleteBackward()
@@ -92,11 +94,21 @@ class KeyboardViewModel {
     /// field. The hash check makes the no-change case essentially free.
     private var contextPollTimer: Timer?
     private var lastContextHash: Int = 0
+    /// Skip the next poll cycle after Dasher injects text (our own typing
+    /// changes documentContextBeforeInput, which would trigger a pointless
+    /// model re-seed every 400ms during continuous Dasher input).
+    private var skipNextPoll = false
 
     private func startContextPoller() {
         stopContextPoller()
         contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
             guard let self, let proxy = self.textDocumentProxy else { return }
+            if self.skipNextPoll {
+                self.skipNextPoll = false
+                // Still update the hash so the next real change is detected
+                self.lastContextHash = self.contextHash(proxy)
+                return
+            }
             self.seedFromField(proxy)
         }
     }
@@ -104,6 +116,12 @@ class KeyboardViewModel {
     private func stopContextPoller() {
         contextPollTimer?.invalidate()
         contextPollTimer = nil
+    }
+
+    private func contextHash(_ proxy: UITextDocumentProxy) -> Int {
+        let before = proxy.documentContextBeforeInput ?? ""
+        let after = proxy.documentContextAfterInput ?? ""
+        return before.hashValue ^ (after.hashValue &+ before.count)
     }
 
     private func seedFromField(_ proxy: UITextDocumentProxy) {
@@ -114,6 +132,7 @@ class KeyboardViewModel {
         let hash = before.hashValue ^ (after.hashValue &+ before.count)
         guard hash != lastContextHash else { return }
         lastContextHash = hash
+
         bridge.seedFromTargetField(beforeInput: before, afterInput: after)
     }
 

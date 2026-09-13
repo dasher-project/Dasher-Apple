@@ -31,35 +31,53 @@ class DirectModeService: ObservableObject {
 
     // MARK: - RFC 0019: caret watcher (AXSelectedTextChanged)
 
-    private var caretObserver: Any?
+    private var axObserver: AXObserver?
 
+    /// AXObserver-based caret watcher. NotificationCenter only delivers AX
+    /// notifications for elements in our own process; cross-process watching
+    /// requires AXObserverCreate(pid:) + per-element notification registration
+    /// on the focused element, re-attached whenever focus moves.
     private func startCaretWatcher() {
         stopCaretWatcher()
-        // NSAccessibilitySelectedTextChanged fires when the selection/caret
-        // changes in ANY accessible text element — we scope it to the
-        // focused app via the frontmost check in the handler.
-        caretObserver = NotificationCenter.default.addObserver(
-            forName: Notification.Name(kAXSelectedTextChangedNotification as String),
-            object: nil, queue: .main
-        ) { [weak self] note in
+        guard let pid = lastTargetApp?.processIdentifier else { return }
+
+        let callback: AXObserverCallback = { _, _, _, refcon in
+            let service = Unmanaged<DirectModeService>.fromOpaque(refcon!).takeUnretainedValue()
             DispatchQueue.main.async {
-                // Only react when a non-Dasher app is frontmost (the user is
-                // moving the caret in a target field, not in our own pane —
-                // our own pane's caret is handled by the NSTextView delegate).
-                guard let self else { return }
                 guard let front = NSWorkspace.shared.frontmostApplication,
                       front.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
-                // Drop self-injection echoes (our own typing just changed the caret).
-                guard !self.isEchoSuppressed else { return }
-                self.onTargetCaretChanged?()
+                guard !service.isEchoSuppressed else { return }
+                service.onTargetCaretChanged?()
             }
         }
+
+        var observerRef: AXObserver?
+        guard AXObserverCreate(pid, callback, &observerRef) == .success,
+              let observer = observerRef else { return }
+        axObserver = observer
+
+        // Add the run-loop source so notifications are delivered
+        CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+
+        // Register on the focused element (re-attach when focus changes)
+        registerCaretNotification(on: observer, pid: pid)
+    }
+
+    private func registerCaretNotification(on observer: AXObserver, pid: pid_t) {
+        let app = AXUIElementCreateApplication(pid)
+        var focusedRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef) == .success,
+              let focusedCF = focusedRef,
+              CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else { return }
+        let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
+        let refcon = Unmanaged.passUnretained(self).toOpaque()
+        AXObserverAddNotification(observer, focused, kAXSelectedTextChangedNotification as CFString, refcon)
     }
 
     private func stopCaretWatcher() {
-        if let observer = caretObserver {
-            NotificationCenter.default.removeObserver(observer)
-            caretObserver = nil
+        if let observer = axObserver {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
+            axObserver = nil
         }
     }
 
@@ -148,6 +166,10 @@ class DirectModeService: ObservableObject {
                 DispatchQueue.main.async {
                     self?.lastTargetApp = app
                     self?.targetAppName = app.localizedName ?? "Unknown"
+                    // Re-attach the AX observer to the new target's pid —
+                    // the observer is per-process, so switching apps without
+                    // this leaves the watcher on the old pid (dead).
+                    self?.startCaretWatcher()
                 }
             }
         }
@@ -187,9 +209,10 @@ class DirectModeService: ObservableObject {
             return
         }
 
-        let chars = Array(text)
-        var unichars = chars.map { UInt16($0.unicodeScalars.first!.value) }
-        unichars.withUnsafeMutableBufferPointer { buf in
+        // UTF-16 code units are exactly what keyboardSetUnicodeString wants —
+        // using unicodeScalars truncates non-BMP characters (emoji → garbage).
+        let unichars = Array(text.utf16)
+        unichars.withUnsafeBufferPointer { buf in
             let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)
             event?.keyboardSetUnicodeString(stringLength: buf.count, unicodeString: buf.baseAddress)
             postEvent(event)
@@ -225,8 +248,7 @@ class DirectModeService: ObservableObject {
     /// (RFC 0019, mirrors the Windows keyboard mini-bar).
     func sendCmdChord(_ key: String) {
         guard hasAccessibilityPermission else { return }
-        guard let keyCode = key.first?.utf16.first else { return }
-        // Map lowercase ASCII to virtual key (a=0, b=11, c=8, v=9, x=7...)
+        // Map lowercase ASCII to virtual key (a=0, c=8, v=9, x=7...)
         let virtualKey: CGKeyCode
         switch key.lowercased() {
         case "a": virtualKey = 0    // kVK_ANSI_A
