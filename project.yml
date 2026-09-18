@@ -138,6 +138,8 @@ targets:
         link: true
       - target: DasherKeyboard
         embed: true
+      - target: DasherWatch
+        embed: true
       - package: DasherShared
         product: DasherShared
       - package: DasherSpeech
@@ -525,6 +527,9 @@ schemes:
         DasherKeyboard: all
         DasherCore_ios: all
         pugixml_ios: all
+        DasherWatch: all
+        DasherCore_watchos: all
+        pugixml_watchos: all
         DasherApp: all
     run:
       config: Debug
