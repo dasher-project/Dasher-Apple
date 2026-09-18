@@ -475,6 +475,11 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         tv.textContainerInset = UIEdgeInsets(top: 12, left: 8, bottom: 12, right: 8)
         tv.isEditable = true
         tv.isSelectable = true
+        // Dasher IS the input method — suppress the system on-screen keyboard.
+        // An empty inputView keeps the text view fully editable (Dasher canvas
+        // drives text, hardware keyboards work, selection tracked for
+        // re-anchoring) but tapping the pane no longer summons the keyboard.
+        tv.inputView = UIView()
         tv.text = viewModel.outputText
         return tv
     }
