@@ -11,15 +11,27 @@ struct ContentView: View {
     @State private var showOpenFile = false
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
     @State private var showAlphabetPopover = false
+    @State private var foldDivision: CGRect? = nil
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.horizontalSizeClass) private var hSizeClass
 
     var body: some View {
         GeometryReader { geometry in
             let isPortrait = geometry.size.width <= geometry.size.height
+            // iPhone Duo HIG: on the outer display (closed) and in landscape
+            // the system moves toolbars to the side to preserve vertical
+            // space; controls stay there when the device unfolds so the
+            // experience is continuous between displays. Standard components
+            // do this automatically; our toolbar is custom, so phone-wide
+            // poses get an explicit vertical rail. Inner-display portrait
+            // keeps the horizontal bar (the HIG's stated exception).
+            let useSideRail = !isPortrait && UIDevice.current.userInterfaceIdiom == .phone
 
             if isPortrait {
                 bottomTextLayout(geometry: geometry)
                     .ignoresSafeArea(edges: .leading)
+            } else if useSideRail {
+                sideRailLayout(geometry: geometry)
             } else if currentLayoutPosition == "Left" {
                 leftTextLayout(geometry: geometry)
             } else if currentLayoutPosition == "Bottom" {
@@ -81,6 +93,11 @@ struct ContentView: View {
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
+        let panes = FoldDivision.vertical(
+            fold: hSizeClass == .regular ? foldDivision : nil,
+            total: contentHeight,
+            fraction: outputPaneFraction
+        )
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -88,22 +105,25 @@ struct ContentView: View {
 
             Divider().overlay(Color("BarBorder"))
 
-            DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
-                .frame(height: contentHeight * (1 - outputPaneFraction))
-                .ignoresSafeArea(edges: .leading)
+            VStack(spacing: 0) {
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(height: panes.top)
+                    .ignoresSafeArea(edges: .leading)
 
-            Divider().overlay(Color("GridBorder"))
+                Divider().overlay(Color("GridBorder"))
 
-            OutputTextView(
-                viewModel: viewModel,
-                paneSize: Binding(
-                    get: { contentHeight * outputPaneFraction },
-                    set: { outputPaneFraction = $0 / contentHeight }
-                ),
-                handleEdge: .top,
-                availableSpace: contentHeight
-            )
-            .frame(height: contentHeight * outputPaneFraction)
+                OutputTextView(
+                    viewModel: viewModel,
+                    paneSize: Binding(
+                        get: { contentHeight * outputPaneFraction },
+                        set: { outputPaneFraction = $0 / contentHeight }
+                    ),
+                    handleEdge: .top,
+                    availableSpace: contentHeight
+                )
+                .frame(height: panes.bottom)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
 
             Divider().overlay(Color("BarBorder"))
 
@@ -117,6 +137,11 @@ struct ContentView: View {
         let barHeight: CGFloat = isWide ? 64 : 44
         let bottomBarHeight: CGFloat = 44
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
+        let panes = FoldDivision.vertical(
+            fold: hSizeClass == .regular ? foldDivision : nil,
+            total: contentHeight,
+            fraction: outputPaneFraction
+        )
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -124,22 +149,25 @@ struct ContentView: View {
 
             Divider().overlay(Color("BarBorder"))
 
-            OutputTextView(
-                viewModel: viewModel,
-                paneSize: Binding(
-                    get: { contentHeight * outputPaneFraction },
-                    set: { outputPaneFraction = $0 / contentHeight }
-                ),
-                handleEdge: .bottom,
-                availableSpace: contentHeight
-            )
-            .frame(height: contentHeight * outputPaneFraction)
+            VStack(spacing: 0) {
+                OutputTextView(
+                    viewModel: viewModel,
+                    paneSize: Binding(
+                        get: { contentHeight * outputPaneFraction },
+                        set: { outputPaneFraction = $0 / contentHeight }
+                    ),
+                    handleEdge: .bottom,
+                    availableSpace: contentHeight
+                )
+                .frame(height: panes.top)
 
-            Divider().overlay(Color("GridBorder"))
+                Divider().overlay(Color("GridBorder"))
 
-            DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
-                .frame(height: contentHeight * (1 - outputPaneFraction))
-                .ignoresSafeArea(edges: .leading)
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(height: panes.bottom)
+                    .ignoresSafeArea(edges: .leading)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
 
             Divider().overlay(Color("BarBorder"))
 
@@ -154,6 +182,11 @@ struct ContentView: View {
         let bottomBarHeight: CGFloat = 44
         let contentWidth = geometry.size.width
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
+        let panes = FoldDivision.horizontal(
+            fold: hSizeClass == .regular ? foldDivision : nil,
+            total: contentWidth,
+            fraction: outputPaneFraction
+        )
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -163,7 +196,7 @@ struct ContentView: View {
 
             HStack(spacing: 0) {
                 DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
-                    .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
+                    .frame(width: panes.leading, height: contentHeight)
 
                 Divider().overlay(Color("GridBorder"))
 
@@ -176,8 +209,9 @@ struct ContentView: View {
                     handleEdge: .leading,
                     availableSpace: contentWidth
                 )
-                .frame(width: contentWidth * outputPaneFraction, height: contentHeight)
+                .frame(width: panes.trailing, height: contentHeight)
             }
+            .background(FoldDivisionReader { foldDivision = $0 })
 
             Divider().overlay(Color("BarBorder"))
 
@@ -192,6 +226,11 @@ struct ContentView: View {
         let bottomBarHeight: CGFloat = 44
         let contentWidth = geometry.size.width
         let contentHeight = geometry.size.height - barHeight - bottomBarHeight
+        let panes = FoldDivision.horizontal(
+            fold: hSizeClass == .regular ? foldDivision : nil,
+            total: contentWidth,
+            fraction: outputPaneFraction
+        )
 
         return VStack(spacing: 0) {
             toolbarBar
@@ -209,19 +248,144 @@ struct ContentView: View {
                     handleEdge: .trailing,
                     availableSpace: contentWidth
                 )
-                .frame(width: contentWidth * outputPaneFraction, height: contentHeight)
+                .frame(width: panes.leading, height: contentHeight)
 
                 Divider().overlay(Color("GridBorder"))
 
                 DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
-                    .frame(width: contentWidth * (1 - outputPaneFraction), height: contentHeight)
+                    .frame(width: panes.trailing, height: contentHeight)
             }
+            .background(FoldDivisionReader { foldDivision = $0 })
 
             Divider().overlay(Color("BarBorder"))
 
             bottomBar
                 .frame(height: bottomBarHeight)
         }
+    }
+
+    /// Landscape-phone / iPhone Duo layout: the toolbar lives in a vertical
+    /// rail on the trailing side (HIG "Vertical controls"), the writing area
+    /// respects the user's chosen position, and the engine controls stay in
+    /// the bottom bar near the canvas.
+    private func sideRailLayout(geometry: GeometryProxy) -> some View {
+        let railWidth: CGFloat = 52
+        let bottomBarHeight: CGFloat = 44
+        let contentWidth = geometry.size.width - railWidth
+        let contentHeight = geometry.size.height - bottomBarHeight
+
+        return HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                sideRailPanes(width: contentWidth, height: contentHeight)
+
+                Divider().overlay(Color("BarBorder"))
+
+                bottomBar
+                    .frame(height: bottomBarHeight)
+            }
+            .frame(width: contentWidth)
+
+            Divider().overlay(Color("BarBorder"))
+
+            verticalRail
+                .frame(width: railWidth)
+        }
+    }
+
+    /// Canvas + writing area for the side-rail layout, honouring the user's
+    /// layout position and snapping the divider to the hinge fold.
+    @ViewBuilder
+    private func sideRailPanes(width: CGFloat, height: CGFloat) -> some View {
+        let fold = hSizeClass == .regular ? foldDivision : nil
+        let hPanes = FoldDivision.horizontal(fold: fold, total: width, fraction: outputPaneFraction)
+        let vPanes = FoldDivision.vertical(fold: fold, total: height, fraction: outputPaneFraction)
+
+        switch currentLayoutPosition {
+        case "Left":
+            HStack(spacing: 0) {
+                OutputTextView(viewModel: viewModel,
+                               paneSize: Binding(get: { width * outputPaneFraction }, set: { outputPaneFraction = $0 / width }),
+                               handleEdge: .trailing, availableSpace: width)
+                    .frame(width: hPanes.leading, height: height)
+                Divider().overlay(Color("GridBorder"))
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(width: hPanes.trailing, height: height)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
+        case "Right":
+            HStack(spacing: 0) {
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(width: hPanes.leading, height: height)
+                Divider().overlay(Color("GridBorder"))
+                OutputTextView(viewModel: viewModel,
+                               paneSize: Binding(get: { width * outputPaneFraction }, set: { outputPaneFraction = $0 / width }),
+                               handleEdge: .leading, availableSpace: width)
+                    .frame(width: hPanes.trailing, height: height)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
+        case "Top":
+            VStack(spacing: 0) {
+                OutputTextView(viewModel: viewModel,
+                               paneSize: Binding(get: { height * outputPaneFraction }, set: { outputPaneFraction = $0 / height }),
+                               handleEdge: .bottom, availableSpace: height)
+                    .frame(height: vPanes.top)
+                Divider().overlay(Color("GridBorder"))
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(height: vPanes.bottom)
+                    .ignoresSafeArea(edges: .leading)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
+        default:
+            VStack(spacing: 0) {
+                DasherCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
+                    .frame(height: vPanes.top)
+                    .ignoresSafeArea(edges: .leading)
+                Divider().overlay(Color("GridBorder"))
+                OutputTextView(viewModel: viewModel,
+                               paneSize: Binding(get: { height * outputPaneFraction }, set: { outputPaneFraction = $0 / height }),
+                               handleEdge: .top, availableSpace: height)
+                    .frame(height: vPanes.bottom)
+            }
+            .background(FoldDivisionReader { foldDivision = $0 })
+        }
+    }
+
+    /// Toolbar actions as an icon-only vertical stack: navigation and
+    /// prominent actions at the top (HIG placement order), settings pinned
+    /// at the bottom.
+    private var verticalRail: some View {
+        VStack(spacing: 6) {
+            compactToolbarButton(icon: DasherIcon.newDocument) {
+                viewModel.newMessage()
+            }
+            compactToolbarButton(icon: DasherIcon.open) {
+                showOpenFile = true
+            }
+            compactToolbarButton(icon: DasherIcon.share) {
+                showShareSheet = true
+            }
+            railDivider
+            layoutPickerCompact(portrait: false)
+            railDivider
+            compactToolbarButton(icon: DasherIcon.gameMode) {
+                viewModel.toggleGameMode()
+            }
+            compactToolbarButton(icon: DasherIcon.controlMode) {
+                viewModel.toggleControlMode()
+            }
+            Spacer(minLength: 0)
+            compactToolbarButton(icon: DasherIcon.settings) {
+                showSettings = true
+            }
+        }
+        .padding(.vertical, 8)
+        .background(Color("BarBackground"))
+    }
+
+    private var railDivider: some View {
+        Rectangle()
+            .fill(Color("Divider"))
+            .frame(width: 24, height: 1)
     }
 
     // MARK: - Top Toolbar
