@@ -252,6 +252,8 @@ targets:
           # the PPM trie too much.
           head -n 50 "${SRCROOT}/DasherCore/Data/training/training_english_GB.txt" > "$DEST/training/training_english_GB.txt" 2>/dev/null || true
           cp "${SRCROOT}/DasherCore/Data/training/gamemode_"* "$DEST/training/" 2>/dev/null || true
+          # Emoji alphabet training priors (DasherCore v0.2.26, ~20KB)
+          cp "${SRCROOT}/DasherCore/Data/training/training_emoji.txt" "$DEST/training/" 2>/dev/null || true
           # Locale strings
           cp -f "${SRCROOT}/DasherCore/Strings/"*.json "$DEST/Strings/" 2>/dev/null || true
     settings:
@@ -478,6 +480,8 @@ targets:
           cp -r "${SRCROOT}/DasherCore/Data/settings/"* "$DEST/settings/" 2>/dev/null || true
           head -n 50 "${SRCROOT}/DasherCore/Data/training/training_english_GB.txt" > "$DEST/training/training_english_GB.txt" 2>/dev/null || true
           cp "${SRCROOT}/DasherCore/Data/training/gamemode_"* "$DEST/training/" 2>/dev/null || true
+          # Emoji alphabet training priors (DasherCore v0.2.26, ~20KB)
+          cp "${SRCROOT}/DasherCore/Data/training/training_emoji.txt" "$DEST/training/" 2>/dev/null || true
           cp -f "${SRCROOT}/DasherCore/Strings/"*.json "$DEST/Strings/" 2>/dev/null || true
     settings:
       base:
