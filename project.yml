@@ -234,14 +234,13 @@ targets:
           # Trim data bundle to ~2MB for keyboard memory constraints
           DEST="${SRCROOT}/DasherKeyboardData"
           find "$DEST" -mindepth 1 ! -name '.gitignore' -exec rm -rf {} + 2>/dev/null || true
-          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/colors" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
+          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
           # Essential alphabets only (root-level English/German variants)
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet.dtd" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet_index.json" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
           # All colour/color palettes (small, ~270KB total)
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true
-          cp -r "${SRCROOT}/DasherCore/Data/colors/"* "$DEST/colors/" 2>/dev/null || true
           find "$DEST" -name "*.py" -delete
           # Control mode (editing commands: stop, move, delete, speak, copy)
           cp "${SRCROOT}/DasherCore/Data/control/"* "$DEST/control/" 2>/dev/null || true
@@ -469,12 +468,11 @@ targets:
           # palettes, control, settings, short training, locale strings, index.
           DEST="${SRCROOT}/DasherWatchData"
           find "$DEST" -mindepth 1 ! -name '.gitignore' -exec rm -rf {} + 2>/dev/null || true
-          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/colors" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
+          mkdir -p "$DEST/alphabets" "$DEST/colours" "$DEST/control" "$DEST/settings" "$DEST/training" "$DEST/Strings"
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet.dtd" "$DEST/alphabets/"
           cp "${SRCROOT}/DasherCore/Data/alphabets/"alphabet.*.xml "$DEST/alphabets/" 2>/dev/null || true
           cp "${SRCROOT}/DasherCore/Data/alphabets/alphabet_index.json" "$DEST/alphabets/"
           cp -r "${SRCROOT}/DasherCore/Data/colours/"* "$DEST/colours/" 2>/dev/null || true
-          cp -r "${SRCROOT}/DasherCore/Data/colors/"* "$DEST/colors/" 2>/dev/null || true
           find "$DEST" -name "*.py" -delete
           cp "${SRCROOT}/DasherCore/Data/control/"* "$DEST/control/" 2>/dev/null || true
           cp -r "${SRCROOT}/DasherCore/Data/settings/"* "$DEST/settings/" 2>/dev/null || true
