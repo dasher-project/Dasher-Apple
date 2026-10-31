@@ -76,6 +76,7 @@ struct VisionContentView: View {
                             }
                         }
                         toolbarButton("delete") {
+                            UITelemetry.action("main_toolbar", "new")
                             viewModel.newMessage()
                         }
                     }

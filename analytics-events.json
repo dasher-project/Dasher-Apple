@@ -21,6 +21,7 @@
           "dasher-windows",
           "dasher-mac",
           "dasher-ios",
+          "dasher-vision",
           "dasher-gtk"
         ]
       },
