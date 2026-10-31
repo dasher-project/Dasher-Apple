@@ -484,7 +484,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: "Dasher"
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.watch
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.watchapp
         INFOPLIST_FILE: DasherWatch/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "6.0.0"
