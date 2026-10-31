@@ -5,39 +5,97 @@
   "default_properties": {
     "description": "Automatically appended to every event from every frontend",
     "properties": {
-      "platform": { "type": "string", "examples": ["windows", "macos", "ios", "visionos", "linux"] },
-      "app_variant": { "type": "string", "examples": ["dasher-windows", "dasher-mac", "dasher-ios", "dasher-gtk"] },
-      "app_version": { "type": "string", "example": "6.0.0 (a1b2c3d)", "description": "Marketing version plus git commit stamped at build time (TestFlight requires numeric X.Y.Z, so the commit rides alongside)." },
-      "os_version": { "type": "string", "example": "Microsoft Windows 10.0.19045" },
-      "$geoip_disable": { "type": "boolean", "const": true, "description": "Sent on every event: PostHog Cloud must not derive location from the client IP (RFC 0001: no location data)." }
+      "platform": {
+        "type": "string",
+        "examples": [
+          "windows",
+          "macos",
+          "ios",
+          "visionos",
+          "linux"
+        ]
+      },
+      "app_variant": {
+        "type": "string",
+        "examples": [
+          "dasher-windows",
+          "dasher-mac",
+          "dasher-ios",
+          "dasher-vision",
+          "dasher-gtk"
+        ]
+      },
+      "app_version": {
+        "type": "string",
+        "example": "6.0.0 (a1b2c3d)",
+        "description": "Marketing version plus git commit stamped at build time (TestFlight requires numeric X.Y.Z, so the commit rides alongside)."
+      },
+      "os_version": {
+        "type": "string",
+        "example": "Microsoft Windows 10.0.19045"
+      },
+      "$geoip_disable": {
+        "type": "boolean",
+        "const": true,
+        "description": "Sent on every event: PostHog Cloud must not derive location from the client IP (RFC 0001: no location data)."
+      }
     }
   },
   "events": {
     "app_launched": {
       "description": "App starts (after opt-in)",
       "properties": {
-        "locale": { "type": "string", "example": "en-GB" }
+        "locale": {
+          "type": "string",
+          "example": "en-GB"
+        }
       },
       "pii": false
     },
     "input_method_changed": {
       "description": "User selects input method",
       "properties": {
-        "method": { "type": "string", "enum": ["pointer", "touch", "switch", "joystick", "eye_gaze", "tilt"] }
+        "method": {
+          "type": "string",
+          "enum": [
+            "pointer",
+            "touch",
+            "switch",
+            "joystick",
+            "eye_gaze",
+            "tilt"
+          ]
+        }
       },
       "pii": false
     },
     "alphabet_selected": {
       "description": "User picks alphabet",
       "properties": {
-        "alphabet_id": { "type": "string", "example": "English with limited punctuation" }
+        "alphabet_id": {
+          "type": "string",
+          "example": "English with limited punctuation"
+        }
       },
       "pii": false
     },
     "settings_viewed": {
       "description": "User opens a settings tab",
       "properties": {
-        "tab_name": { "type": "string", "enum": ["Input", "Language", "Customization", "Speed", "Output", "Speech", "Privacy", "Appearance", "Advanced"] }
+        "tab_name": {
+          "type": "string",
+          "enum": [
+            "Input",
+            "Language",
+            "Customization",
+            "Speed",
+            "Output",
+            "Speech",
+            "Privacy",
+            "Appearance",
+            "Advanced"
+          ]
+        }
       },
       "pii": false
     },
@@ -54,7 +112,89 @@
     "crash": {
       "description": "Uncaught exception",
       "properties": {
-        "stack_trace": { "type": "string", "note": "May contain file paths but not user text" }
+        "stack_trace": {
+          "type": "string",
+          "note": "May contain file paths but not user text"
+        }
+      },
+      "pii": false
+    },
+    "ui_action": {
+      "description": "RFC 0001 2026-10-28 amendment: the user activated a control in the main UI (anything outside the settings windows)",
+      "properties": {
+        "surface": {
+          "type": "string",
+          "enum": [
+            "main_toolbar",
+            "status_bar",
+            "ime_toolbar",
+            "ime_topbar"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "new",
+            "open",
+            "save",
+            "pause_play",
+            "game_mode",
+            "settings",
+            "copy",
+            "paste",
+            "cut",
+            "select_all",
+            "share",
+            "emoji_toggle",
+            "speed_up",
+            "speed_down",
+            "layout",
+            "control_mode",
+            "turbo",
+            "float",
+            "dock",
+            "hide"
+          ]
+        },
+        "state": {
+          "type": "string",
+          "description": "Present only for toggles; always the post-toggle value: on/off, paused/playing, or the layout destination right/left/bottom/top/direct for the layout action"
+        }
+      },
+      "pii": false
+    },
+    "setting_changed": {
+      "description": "RFC 0001 2026-10-28 amendment: the user committed a settings change at its widget site (programmatic engine changes never emit). setting_id is the canonical parameter/setting name; value is omitted entirely for string settings — free text and file paths are never collected",
+      "properties": {
+        "setting_id": {
+          "type": "string",
+          "example": "Speed Percent"
+        },
+        "value_type": {
+          "type": "string",
+          "enum": [
+            "bool",
+            "number",
+            "enum",
+            "string"
+          ]
+        },
+        "value": {
+          "type": [
+            "boolean",
+            "number",
+            "string"
+          ],
+          "description": "Present only for bool/number/enum values from fixed vocabularies; OMITTED for value_type string"
+        },
+        "surface": {
+          "type": "string",
+          "enum": [
+            "settings",
+            "main_ui",
+            "ime"
+          ]
+        }
       },
       "pii": false
     }

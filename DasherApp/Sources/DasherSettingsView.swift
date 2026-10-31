@@ -166,7 +166,11 @@ struct DasherSettingsView: View {
         Section {
             Picker("Appearance", selection: Binding<Int>(
                 get: { viewModel.bridge.getAppearanceMode() },
-                set: { viewModel.bridge.setAppearanceMode($0) }
+                set: {
+                    viewModel.bridge.setAppearanceMode($0)
+                    let modes = ["System", "Light", "Dark"]
+                    UITelemetry.setting("Appearance", modes.indices.contains($0) ? modes[$0] : "System", surface: "settings")
+                }
             )) {
                 Text("System").tag(0)
                 Text("Light").tag(1)
@@ -182,6 +186,7 @@ struct DasherSettingsView: View {
                     selectedName: viewModel.bridge.getLightPalette()
                 ) { name in
                     viewModel.bridge.setLightPalette(name)
+                    UITelemetry.setting("Light Palette", name, surface: "settings")
                 }
                 palettePickerRow(
                     label: "Dark Palette",
@@ -189,6 +194,7 @@ struct DasherSettingsView: View {
                     selectedName: viewModel.bridge.getDarkPalette()
                 ) { name in
                     viewModel.bridge.setDarkPalette(name)
+                    UITelemetry.setting("Dark Palette", name, surface: "settings")
                 }
             }
             ForEach(params.filter { $0.name != "Color Palette" }) { param in
@@ -265,7 +271,13 @@ struct DasherSettingsView: View {
             }
 
             #if os(iOS) || os(visionOS)
-            Toggle(isOn: $viewModel.pointerHoverEnabled) {
+            Toggle(isOn: Binding(
+                get: { viewModel.pointerHoverEnabled },
+                set: {
+                    viewModel.pointerHoverEnabled = $0
+                    UITelemetry.setting("Pointer Hover Input", $0, surface: "settings")
+                }
+            )) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Pointer Hover Input")
                     Text("Accept hover/pointer events as Dasher input. Enable for eye tracking or external pointers.")
@@ -275,7 +287,13 @@ struct DasherSettingsView: View {
             }
 
             if viewModel.pointerHoverEnabled {
-                Toggle(isOn: $viewModel.appLevelDwell) {
+                Toggle(isOn: Binding(
+                    get: { viewModel.appLevelDwell },
+                    set: {
+                        viewModel.appLevelDwell = $0
+                        UITelemetry.setting("App-Level Dwell", $0, surface: "settings")
+                    }
+                )) {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("App-Level Dwell to Select")
                         Text("Auto-select after fixating. Only enable if OS dwell is off.")
@@ -285,7 +303,14 @@ struct DasherSettingsView: View {
                 }
 
                 if viewModel.appLevelDwell {
-                    Picker("Dwell Duration", selection: $viewModel.dwellDuration) {
+                    Picker("Dwell Duration", selection: Binding(
+                        get: { viewModel.dwellDuration },
+                        set: { newValue in
+                            viewModel.dwellDuration = newValue
+                            let label = DasherViewModel.dwellDurationOptions.first(where: { $0.1 == newValue })?.0 ?? String(newValue)
+                            UITelemetry.setting("Dwell Duration", label, surface: "settings")
+                        }
+                    )) {
                         ForEach(DasherViewModel.dwellDurationOptions, id: \.1) { option in
                             Text(option.0).tag(option.1)
                         }
@@ -323,6 +348,7 @@ struct DasherSettingsView: View {
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)
+                        UITelemetry.alphabetSelected($0)
                     }
                 )) {
                     ForEach(alphabets, id: \.name) { a in
@@ -371,7 +397,10 @@ struct DasherSettingsView: View {
                 Slider(value: Binding(
                     get: { Double(viewModel.bridge.speedPercent) },
                     set: { viewModel.bridge.setSpeedPercent(Int($0)) }
-                ), in: 20...400)
+                ), in: 20...400) { editing in
+                    guard !editing else { return }
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "settings")
+                }
             }
             // Output text font
             Picker("Output Font", selection: Binding(
@@ -379,6 +408,7 @@ struct DasherSettingsView: View {
                 set: {
                     OutputFontSettings.fontName = $0
                     NotificationCenter.default.post(name: .outputFontChanged, object: nil)
+                    UITelemetry.setting("output_font_family", $0, surface: "settings")
                 }
             )) {
                 ForEach(OutputFontSettings.availableFonts, id: \.self) { Text($0).tag($0) }
@@ -392,6 +422,7 @@ struct DasherSettingsView: View {
                     set: {
                         OutputFontSettings.fontSize = $0
                         NotificationCenter.default.post(name: .outputFontChanged, object: nil)
+                        UITelemetry.setting("output_font_size", Int($0), surface: "settings")
                     }
                 ), in: 10...48)
             }
@@ -449,6 +480,7 @@ struct DasherSettingsView: View {
                 if !currentFile.isEmpty {
                     Button {
                         viewModel.bridge.setStringParameter(key: gameTextKey, value: "")
+                        UITelemetry.stringSettingChanged("Game Text File", surface: "settings")
                     } label: {
                         LucideIcon(DasherIcon.close, size: 16, color: .secondary)
                     }
@@ -473,6 +505,7 @@ struct DasherSettingsView: View {
                     let path = url.path
                     viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey(Self.spGameTextFile), value: path)
                     if accessing { url.stopAccessingSecurityScopedResource() }
+                    UITelemetry.stringSettingChanged("Game Text File", surface: "settings")
                 }
             case .failure:
                 break
@@ -496,6 +529,7 @@ struct DasherSettingsView: View {
                                                                     method: AccessConfiguration.current.method)
                     }
                     viewModel.bridge.setBoolParameter(key: param.key, value: newValue)
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             VStack(alignment: .leading, spacing: 2) {
@@ -513,7 +547,11 @@ struct DasherSettingsView: View {
                 if !enumVals.isEmpty {
                     let binding = Binding<Int>(
                         get: { viewModel.bridge.getLongParameter(key: param.key) },
-                        set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                        set: { newValue in
+                            viewModel.bridge.setLongParameter(key: param.key, value: newValue)
+                            let chosen = enumVals.first(where: { $0.value == newValue })
+                            UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
+                        }
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         Picker(param.name, selection: binding) {
@@ -542,12 +580,20 @@ struct DasherSettingsView: View {
                         Text("\(viewModel.bridge.getLongParameter(key: param.key))")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step))
+                    // Slider set fires per drag tick; the setting_changed
+                    // event belongs to the committed value (edit end).
+                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step)) { editing in
+                        guard !editing else { return }
+                        UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                    }
                 }
             } else if param.uiType == .step {
                 let binding = Binding<Int>(
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
-                    set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                    set: {
+                        viewModel.bridge.setLongParameter(key: param.key, value: $0)
+                        UITelemetry.setting(param.name, $0, surface: "settings")
+                    }
                 )
                 Stepper(value: binding, in: param.minVal...param.maxVal, step: param.step) {
                     HStack {
@@ -585,6 +631,10 @@ struct DasherSettingsView: View {
             TextField("", value: binding, format: .number)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
+                // Per-keystroke bindings are not commits; submit is.
+                .onSubmit {
+                    UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                }
         }
     }
 
@@ -601,6 +651,7 @@ struct DasherSettingsView: View {
                 set: { newValue in
                     viewModel.bridge.setStringParameter(key: param.key, value: newValue)
                     if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             Picker(param.name, selection: binding) {
@@ -616,6 +667,8 @@ struct DasherSettingsView: View {
                     set: { newValue in
                         viewModel.bridge.setLongParameter(key: param.key, value: newValue)
                         if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
+                        let chosen = enumVals.first(where: { $0.value == newValue })
+                        UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
                     }
                 )
                 Picker(param.name, selection: binding) {
@@ -637,7 +690,10 @@ struct DasherSettingsView: View {
         let mapped = Self.dasherFonts.contains(currentFont) ? currentFont : "System"
         let binding = Binding<String>(
             get: { mapped },
-            set: { viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0) }
+            set: {
+                viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0)
+                UITelemetry.setting(param.name, $0, surface: "settings")
+            }
         )
         Picker(param.name, selection: binding) {
             ForEach(Self.dasherFonts, id: \.self) { font in
@@ -657,6 +713,11 @@ struct DasherSettingsView: View {
             Spacer()
             TextField("", text: binding)
                 .multilineTextAlignment(.trailing)
+                // Free text is never collected (RFC 0001 amendment) — the
+                // event records only that the setting changed.
+                .onSubmit {
+                    UITelemetry.stringSettingChanged(param.name, surface: "settings")
+                }
         }
     }
 }

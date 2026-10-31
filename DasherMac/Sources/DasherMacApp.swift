@@ -111,11 +111,13 @@ struct DasherMacApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Message") {
+                    UITelemetry.action("main_toolbar", "new")
                     viewModel.newMessage()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
 
                 Button("Open...") {
+                    UITelemetry.action("main_toolbar", "open")
                     viewModel.showOpenFile = true
                 }
                 .keyboardShortcut("o", modifiers: [.command])
@@ -123,6 +125,7 @@ struct DasherMacApp: App {
 
             CommandGroup(after: .saveItem) {
                 Button("Save...") {
+                    UITelemetry.action("main_toolbar", "save")
                     saveFile()
                 }
                 .keyboardShortcut("s", modifiers: [.command])
@@ -130,6 +133,7 @@ struct DasherMacApp: App {
 
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
+                    UITelemetry.action("main_toolbar", "settings")
                     showSettings = true
                 }
                 .keyboardShortcut(",", modifiers: [.command])
@@ -137,17 +141,20 @@ struct DasherMacApp: App {
 
             CommandMenu("Input") {
                 Button(viewModel.isPlaying ? "Pause" : "Play") {
+                    UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "paused" : "playing")
                     viewModel.togglePlay()
                 }
                 .keyboardShortcut("p", modifiers: [.command])
 
                 Button("Increase Speed") {
                     viewModel.increaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
                 }
                 .keyboardShortcut("+", modifiers: [.command])
 
                 Button("Decrease Speed") {
                     viewModel.decreaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
                 }
                 .keyboardShortcut("-", modifiers: [.command])
             }
@@ -343,7 +350,10 @@ struct MacDasherSettingsView: View {
                             ForEach(0..<palettes.count, id: \.self) { i in
                                 let palette = palettes[i]
                                 let isSelected = viewModel.bridge.currentPalette == palette.name
-                                Button(action: { viewModel.bridge.setPalette(palette.name) }) {
+                                Button(action: {
+                                    viewModel.bridge.setPalette(palette.name)
+                                    UITelemetry.setting("Colour Palette", palette.name, surface: "settings")
+                                }) {
                                     VStack(spacing: 4) {
                                         HStack(spacing: 2) {
                                             ForEach(0..<min(palette.previewColors.count, 4), id: \.self) { ci in
@@ -428,6 +438,7 @@ struct MacDasherSettingsView: View {
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)
+                        UITelemetry.alphabetSelected($0)
                     }
                 )) {
                     ForEach(pickerAlphabets, id: \.name) { a in
@@ -473,11 +484,17 @@ struct MacDasherSettingsView: View {
                 Slider(value: Binding(
                     get: { Double(viewModel.bridge.speedPercent) },
                     set: { viewModel.bridge.setSpeedPercent(Int($0)) }
-                ), in: 20...400)
+                ), in: 20...400) { editing in
+                    guard !editing else { return }
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "settings")
+                }
             }
             Picker("Output Font", selection: Binding(
                 get: { OutputFontSettings.fontName },
-                set: { OutputFontSettings.fontName = $0 }
+                set: {
+                    OutputFontSettings.fontName = $0
+                    UITelemetry.setting("output_font_family", $0, surface: "settings")
+                }
             )) {
                 ForEach(OutputFontSettings.availableFonts, id: \.self) { Text($0).tag($0) }
             }
@@ -486,7 +503,10 @@ struct MacDasherSettingsView: View {
                 Spacer()
                 Stepper("\(Int(OutputFontSettings.fontSize))", value: Binding(
                     get: { OutputFontSettings.fontSize },
-                    set: { OutputFontSettings.fontSize = $0 }
+                    set: {
+                        OutputFontSettings.fontSize = $0
+                        UITelemetry.setting("output_font_size", Int($0), surface: "settings")
+                    }
                 ), in: 10...48)
             }
             ForEach(params) { param in
@@ -576,6 +596,7 @@ struct MacDasherSettingsView: View {
                                                                     method: AccessConfiguration.current.method)
                     }
                     viewModel.bridge.setBoolParameter(key: param.key, value: newValue)
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             HStack {
@@ -599,7 +620,11 @@ struct MacDasherSettingsView: View {
                 if !enumVals.isEmpty {
                     let binding = Binding<Int>(
                         get: { viewModel.bridge.getLongParameter(key: param.key) },
-                        set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                        set: { newValue in
+                            viewModel.bridge.setLongParameter(key: param.key, value: newValue)
+                            let chosen = enumVals.first(where: { $0.value == newValue })
+                            UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
+                        }
                     )
                     Picker(param.name, selection: binding) {
                         ForEach(enumVals, id: \.value) { ev in
@@ -621,12 +646,20 @@ struct MacDasherSettingsView: View {
                         Text("\(viewModel.bridge.getLongParameter(key: param.key))")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step))
+                    // Slider set fires per drag tick; the setting_changed
+                    // event belongs to the committed value (edit end).
+                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step)) { editing in
+                        guard !editing else { return }
+                        UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                    }
                 }
             } else if param.uiType == .step {
                 let binding = Binding<Int>(
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
-                    set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                    set: {
+                        viewModel.bridge.setLongParameter(key: param.key, value: $0)
+                        UITelemetry.setting(param.name, $0, surface: "settings")
+                    }
                 )
                 Stepper(value: binding, in: param.minVal...param.maxVal, step: param.step) {
                     HStack {
@@ -665,6 +698,7 @@ struct MacDasherSettingsView: View {
                 set: { newValue in
                     viewModel.bridge.setStringParameter(key: param.key, value: newValue)
                     if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             Picker(param.name, selection: binding) {
@@ -682,6 +716,8 @@ struct MacDasherSettingsView: View {
                         if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) {
                             updateAccessSummary()
                         }
+                        let chosen = enumVals.first(where: { $0.value == newValue })
+                        UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
                     }
                 )
                 Picker(param.name, selection: binding) {
@@ -703,7 +739,10 @@ struct MacDasherSettingsView: View {
         let mapped = Self.dasherFonts.contains(currentFont) ? currentFont : "System"
         let binding = Binding<String>(
             get: { mapped },
-            set: { viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0) }
+            set: {
+                viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0)
+                UITelemetry.setting(param.name, $0, surface: "settings")
+            }
         )
         Picker(param.name, selection: binding) {
             ForEach(Self.dasherFonts, id: \.self) { font in
@@ -724,6 +763,10 @@ struct MacDasherSettingsView: View {
             TextField("", value: binding, format: .number)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
+                // Per-keystroke bindings are not commits; submit is.
+                .onSubmit {
+                    UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                }
         }
     }
 
@@ -738,6 +781,11 @@ struct MacDasherSettingsView: View {
             Spacer()
             TextField("", text: binding)
                 .multilineTextAlignment(.trailing)
+                // Free text is never collected (RFC 0001 amendment) — the
+                // event records only that the setting changed.
+                .onSubmit {
+                    UITelemetry.stringSettingChanged(param.name, surface: "settings")
+                }
         }
     }
 }

@@ -207,7 +207,10 @@ struct OutputTextView: View {
             toolbarButton(icon: DasherIcon.copy, label: "Copy") { copyAllText() }
             toolbarButton(icon: DasherIcon.paste, label: "Paste") { pasteText() }
             toolbarDivider
-            toolbarButton(icon: DasherIcon.close, label: "Clear") { viewModel.newMessage() }
+            toolbarButton(icon: DasherIcon.close, label: "Clear") {
+                UITelemetry.action("main_toolbar", "new")
+                viewModel.newMessage()
+            }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 10)
@@ -226,7 +229,10 @@ struct OutputTextView: View {
             iconOnlyButton(icon: DasherIcon.copy) { copyAllText() }
             iconOnlyButton(icon: DasherIcon.paste) { pasteText() }
             toolbarDivider
-            iconOnlyButton(icon: DasherIcon.close) { viewModel.newMessage() }
+            iconOnlyButton(icon: DasherIcon.close) {
+                UITelemetry.action("main_toolbar", "new")
+                viewModel.newMessage()
+            }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 8)
@@ -244,7 +250,10 @@ struct OutputTextView: View {
                 Button("Copy All", action: copyAllText)
                 Button("Paste", action: pasteText)
                 Divider()
-                Button("Clear", role: .destructive) { viewModel.newMessage() }
+                Button("Clear", role: .destructive) {
+                    UITelemetry.action("main_toolbar", "new")
+                    viewModel.newMessage()
+                }
             } label: {
                 LucideIcon(DasherIcon.more, size: 15, color: Color("BarText"))
                     .frame(width: 32, height: 32)
@@ -263,6 +272,7 @@ struct OutputTextView: View {
         Button(action: {
             let current = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
             viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
+            UITelemetry.setting("Speak Words", !current, surface: "main_ui")
         }) {
             let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
             if showLabel {
@@ -321,6 +331,7 @@ struct OutputTextView: View {
         return Button(action: {
             turboActive.toggle()
             viewModel.bridge.keyEvent(key: 101, pressed: turboActive)
+            UITelemetry.action("main_toolbar", "turbo", state: turboActive ? "on" : "off")
         }) {
             if showLabel {
                 HStack(spacing: 4) {
@@ -375,10 +386,12 @@ struct OutputTextView: View {
     // MARK: - Actions
 
     private func copyAllText() {
+        UITelemetry.action("main_toolbar", "copy")
         UIPasteboard.general.string = viewModel.outputText
     }
 
     private func pasteText() {
+        UITelemetry.action("main_toolbar", "paste")
         if let clipboardString = UIPasteboard.general.string {
             let newText = viewModel.outputText + clipboardString
             let (capped, cappedCaret) = EditorSeedPolicy.apply(

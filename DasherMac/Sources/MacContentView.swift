@@ -48,25 +48,37 @@ struct MacContentView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: { viewModel.newMessage() }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "new")
+                    viewModel.newMessage()
+                }) {
                     LucideLabel("New", icon: DasherIcon.newDocument)
                 }
 
                 layoutPickerMenu
 
                 if currentLayoutPosition != "Direct" {
-                    Button(action: { viewModel.toggleGameMode() }) {
+                    Button(action: {
+                        UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
+                        viewModel.toggleGameMode()
+                    }) {
                         LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
                               icon: DasherIcon.gameMode)
                     }
                 }
 
-                Button(action: { viewModel.toggleControlMode() }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
+                    viewModel.toggleControlMode()
+                }) {
                     LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
                           icon: DasherIcon.controlMode)
                 }
 
-                Button(action: { showSettings = true }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "settings")
+                    showSettings = true
+                }) {
                     LucideLabel("Settings", icon: DasherIcon.settings)
                 }
             }
@@ -79,12 +91,27 @@ struct MacContentView: View {
 
     private var layoutPickerMenu: some View {
         Menu {
-            Button("Right side") { currentLayoutPosition = "Right" }
-            Button("Left side") { currentLayoutPosition = "Left" }
-            Button("Bottom") { currentLayoutPosition = "Bottom" }
-            Button("Top") { currentLayoutPosition = "Top" }
+            Button("Right side") {
+                UITelemetry.action("main_toolbar", "layout", state: "right")
+                currentLayoutPosition = "Right"
+            }
+            Button("Left side") {
+                UITelemetry.action("main_toolbar", "layout", state: "left")
+                currentLayoutPosition = "Left"
+            }
+            Button("Bottom") {
+                UITelemetry.action("main_toolbar", "layout", state: "bottom")
+                currentLayoutPosition = "Bottom"
+            }
+            Button("Top") {
+                UITelemetry.action("main_toolbar", "layout", state: "top")
+                currentLayoutPosition = "Top"
+            }
             Divider()
-            Button("Direct Mode") { currentLayoutPosition = "Direct" }
+            Button("Direct Mode") {
+                UITelemetry.action("main_toolbar", "layout", state: "direct")
+                currentLayoutPosition = "Direct"
+            }
         } label: {
             LucideLabel(currentLayoutPosition, icon: layoutIcon)
         }
@@ -319,6 +346,7 @@ struct MacContentView: View {
 
             // New session: clear text + model context (clause 5)
             Button {
+                UITelemetry.action("main_toolbar", "new")
                 viewModel.newMessage()
             } label: {
                 LucideIcon(DasherIcon.close, size: 16, color: Color("MutedText"))
@@ -329,6 +357,7 @@ struct MacContentView: View {
 
             // Copy all typed text to clipboard
             Button {
+                UITelemetry.action("main_toolbar", "copy")
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(viewModel.outputText, forType: .string)
             } label: {
@@ -340,6 +369,7 @@ struct MacContentView: View {
 
             // Cut selection in target app (Cmd+X)
             Button {
+                UITelemetry.action("main_toolbar", "cut")
                 viewModel.directService.sendCmdChord("x")
             } label: {
                 LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
@@ -350,6 +380,7 @@ struct MacContentView: View {
 
             // Paste into target app (Cmd+V)
             Button {
+                UITelemetry.action("main_toolbar", "paste")
                 viewModel.directService.sendCmdChord("v")
             } label: {
                 LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
@@ -360,6 +391,7 @@ struct MacContentView: View {
 
             // Select all in target app (Cmd+A)
             Button {
+                UITelemetry.action("main_toolbar", "select_all")
                 viewModel.directService.sendCmdChord("a")
             } label: {
                 LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
@@ -434,6 +466,7 @@ struct MacContentView: View {
                 Button(a.name) {
                     AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                     viewModel.bridge.setAlphabetId(a.name)
+                    UITelemetry.alphabetSelected(a.name)
                 }
             }
         } label: {
@@ -451,18 +484,27 @@ struct MacContentView: View {
             Text("Speed")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
-            Button("-") { viewModel.decreaseSpeed() }
+            Button("-") {
+                viewModel.decreaseSpeed()
+                UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+            }
             Text(String(format: "%.1f", viewModel.speed))
                 .font(.system(size: 12, design: .monospaced))
                 .frame(width: 30)
-            Button("+") { viewModel.increaseSpeed() }
+            Button("+") {
+                viewModel.increaseSpeed()
+                UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+            }
         }
     }
 
     private var learningToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0)
+                UITelemetry.setting("Learning", $0, surface: "main_ui")
+            }
         )
         return HStack(spacing: 6) {
             Text("Learning")
@@ -479,7 +521,10 @@ struct MacContentView: View {
     private var autoSpeedToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0)
+                UITelemetry.setting("Auto Speed", $0, surface: "main_ui")
+            }
         )
         return HStack(spacing: 6) {
             Text("Auto")
@@ -497,7 +542,10 @@ struct MacContentView: View {
         let palettes = viewModel.bridge.allPalettes
         return Menu {
             ForEach(palettes, id: \.name) { p in
-                Button(action: { viewModel.bridge.setPalette(p.name) }) {
+                Button(action: {
+                    viewModel.bridge.setPalette(p.name)
+                    UITelemetry.setting("Colour Palette", p.name, surface: "main_ui")
+                }) {
                     LucideLabel(p.name, icon: "circle", iconSize: 12)
                 }
             }
@@ -515,7 +563,10 @@ struct MacContentView: View {
         let currentFont = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
         return Menu {
             ForEach(fonts, id: \.self) { f in
-                Button(f) { viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f) }
+                Button(f) {
+                    viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f)
+                    UITelemetry.setting("Dasher Font", f, surface: "main_ui")
+                }
             }
         } label: {
             HStack(spacing: 3) {
@@ -536,11 +587,19 @@ struct MacContentView: View {
             Text("Size")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
-            Button("-") { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: max(8, binding.wrappedValue - 1)) }
+            Button("-") {
+                let v = max(8, binding.wrappedValue - 1)
+                viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: v)
+                UITelemetry.setting("Dasher Font Size", v, surface: "main_ui")
+            }
             Text("\(binding.wrappedValue)")
                 .font(.system(size: 12, design: .monospaced))
                 .frame(width: 24)
-            Button("+") { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: min(72, binding.wrappedValue + 1)) }
+            Button("+") {
+                let v = min(72, binding.wrappedValue + 1)
+                viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: v)
+                UITelemetry.setting("Dasher Font Size", v, surface: "main_ui")
+            }
         }
     }
 
@@ -548,8 +607,14 @@ struct MacContentView: View {
         let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
         return HStack(spacing: 4) {
             Menu {
-                Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
-                Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
+                Button("Speech on") {
+                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                    UITelemetry.setting("Speak Words", true, surface: "main_ui")
+                }
+                Button("Speech off") {
+                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                    UITelemetry.setting("Speak Words", false, surface: "main_ui")
+                }
             } label: {
                 LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute)
             }
@@ -871,11 +936,16 @@ final class MacDasherCanvas: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         for ta in trackingAreas { removeTrackingArea(ta) }
-        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInActiveApp], owner: self, userInfo: nil))
+        // .mouseMoved: continuous steering — a head mouse must be able to
+        // drive Dasher by pointing alone (click only starts/stops per
+        // BP_START_MOUSE; the engine reads the position every frame).
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, .activeInActiveApp], owner: self, userInfo: nil))
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        // mouseMoved events require the window to opt in.
+        window?.acceptsMouseMovedEvents = true
         if window != nil, displayLink == nil {
             // Compositor-synced frame clock (issue #41): a free-running Timer
             // beat against the compositor's cadence and produced judder
@@ -908,9 +978,14 @@ final class MacDasherCanvas: NSView {
         viewModel?.handleTouch(at: CGPoint(x: point.x, y: bounds.height - point.y))
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        viewModel?.handleMove(at: CGPoint(x: point.x, y: bounds.height - point.y))
+    }
+
     override func mouseDragged(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        viewModel?.handleTouch(at: CGPoint(x: point.x, y: bounds.height - point.y))
+        viewModel?.handleMove(at: CGPoint(x: point.x, y: bounds.height - point.y))
     }
 
     override func mouseUp(with event: NSEvent) {
