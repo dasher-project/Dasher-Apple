@@ -400,12 +400,15 @@ struct ContentView: View {
                 HStack(spacing: isWide ? 6 : 4) {
                     if isWide {
                         toolbarButton(icon: DasherIcon.newDocument, label: "New") {
+                            UITelemetry.action("main_toolbar", "new")
                             viewModel.newMessage()
                         }
                         toolbarButton(icon: DasherIcon.open, label: "Open") {
+                            UITelemetry.action("main_toolbar", "open")
                             showOpenFile = true
                         }
                         toolbarButton(icon: DasherIcon.share, label: "Save") {
+                            UITelemetry.action("main_toolbar", "share")
                             showShareSheet = true
                         }
                         barDivider
@@ -415,6 +418,7 @@ struct ContentView: View {
                             icon: DasherIcon.gameMode,
                             label: viewModel.isGameModeActive ? "Game On" : "Game"
                         ) {
+                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
                             viewModel.toggleGameMode()
                         }
                         barDivider
@@ -422,34 +426,42 @@ struct ContentView: View {
                             icon: DasherIcon.controlMode,
                             label: viewModel.isControlModeActive ? "Leave" : "Control"
                         ) {
+                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
                             viewModel.toggleControlMode()
                         }
                         barDivider
                         toolbarButton(icon: DasherIcon.settings, label: "Prefs") {
+                            UITelemetry.action("main_toolbar", "settings")
                             showSettings = true
                         }
                     } else {
                         compactToolbarButton(icon: DasherIcon.newDocument) {
+                            UITelemetry.action("main_toolbar", "new")
                             viewModel.newMessage()
                         }
                         compactToolbarButton(icon: DasherIcon.open) {
+                            UITelemetry.action("main_toolbar", "open")
                             showOpenFile = true
                         }
                         compactToolbarButton(icon: DasherIcon.share) {
+                            UITelemetry.action("main_toolbar", "share")
                             showShareSheet = true
                         }
                         barDivider
                         layoutPickerCompact(portrait: isPortrait)
                         barDivider
                         compactToolbarButton(icon: DasherIcon.gameMode) {
+                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
                             viewModel.toggleGameMode()
                         }
                         barDivider
                         compactToolbarButton(icon: DasherIcon.controlMode) {
+                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
                             viewModel.toggleControlMode()
                         }
                         barDivider
                         compactToolbarButton(icon: DasherIcon.settings) {
+                            UITelemetry.action("main_toolbar", "settings")
                             showSettings = true
                         }
                     }
@@ -486,10 +498,22 @@ struct ContentView: View {
 
     private var layoutPicker: some View {
         Menu {
-            Button("Right side") { currentLayoutPosition = "Right" }
-            Button("Left side") { currentLayoutPosition = "Left" }
-            Button("Bottom") { currentLayoutPosition = "Bottom" }
-            Button("Top") { currentLayoutPosition = "Top" }
+            Button("Right side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Right"
+            }
+            Button("Left side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Left"
+            }
+            Button("Bottom") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Bottom"
+            }
+            Button("Top") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Top"
+            }
         } label: {
             HStack(spacing: 6) {
                 LucideIcon(layoutIcon, size: 14, color: Color("DeepNavy"))
@@ -509,10 +533,22 @@ struct ContentView: View {
 
     private var layoutPickerCompact: some View {
         Menu {
-            Button("Right side") { currentLayoutPosition = "Right" }
-            Button("Left side") { currentLayoutPosition = "Left" }
-            Button("Bottom") { currentLayoutPosition = "Bottom" }
-            Button("Top") { currentLayoutPosition = "Top" }
+            Button("Right side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Right"
+            }
+            Button("Left side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Left"
+            }
+            Button("Bottom") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Bottom"
+            }
+            Button("Top") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Top"
+            }
         } label: {
             HStack(spacing: 3) {
                 LucideIcon(layoutIcon, size: 13, color: Color("DeepNavy"))
@@ -527,11 +563,23 @@ struct ContentView: View {
     private func layoutPickerCompact(portrait: Bool) -> some View {
         Menu {
             if !portrait {
-                Button("Right side") { currentLayoutPosition = "Right" }
-                Button("Left side") { currentLayoutPosition = "Left" }
+                Button("Right side") {
+                    UITelemetry.action("main_toolbar", "layout")
+                    currentLayoutPosition = "Right"
+                }
+                Button("Left side") {
+                    UITelemetry.action("main_toolbar", "layout")
+                    currentLayoutPosition = "Left"
+                }
             }
-            Button("Bottom") { currentLayoutPosition = "Bottom" }
-            Button("Top") { currentLayoutPosition = "Top" }
+            Button("Bottom") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Bottom"
+            }
+            Button("Top") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Top"
+            }
         } label: {
             HStack(spacing: 3) {
                 LucideIcon(layoutIcon, size: 13, color: Color("DeepNavy"))
@@ -645,8 +693,14 @@ struct ContentView: View {
 
             stepperBox(
                 label: String(format: "%.1f", viewModel.speed),
-                onDecrement: { viewModel.decreaseSpeed() },
-                onIncrement: { viewModel.increaseSpeed() }
+                onDecrement: {
+                    viewModel.decreaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+                },
+                onIncrement: {
+                    viewModel.increaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+                }
             )
         }
     }
@@ -654,7 +708,10 @@ struct ContentView: View {
     private var learningToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0)
+                UITelemetry.setting("Learning", $0, surface: "main_ui")
+            }
         )
 
         return HStack(spacing: 6) {
@@ -673,7 +730,10 @@ struct ContentView: View {
     private var autoSpeedToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0)
+                UITelemetry.setting("Auto Speed", $0, surface: "main_ui")
+            }
         )
 
         return HStack(spacing: 6) {
@@ -761,8 +821,14 @@ struct ContentView: View {
     private var speechPicker: some View {
         let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
         return Menu {
-            Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
-            Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
+            Button("Speech on") {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                UITelemetry.setting("Speak Words", true, surface: "main_ui")
+            }
+            Button("Speech off") {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                UITelemetry.setting("Speak Words", false, surface: "main_ui")
+            }
         } label: {
             HStack(spacing: 3) {
                 Text(isOn ? "Speech on" : "Speech off")

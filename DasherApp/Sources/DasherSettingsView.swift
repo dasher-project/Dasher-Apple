@@ -166,7 +166,10 @@ struct DasherSettingsView: View {
         Section {
             Picker("Appearance", selection: Binding<Int>(
                 get: { viewModel.bridge.getAppearanceMode() },
-                set: { viewModel.bridge.setAppearanceMode($0) }
+                set: {
+                    viewModel.bridge.setAppearanceMode($0)
+                    UITelemetry.setting("Appearance", ["System", "Light", "Dark"][$0], surface: "settings")
+                }
             )) {
                 Text("System").tag(0)
                 Text("Light").tag(1)
@@ -182,6 +185,7 @@ struct DasherSettingsView: View {
                     selectedName: viewModel.bridge.getLightPalette()
                 ) { name in
                     viewModel.bridge.setLightPalette(name)
+                    UITelemetry.setting("Colour Palette", name, surface: "settings")
                 }
                 palettePickerRow(
                     label: "Dark Palette",
@@ -189,6 +193,7 @@ struct DasherSettingsView: View {
                     selectedName: viewModel.bridge.getDarkPalette()
                 ) { name in
                     viewModel.bridge.setDarkPalette(name)
+                    UITelemetry.setting("Colour Palette", name, surface: "settings")
                 }
             }
             ForEach(params.filter { $0.name != "Color Palette" }) { param in
@@ -496,6 +501,7 @@ struct DasherSettingsView: View {
                                                                     method: AccessConfiguration.current.method)
                     }
                     viewModel.bridge.setBoolParameter(key: param.key, value: newValue)
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             VStack(alignment: .leading, spacing: 2) {
@@ -513,7 +519,11 @@ struct DasherSettingsView: View {
                 if !enumVals.isEmpty {
                     let binding = Binding<Int>(
                         get: { viewModel.bridge.getLongParameter(key: param.key) },
-                        set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                        set: { newValue in
+                            viewModel.bridge.setLongParameter(key: param.key, value: newValue)
+                            let chosen = enumVals.first(where: { $0.value == newValue })
+                            UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
+                        }
                     )
                     VStack(alignment: .leading, spacing: 2) {
                         Picker(param.name, selection: binding) {
@@ -542,12 +552,20 @@ struct DasherSettingsView: View {
                         Text("\(viewModel.bridge.getLongParameter(key: param.key))")
                             .foregroundColor(.secondary)
                     }
-                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step))
+                    // Slider set fires per drag tick; the setting_changed
+                    // event belongs to the committed value (edit end).
+                    Slider(value: binding, in: Double(param.minVal)...Double(param.maxVal), step: Double(param.step)) { editing in
+                        guard !editing else { return }
+                        UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                    }
                 }
             } else if param.uiType == .step {
                 let binding = Binding<Int>(
                     get: { viewModel.bridge.getLongParameter(key: param.key) },
-                    set: { viewModel.bridge.setLongParameter(key: param.key, value: $0) }
+                    set: {
+                        viewModel.bridge.setLongParameter(key: param.key, value: $0)
+                        UITelemetry.setting(param.name, $0, surface: "settings")
+                    }
                 )
                 Stepper(value: binding, in: param.minVal...param.maxVal, step: param.step) {
                     HStack {
@@ -585,6 +603,10 @@ struct DasherSettingsView: View {
             TextField("", value: binding, format: .number)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 60)
+                // Per-keystroke bindings are not commits; submit is.
+                .onSubmit {
+                    UITelemetry.setting(param.name, viewModel.bridge.getLongParameter(key: param.key), surface: "settings")
+                }
         }
     }
 
@@ -601,6 +623,7 @@ struct DasherSettingsView: View {
                 set: { newValue in
                     viewModel.bridge.setStringParameter(key: param.key, value: newValue)
                     if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
+                    UITelemetry.setting(param.name, newValue, surface: "settings")
                 }
             )
             Picker(param.name, selection: binding) {
@@ -616,6 +639,8 @@ struct DasherSettingsView: View {
                     set: { newValue in
                         viewModel.bridge.setLongParameter(key: param.key, value: newValue)
                         if param.key == viewModel.bridge.findParameterKey(Self.spInputFilter) { updateAccessSummary() }
+                        let chosen = enumVals.first(where: { $0.value == newValue })
+                        UITelemetry.setting(param.name, chosen?.name ?? String(newValue), surface: "settings")
                     }
                 )
                 Picker(param.name, selection: binding) {
@@ -637,7 +662,10 @@ struct DasherSettingsView: View {
         let mapped = Self.dasherFonts.contains(currentFont) ? currentFont : "System"
         let binding = Binding<String>(
             get: { mapped },
-            set: { viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0) }
+            set: {
+                viewModel.bridge.setStringParameter(key: param.key, value: $0 == "System" ? "" : $0)
+                UITelemetry.setting(param.name, $0, surface: "settings")
+            }
         )
         Picker(param.name, selection: binding) {
             ForEach(Self.dasherFonts, id: \.self) { font in
@@ -657,6 +685,11 @@ struct DasherSettingsView: View {
             Spacer()
             TextField("", text: binding)
                 .multilineTextAlignment(.trailing)
+                // Free text is never collected (RFC 0001 amendment) — the
+                // event records only that the setting changed.
+                .onSubmit {
+                    UITelemetry.stringSettingChanged(param.name, surface: "settings")
+                }
         }
     }
 }

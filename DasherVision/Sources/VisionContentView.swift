@@ -17,10 +17,19 @@ struct VisionContentView: View {
 
             VStack {
                 HStack {
-                    toolbarButton(DasherIcon.newDocument) { viewModel.newMessage() }
-                    toolbarButton(viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play, isAccent: true) { viewModel.togglePlay() }
+                    toolbarButton(DasherIcon.newDocument) {
+                        UITelemetry.action("main_toolbar", "new")
+                        viewModel.newMessage()
+                    }
+                    toolbarButton(viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play, isAccent: true) {
+                        UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "playing" : "paused")
+                        viewModel.togglePlay()
+                    }
                     Spacer()
-                    toolbarButton(DasherIcon.settings) { showSettings = true }
+                    toolbarButton(DasherIcon.settings) {
+                        UITelemetry.action("main_toolbar", "settings")
+                        showSettings = true
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 16)
@@ -45,17 +54,24 @@ struct VisionContentView: View {
                     }
 
                     HStack(spacing: 16) {
-                        toolbarButton("minus") { viewModel.decreaseSpeed() }
+                        toolbarButton("minus") {
+                            viewModel.decreaseSpeed()
+                            UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+                        }
                         Text(String(format: "%.1f", viewModel.speed))
                             .font(.system(size: 16, weight: .medium, design: .monospaced))
                             .monospacedDigit()
                             .foregroundColor(.white)
-                        toolbarButton("plus") { viewModel.increaseSpeed() }
+                        toolbarButton("plus") {
+                            viewModel.increaseSpeed()
+                            UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+                        }
 
                         Spacer()
 
                         if !viewModel.outputText.isEmpty {
                             toolbarButton(DasherIcon.copy) {
+                                UITelemetry.action("main_toolbar", "copy")
                                 viewModel.copyOutput()
                             }
                         }

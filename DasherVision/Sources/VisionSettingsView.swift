@@ -47,7 +47,10 @@ struct VisionSettingsView: View {
                 Section {
                     Toggle("Pause When Looking Away", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE")) },
-                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE"), value: $0) }
+                        set: {
+                            viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE"), value: $0)
+                            UITelemetry.setting("Pause When Looking Away", $0, surface: "settings")
+                        }
                     ))
                     Toggle("Auto-Centre Target", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE")) },
@@ -57,11 +60,15 @@ struct VisionSettingsView: View {
                             AccessConfiguration.userToggledAutocalibrate(to: newValue,
                                                                         method: AccessConfiguration.current.method)
                             viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTOCALIBRATE"), value: newValue)
+                            UITelemetry.setting("Auto Calibrate", newValue, surface: "settings")
                         }
                     ))
                     Toggle("Adapt Speed Automatically", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
-                        set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
+                        set: {
+                            viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0)
+                            UITelemetry.setting("Auto Speed", $0, surface: "settings")
+                        }
                     ))
                 } header: {
                     Text("Eye Gaze")

@@ -48,25 +48,37 @@ struct MacContentView: View {
         }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: { viewModel.newMessage() }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "new")
+                    viewModel.newMessage()
+                }) {
                     LucideLabel("New", icon: DasherIcon.newDocument)
                 }
 
                 layoutPickerMenu
 
                 if currentLayoutPosition != "Direct" {
-                    Button(action: { viewModel.toggleGameMode() }) {
+                    Button(action: {
+                        UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
+                        viewModel.toggleGameMode()
+                    }) {
                         LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
                               icon: DasherIcon.gameMode)
                     }
                 }
 
-                Button(action: { viewModel.toggleControlMode() }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
+                    viewModel.toggleControlMode()
+                }) {
                     LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
                           icon: DasherIcon.controlMode)
                 }
 
-                Button(action: { showSettings = true }) {
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "settings")
+                    showSettings = true
+                }) {
                     LucideLabel("Settings", icon: DasherIcon.settings)
                 }
             }
@@ -79,12 +91,27 @@ struct MacContentView: View {
 
     private var layoutPickerMenu: some View {
         Menu {
-            Button("Right side") { currentLayoutPosition = "Right" }
-            Button("Left side") { currentLayoutPosition = "Left" }
-            Button("Bottom") { currentLayoutPosition = "Bottom" }
-            Button("Top") { currentLayoutPosition = "Top" }
+            Button("Right side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Right"
+            }
+            Button("Left side") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Left"
+            }
+            Button("Bottom") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Bottom"
+            }
+            Button("Top") {
+                UITelemetry.action("main_toolbar", "layout")
+                currentLayoutPosition = "Top"
+            }
             Divider()
-            Button("Direct Mode") { currentLayoutPosition = "Direct" }
+            Button("Direct Mode") {
+                UITelemetry.action("main_toolbar", "layout", state: "direct")
+                currentLayoutPosition = "Direct"
+            }
         } label: {
             LucideLabel(currentLayoutPosition, icon: layoutIcon)
         }
@@ -434,6 +461,7 @@ struct MacContentView: View {
                 Button(a.name) {
                     AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                     viewModel.bridge.setAlphabetId(a.name)
+                    AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": a.name])
                 }
             }
         } label: {
@@ -451,18 +479,27 @@ struct MacContentView: View {
             Text("Speed")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
-            Button("-") { viewModel.decreaseSpeed() }
+            Button("-") {
+                viewModel.decreaseSpeed()
+                UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+            }
             Text(String(format: "%.1f", viewModel.speed))
                 .font(.system(size: 12, design: .monospaced))
                 .frame(width: 30)
-            Button("+") { viewModel.increaseSpeed() }
+            Button("+") {
+                viewModel.increaseSpeed()
+                UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
+            }
         }
     }
 
     private var learningToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_LM_ADAPTIVE"), value: $0)
+                UITelemetry.setting("Learning", $0, surface: "main_ui")
+            }
         )
         return HStack(spacing: 6) {
             Text("Learning")
@@ -479,7 +516,10 @@ struct MacContentView: View {
     private var autoSpeedToggle: some View {
         let binding = Binding<Bool>(
             get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL")) },
-            set: { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0) }
+            set: {
+                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_AUTO_SPEEDCONTROL"), value: $0)
+                UITelemetry.setting("Auto Speed", $0, surface: "main_ui")
+            }
         )
         return HStack(spacing: 6) {
             Text("Auto")
@@ -497,7 +537,10 @@ struct MacContentView: View {
         let palettes = viewModel.bridge.allPalettes
         return Menu {
             ForEach(palettes, id: \.name) { p in
-                Button(action: { viewModel.bridge.setPalette(p.name) }) {
+                Button(action: {
+                    viewModel.bridge.setPalette(p.name)
+                    UITelemetry.setting("Colour Palette", p.name, surface: "main_ui")
+                }) {
                     LucideLabel(p.name, icon: "circle", iconSize: 12)
                 }
             }
@@ -515,7 +558,10 @@ struct MacContentView: View {
         let currentFont = viewModel.bridge.getStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"))
         return Menu {
             ForEach(fonts, id: \.self) { f in
-                Button(f) { viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f) }
+                Button(f) {
+                    viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey("SP_DASHER_FONT"), value: f)
+                    UITelemetry.setting("Dasher Font", f, surface: "main_ui")
+                }
             }
         } label: {
             HStack(spacing: 3) {
@@ -536,11 +582,19 @@ struct MacContentView: View {
             Text("Size")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary)
-            Button("-") { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: max(8, binding.wrappedValue - 1)) }
+            Button("-") {
+                let v = max(8, binding.wrappedValue - 1)
+                viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: v)
+                UITelemetry.setting("Dasher Font Size", v, surface: "main_ui")
+            }
             Text("\(binding.wrappedValue)")
                 .font(.system(size: 12, design: .monospaced))
                 .frame(width: 24)
-            Button("+") { viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: min(72, binding.wrappedValue + 1)) }
+            Button("+") {
+                let v = min(72, binding.wrappedValue + 1)
+                viewModel.bridge.setLongParameter(key: viewModel.bridge.findParameterKey("LP_DASHER_FONTSIZE"), value: v)
+                UITelemetry.setting("Dasher Font Size", v, surface: "main_ui")
+            }
         }
     }
 
@@ -548,8 +602,14 @@ struct MacContentView: View {
         let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
         return HStack(spacing: 4) {
             Menu {
-                Button("Speech on") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true) }
-                Button("Speech off") { viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false) }
+                Button("Speech on") {
+                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                    UITelemetry.setting("Speak Words", true, surface: "main_ui")
+                }
+                Button("Speech off") {
+                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                    UITelemetry.setting("Speak Words", false, surface: "main_ui")
+                }
             } label: {
                 LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute)
             }
