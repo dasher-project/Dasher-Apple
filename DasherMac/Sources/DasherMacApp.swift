@@ -111,11 +111,13 @@ struct DasherMacApp: App {
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("New Message") {
+                    UITelemetry.action("main_toolbar", "new")
                     viewModel.newMessage()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
 
                 Button("Open...") {
+                    UITelemetry.action("main_toolbar", "open")
                     viewModel.showOpenFile = true
                 }
                 .keyboardShortcut("o", modifiers: [.command])
@@ -123,6 +125,7 @@ struct DasherMacApp: App {
 
             CommandGroup(after: .saveItem) {
                 Button("Save...") {
+                    UITelemetry.action("main_toolbar", "save")
                     saveFile()
                 }
                 .keyboardShortcut("s", modifiers: [.command])
@@ -130,6 +133,7 @@ struct DasherMacApp: App {
 
             CommandGroup(replacing: .appSettings) {
                 Button("Settings...") {
+                    UITelemetry.action("main_toolbar", "settings")
                     showSettings = true
                 }
                 .keyboardShortcut(",", modifiers: [.command])
@@ -137,17 +141,20 @@ struct DasherMacApp: App {
 
             CommandMenu("Input") {
                 Button(viewModel.isPlaying ? "Pause" : "Play") {
+                    UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "paused" : "playing")
                     viewModel.togglePlay()
                 }
                 .keyboardShortcut("p", modifiers: [.command])
 
                 Button("Increase Speed") {
                     viewModel.increaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
                 }
                 .keyboardShortcut("+", modifiers: [.command])
 
                 Button("Decrease Speed") {
                     viewModel.decreaseSpeed()
+                    UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "main_ui")
                 }
                 .keyboardShortcut("-", modifiers: [.command])
             }

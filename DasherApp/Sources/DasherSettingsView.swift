@@ -348,6 +348,7 @@ struct DasherSettingsView: View {
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)
+                        UITelemetry.alphabetSelected($0)
                     }
                 )) {
                     ForEach(alphabets, id: \.name) { a in
@@ -479,6 +480,7 @@ struct DasherSettingsView: View {
                 if !currentFile.isEmpty {
                     Button {
                         viewModel.bridge.setStringParameter(key: gameTextKey, value: "")
+                        UITelemetry.stringSettingChanged("Game Text File", surface: "settings")
                     } label: {
                         LucideIcon(DasherIcon.close, size: 16, color: .secondary)
                     }
@@ -503,6 +505,7 @@ struct DasherSettingsView: View {
                     let path = url.path
                     viewModel.bridge.setStringParameter(key: viewModel.bridge.findParameterKey(Self.spGameTextFile), value: path)
                     if accessing { url.stopAccessingSecurityScopedResource() }
+                    UITelemetry.stringSettingChanged("Game Text File", surface: "settings")
                 }
             case .failure:
                 break
