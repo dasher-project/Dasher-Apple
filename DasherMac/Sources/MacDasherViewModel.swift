@@ -240,9 +240,20 @@ class MacDasherViewModel: ObservableObject {
         bridge.setScreenSize(width: Int(size.width), height: Int(size.height))
     }
 
+    /// Button-down: the primary-input edge (start/stop toggle per
+    /// BP_START_MOUSE) plus one position sample.
     func handleTouch(at point: CGPoint) {
         guard isPlaying else { return }
         bridge.mouseDown()
+        bridge.mouseMove(x: Float(point.x), y: Float(point.y))
+    }
+
+    /// Pointer motion without a button — the continuous-steering path.
+    /// Hover-only movement must reach the engine so a head mouse can drive
+    /// Dasher by pointing alone; never sends the mouse-down edge here
+    /// (re-sending it per sample re-triggered the BP_START_MOUSE toggle).
+    func handleMove(at point: CGPoint) {
+        guard isPlaying else { return }
         bridge.mouseMove(x: Float(point.x), y: Float(point.y))
     }
 

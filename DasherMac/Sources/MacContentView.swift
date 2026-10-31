@@ -871,11 +871,16 @@ final class MacDasherCanvas: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         for ta in trackingAreas { removeTrackingArea(ta) }
-        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeInActiveApp], owner: self, userInfo: nil))
+        // .mouseMoved: continuous steering — a head mouse must be able to
+        // drive Dasher by pointing alone (click only starts/stops per
+        // BP_START_MOUSE; the engine reads the position every frame).
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, .activeInActiveApp], owner: self, userInfo: nil))
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        // mouseMoved events require the window to opt in.
+        window?.acceptsMouseMovedEvents = true
         if window != nil, displayLink == nil {
             // Compositor-synced frame clock (issue #41): a free-running Timer
             // beat against the compositor's cadence and produced judder
@@ -908,9 +913,14 @@ final class MacDasherCanvas: NSView {
         viewModel?.handleTouch(at: CGPoint(x: point.x, y: bounds.height - point.y))
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        let point = convert(event.locationInWindow, from: nil)
+        viewModel?.handleMove(at: CGPoint(x: point.x, y: bounds.height - point.y))
+    }
+
     override func mouseDragged(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        viewModel?.handleTouch(at: CGPoint(x: point.x, y: bounds.height - point.y))
+        viewModel?.handleMove(at: CGPoint(x: point.x, y: bounds.height - point.y))
     }
 
     override func mouseUp(with event: NSEvent) {
