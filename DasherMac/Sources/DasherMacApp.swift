@@ -431,7 +431,7 @@ struct MacDasherSettingsView: View {
                     set: {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId($0)
-                        AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": $0])
+                        UITelemetry.alphabetSelected($0)
                     }
                 )) {
                     ForEach(pickerAlphabets, id: \.name) { a in

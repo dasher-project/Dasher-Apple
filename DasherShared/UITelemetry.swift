@@ -60,6 +60,11 @@ public enum UITelemetry {
         ])
     }
 
+    /// RFC 0001 v1 event: the user picked an alphabet (fixed vocabulary).
+    public static func alphabetSelected(_ id: String) {
+        AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": id])
+    }
+
     /// Free-text/string setting committed by the user — the VALUE is never
     /// collected (RFC 0001 amendment: file paths and custom text excluded);
     /// only the fact of the change and its surface.

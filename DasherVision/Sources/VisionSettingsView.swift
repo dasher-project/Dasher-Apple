@@ -20,7 +20,10 @@ struct VisionSettingsView: View {
                     Slider(value: Binding(
                         get: { Double(viewModel.bridge.speedPercent) },
                         set: { viewModel.bridge.setSpeedPercent(Int($0)) }
-                    ), in: 20...400)
+                    ), in: 20...400) { editing in
+                        guard !editing else { return }
+                        UITelemetry.setting("Speed Percent", viewModel.bridge.speedPercent, surface: "settings")
+                    }
                 }
 
                 Section("Language") {
@@ -35,6 +38,7 @@ struct VisionSettingsView: View {
                             set: {
                                 AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                                 viewModel.bridge.setAlphabetId($0)
+                                UITelemetry.alphabetSelected($0)
                             }
                         )) {
                             ForEach(pickerAlphabets, id: \.name) { a in

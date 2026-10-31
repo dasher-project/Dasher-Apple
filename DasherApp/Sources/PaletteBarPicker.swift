@@ -1,4 +1,5 @@
 import SwiftUI
+import DasherShared
 
 struct PaletteBarPicker: View {
     let bridge: DasherBridge
@@ -11,7 +12,10 @@ struct PaletteBarPicker: View {
             ForEach(0..<min(palettes.count, maxVisible), id: \.self) { i in
                 let palette = palettes[i]
                 let isSelected = bridge.currentPalette == palette.name
-                Button(action: { bridge.setPalette(palette.name) }) {
+                Button(action: {
+                    bridge.setPalette(palette.name)
+                    UITelemetry.setting("Colour Palette", palette.name, surface: "main_ui")
+                }) {
                     HStack(spacing: 1) {
                         ForEach(0..<min(palette.previewColors.count, 3), id: \.self) { ci in
                             Circle()

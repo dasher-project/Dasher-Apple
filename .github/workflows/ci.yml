@@ -23,6 +23,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Guard bundled engine data against drift
+        run: |
+          # The curated DasherEngine/Resources/Data copy caused the
+          # palette-fills regression (legacy-only palettes shipped while the
+          # engine consolidated to v6). Fail the build if it drifts again.
+          diff -rq DasherCore/Data/colours DasherEngine/Resources/Data/colours --exclude=Makefile.am --exclude='*.py' --exclude='*.dtd'
+
       - name: Install xcodegen
         run: brew install xcodegen
 

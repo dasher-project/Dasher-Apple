@@ -59,7 +59,7 @@ struct MacContentView: View {
 
                 if currentLayoutPosition != "Direct" {
                     Button(action: {
-                        UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
+                        UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
                         viewModel.toggleGameMode()
                     }) {
                         LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
@@ -68,7 +68,7 @@ struct MacContentView: View {
                 }
 
                 Button(action: {
-                    UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
+                    UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
                     viewModel.toggleControlMode()
                 }) {
                     LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
@@ -92,19 +92,19 @@ struct MacContentView: View {
     private var layoutPickerMenu: some View {
         Menu {
             Button("Right side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "right")
                 currentLayoutPosition = "Right"
             }
             Button("Left side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "left")
                 currentLayoutPosition = "Left"
             }
             Button("Bottom") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "bottom")
                 currentLayoutPosition = "Bottom"
             }
             Button("Top") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "top")
                 currentLayoutPosition = "Top"
             }
             Divider()
@@ -346,6 +346,7 @@ struct MacContentView: View {
 
             // New session: clear text + model context (clause 5)
             Button {
+                UITelemetry.action("main_toolbar", "new")
                 viewModel.newMessage()
             } label: {
                 LucideIcon(DasherIcon.close, size: 16, color: Color("MutedText"))
@@ -356,6 +357,7 @@ struct MacContentView: View {
 
             // Copy all typed text to clipboard
             Button {
+                UITelemetry.action("main_toolbar", "copy")
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(viewModel.outputText, forType: .string)
             } label: {
@@ -367,6 +369,7 @@ struct MacContentView: View {
 
             // Cut selection in target app (Cmd+X)
             Button {
+                UITelemetry.action("main_toolbar", "cut")
                 viewModel.directService.sendCmdChord("x")
             } label: {
                 LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
@@ -377,6 +380,7 @@ struct MacContentView: View {
 
             // Paste into target app (Cmd+V)
             Button {
+                UITelemetry.action("main_toolbar", "paste")
                 viewModel.directService.sendCmdChord("v")
             } label: {
                 LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
@@ -387,6 +391,7 @@ struct MacContentView: View {
 
             // Select all in target app (Cmd+A)
             Button {
+                UITelemetry.action("main_toolbar", "select_all")
                 viewModel.directService.sendCmdChord("a")
             } label: {
                 LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
@@ -461,7 +466,7 @@ struct MacContentView: View {
                 Button(a.name) {
                     AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                     viewModel.bridge.setAlphabetId(a.name)
-                    AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": a.name])
+                    UITelemetry.alphabetSelected(a.name)
                 }
             }
         } label: {

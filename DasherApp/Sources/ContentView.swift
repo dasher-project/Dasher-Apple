@@ -356,25 +356,31 @@ struct ContentView: View {
     private var verticalRail: some View {
         VStack(spacing: 6) {
             compactToolbarButton(icon: DasherIcon.newDocument) {
+                UITelemetry.action("main_toolbar", "new")
                 viewModel.newMessage()
             }
             compactToolbarButton(icon: DasherIcon.open) {
+                UITelemetry.action("main_toolbar", "open")
                 showOpenFile = true
             }
             compactToolbarButton(icon: DasherIcon.share) {
+                UITelemetry.action("main_toolbar", "share")
                 showShareSheet = true
             }
             railDivider
             layoutPickerCompact(portrait: false)
             railDivider
             compactToolbarButton(icon: DasherIcon.gameMode) {
+                UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
                 viewModel.toggleGameMode()
             }
             compactToolbarButton(icon: DasherIcon.controlMode) {
+                UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
                 viewModel.toggleControlMode()
             }
             Spacer(minLength: 0)
             compactToolbarButton(icon: DasherIcon.settings) {
+                UITelemetry.action("main_toolbar", "settings")
                 showSettings = true
             }
         }
@@ -418,7 +424,7 @@ struct ContentView: View {
                             icon: DasherIcon.gameMode,
                             label: viewModel.isGameModeActive ? "Game On" : "Game"
                         ) {
-                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
+                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
                             viewModel.toggleGameMode()
                         }
                         barDivider
@@ -426,7 +432,7 @@ struct ContentView: View {
                             icon: DasherIcon.controlMode,
                             label: viewModel.isControlModeActive ? "Leave" : "Control"
                         ) {
-                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
+                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
                             viewModel.toggleControlMode()
                         }
                         barDivider
@@ -451,12 +457,12 @@ struct ContentView: View {
                         layoutPickerCompact(portrait: isPortrait)
                         barDivider
                         compactToolbarButton(icon: DasherIcon.gameMode) {
-                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "on" : "off")
+                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
                             viewModel.toggleGameMode()
                         }
                         barDivider
                         compactToolbarButton(icon: DasherIcon.controlMode) {
-                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "on" : "off")
+                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
                             viewModel.toggleControlMode()
                         }
                         barDivider
@@ -499,19 +505,19 @@ struct ContentView: View {
     private var layoutPicker: some View {
         Menu {
             Button("Right side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "right")
                 currentLayoutPosition = "Right"
             }
             Button("Left side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "left")
                 currentLayoutPosition = "Left"
             }
             Button("Bottom") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "bottom")
                 currentLayoutPosition = "Bottom"
             }
             Button("Top") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "top")
                 currentLayoutPosition = "Top"
             }
         } label: {
@@ -534,19 +540,19 @@ struct ContentView: View {
     private var layoutPickerCompact: some View {
         Menu {
             Button("Right side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "right")
                 currentLayoutPosition = "Right"
             }
             Button("Left side") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "left")
                 currentLayoutPosition = "Left"
             }
             Button("Bottom") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "bottom")
                 currentLayoutPosition = "Bottom"
             }
             Button("Top") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "top")
                 currentLayoutPosition = "Top"
             }
         } label: {
@@ -564,20 +570,20 @@ struct ContentView: View {
         Menu {
             if !portrait {
                 Button("Right side") {
-                    UITelemetry.action("main_toolbar", "layout")
+                    UITelemetry.action("main_toolbar", "layout", state: "right")
                     currentLayoutPosition = "Right"
                 }
                 Button("Left side") {
-                    UITelemetry.action("main_toolbar", "layout")
+                    UITelemetry.action("main_toolbar", "layout", state: "left")
                     currentLayoutPosition = "Left"
                 }
             }
             Button("Bottom") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "bottom")
                 currentLayoutPosition = "Bottom"
             }
             Button("Top") {
-                UITelemetry.action("main_toolbar", "layout")
+                UITelemetry.action("main_toolbar", "layout", state: "top")
                 currentLayoutPosition = "Top"
             }
         } label: {
@@ -660,7 +666,7 @@ struct ContentView: View {
                     Button {
                         AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                         viewModel.bridge.setAlphabetId(a.name)
-                        AnalyticsService.shared.capture("alphabet_selected", properties: ["alphabet_id": a.name])
+                        UITelemetry.alphabetSelected(a.name)
                         showAlphabetPopover = false
                     } label: {
                         HStack {

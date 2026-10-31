@@ -22,7 +22,7 @@ struct VisionContentView: View {
                         viewModel.newMessage()
                     }
                     toolbarButton(viewModel.isPlaying ? DasherIcon.pause : DasherIcon.play, isAccent: true) {
-                        UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "playing" : "paused")
+                        UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "paused" : "playing")
                         viewModel.togglePlay()
                     }
                     Spacer()
