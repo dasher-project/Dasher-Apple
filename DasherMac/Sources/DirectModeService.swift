@@ -8,17 +8,38 @@ class DirectModeService: ObservableObject {
     @Published var hasAccessibilityPermission = false
     @Published var targetAppName: String = ""
 
-    /// RFC 0019 clause 6: fires when the caret/selection changes in the target
-    /// app's focused text field. The view model re-seeds the engine from the
-    /// field's content at the new caret position.
-    var onTargetCaretChanged: (() -> Void)?
+    /// RFC 0019 clause 6 / RFC 0015: fires when the caret/selection, focused
+    /// element, or target application changes. Carries the trigger reason
+    /// (`"caret moved"`, `"focus changed"`, `"target changed"`).
+    var onTargetCaretChanged: ((String) -> Void)?
 
     /// Self-injection echo suppression (Windows #58/#61): when Dasher types
     /// into the target, the AX caret watcher fires for our own injected text.
     /// The engine already knows — don't re-seed from our own output.
     private var echoSuppressionUntil = Date.distantPast
 
+    /// Timestamp of our last own character/delete injection for the 600 ms
+    /// echo settle check in `MacDasherViewModel.seedContextFromTarget`.
+    private(set) var lastOwnInjectAt: Date?
+
+    var msSinceLastOwnInject: Int? {
+        guard let ts = lastOwnInjectAt else { return nil }
+        let elapsed = Date().timeIntervalSince(ts) * 1000.0
+        return max(0, Int(elapsed))
+    }
+
+    /// Timestamp of our last newline (`\n`) or selection-chord injection for
+    /// the 1500 ms paragraph/selection settle guard (Windows #79 / RFC 0021).
+    private(set) var lastOwnParagraphOrSelectInjectAt: Date?
+
+    var msSinceLastOwnParagraphOrSelectInject: Int? {
+        guard let ts = lastOwnParagraphOrSelectInjectAt else { return nil }
+        let elapsed = Date().timeIntervalSince(ts) * 1000.0
+        return max(0, Int(elapsed))
+    }
+
     func suppressEchoes(for interval: TimeInterval = 0.3) {
+        lastOwnInjectAt = Date()
         let candidate = Date().addingTimeInterval(interval)
         if candidate > echoSuppressionUntil {
             echoSuppressionUntil = candidate
@@ -36,6 +57,7 @@ class DirectModeService: ObservableObject {
     // MARK: - RFC 0019: caret watcher (AXSelectedTextChanged)
 
     private var axObserver: AXObserver?
+    private var watchedElement: AXUIElement?
 
     /// AXObserver-based caret watcher. NotificationCenter only delivers AX
     /// notifications for elements in our own process; cross-process watching
@@ -45,13 +67,22 @@ class DirectModeService: ObservableObject {
         stopCaretWatcher()
         guard let pid = lastTargetApp?.processIdentifier else { return }
 
-        let callback: AXObserverCallback = { _, _, _, refcon in
-            let service = Unmanaged<DirectModeService>.fromOpaque(refcon!).takeUnretainedValue()
+        let callback: AXObserverCallback = { observer, _, notification, refcon in
+            guard let refcon else { return }
+            let service = Unmanaged<DirectModeService>.fromOpaque(refcon).takeUnretainedValue()
+            let notifName = notification as String
             DispatchQueue.main.async {
                 guard let front = NSWorkspace.shared.frontmostApplication,
                       front.bundleIdentifier != Bundle.main.bundleIdentifier else { return }
-                guard !service.isEchoSuppressed else { return }
-                service.onTargetCaretChanged?()
+                if notifName == (kAXFocusedUIElementChangedNotification as String) {
+                    if let pid = service.lastTargetApp?.processIdentifier {
+                        service.registerCaretNotification(on: observer, pid: pid)
+                    }
+                    service.onTargetCaretChanged?("focus changed")
+                } else {
+                    guard !service.isEchoSuppressed else { return }
+                    service.onTargetCaretChanged?("caret moved")
+                }
             }
         }
 
@@ -69,7 +100,13 @@ class DirectModeService: ObservableObject {
 
     private func registerCaretNotification(on observer: AXObserver, pid: pid_t) {
         let app = AXUIElementCreateApplication(pid)
+        AXUIElementSetMessagingTimeout(app, 0.3)
         let refcon = Unmanaged.passUnretained(self).toOpaque()
+
+        if let prev = watchedElement {
+            AXObserverRemoveNotification(observer, prev, kAXSelectedTextChangedNotification as CFString)
+            watchedElement = nil
+        }
 
         // Watch focus changes on the app element — tabbing between text fields
         // within the same app fires this; re-register the caret notification
@@ -81,23 +118,40 @@ class DirectModeService: ObservableObject {
               let focusedCF = focusedRef,
               CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else { return }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
+        AXUIElementSetMessagingTimeout(focused, 0.3)
         AXObserverAddNotification(observer, focused, kAXSelectedTextChangedNotification as CFString, refcon)
+        watchedElement = focused
     }
 
     private func stopCaretWatcher() {
         if let observer = axObserver {
+            if let prev = watchedElement {
+                AXObserverRemoveNotification(observer, prev, kAXSelectedTextChangedNotification as CFString)
+            }
             CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .defaultMode)
             axObserver = nil
         }
+        watchedElement = nil
     }
 
     /// Reads the focused text field's content + caret via AX, for engine
     /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3). A 300 ms timeout on
     /// the AX messages prevents an unresponsive target from stalling the
     /// caret watcher (Windows' hard budget, PR #52).
-    func readTargetFieldContext() -> (before: String, after: String)? {
+    func readTargetFieldContext() -> (text: String, caretUTF16: Int)? {
         guard hasAccessibilityPermission,
-              let pid = lastTargetApp?.processIdentifier else { return nil }
+              let appTarget = lastTargetApp,
+              !appTarget.isTerminated else { return nil }
+        let pid = appTarget.processIdentifier
+
+        // Stale-target guard: if another non-Dasher app has become frontmost
+        // mid-debounce, do not read from a backgrounded window.
+        if let front = NSWorkspace.shared.frontmostApplication,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier,
+           front.processIdentifier != pid {
+            LogManager.kb("  [AX] skipping read: target pid=\(pid) is not frontmost (front=\(front.processIdentifier))")
+            return nil
+        }
 
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.3)
@@ -111,6 +165,7 @@ class DirectModeService: ObservableObject {
             return nil
         }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
+        AXUIElementSetMessagingTimeout(focused, 0.3)
 
         var valueRef: CFTypeRef?
         let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
@@ -119,24 +174,24 @@ class DirectModeService: ObservableObject {
             return nil
         }
 
-        // Caret position (selectedTextRange gives (loc, len))
+        let nsLength = (value as NSString).length
+
+        // Caret position (selectedTextRange gives (loc, len)). Guard loc.location >= 0
+        // because AX can return kCFNotFound (-1) when no selection exists.
         var rangeRef: CFTypeRef?
         let rangeErr = AXUIElementCopyAttributeValue(focused, kAXSelectedTextRangeAttribute as CFString, &rangeRef)
-        var caretOffset = (value as NSString).length
+        var caretOffset = nsLength
         if rangeErr == .success, let rangeCF = rangeRef,
               CFGetTypeID(rangeCF) == AXValueGetTypeID() {
             let range = unsafeBitCast(rangeCF, to: AXValue.self)
             var loc = CFRange()
-            if AXValueGetValue(range, .cfRange, &loc) {
-                caretOffset = loc.location
+            if AXValueGetValue(range, .cfRange, &loc), loc.location >= 0 {
+                caretOffset = min(loc.location, nsLength)
             }
         }
 
-        let nsValue = value as NSString
-        LogManager.kb("  [AX] read \(nsValue.length) utf16, caret16=\(caretOffset)")
-        let before = nsValue.substring(to: min(caretOffset, nsValue.length))
-        let after = nsValue.substring(from: min(caretOffset, nsValue.length))
-        return (before, after)
+        LogManager.kb("  [AX] read \(nsLength) utf16, caret16=\(caretOffset)")
+        return (value, caretOffset)
     }
 
     func checkAccessibility() {
@@ -173,7 +228,6 @@ class DirectModeService: ObservableObject {
     }
 
     func startWatching() {
-        startCaretWatcher()
         frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification,
             object: nil, queue: .main
@@ -181,13 +235,16 @@ class DirectModeService: ObservableObject {
             guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
             if app.bundleIdentifier != Bundle.main.bundleIdentifier {
                 DispatchQueue.main.async {
-                    self?.lastTargetApp = app
-                    self?.targetAppName = app.localizedName ?? "Unknown"
-                    LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier)")
+                    guard let self else { return }
+                    let changed = self.lastTargetApp?.processIdentifier != app.processIdentifier
+                    self.lastTargetApp = app
+                    self.targetAppName = app.localizedName ?? "Unknown"
+                    LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier) changed=\(changed)")
                     // Re-attach the AX observer to the new target's pid —
                     // the observer is per-process, so switching apps without
                     // this leaves the watcher on the old pid (dead).
-                    self?.startCaretWatcher()
+                    self.startCaretWatcher()
+                    self.onTargetCaretChanged?(changed ? "target changed" : "refocus")
                 }
             }
         }
@@ -205,6 +262,9 @@ class DirectModeService: ObservableObject {
         }
         // Attach the caret watcher now that lastTargetApp is resolved.
         startCaretWatcher()
+        if lastTargetApp != nil {
+            onTargetCaretChanged?("target changed")
+        }
     }
 
     func stopWatching() {
@@ -228,7 +288,8 @@ class DirectModeService: ObservableObject {
         if text == "\n" {
             LogManager.kb("  injectKey return")
             // Paragraph / Return settle guard (Windows #79): suppress AX caret
-            // echoes for 1500 ms after our own newline injection.
+            // echoes and record settle timestamp for 1500 ms after our own newline injection.
+            lastOwnParagraphOrSelectInjectAt = Date()
             suppressEchoes(for: 1.5)
             postKeycode(36)
             return
@@ -293,6 +354,11 @@ class DirectModeService: ObservableObject {
             up.flags = cmdFlag
             postEvent(up)
         }
+        // Cut and Paste mutate the target field outside Dasher's engine; schedule
+        // a debounced context re-seed so the engine re-anchors at the new caret.
+        if key.lowercased() == "x" || key.lowercased() == "v" {
+            onTargetCaretChanged?("caret moved")
+        }
     }
 
     static let keyCodeBackspace: CGKeyCode = 51   // kVK_Delete (0x33)
@@ -303,11 +369,15 @@ class DirectModeService: ObservableObject {
 
     /// Inject a single virtual key press + release into the target application
     /// (used by the Direct Mode editing keys strip: Backspace, Left, Right).
+    /// Unlike `injectText` / `injectDelete`, this moves the caret or deletes
+    /// text outside the Dasher engine, so do NOT suppress AX echoes — instead
+    /// notify `onTargetCaretChanged` so the 500 ms debounce re-anchors the
+    /// engine once the user releases the button.
     func injectVirtualKey(_ keyCode: CGKeyCode) {
         guard hasAccessibilityPermission else { return }
-        suppressEchoes()
         LogManager.kb("  injectVirtualKey code=\(keyCode)")
         postKeycode(keyCode)
+        onTargetCaretChanged?("caret moved")
     }
 
     /// RFC 0021: send a Direct Mode selection chord (`Shift+Arrow`,
@@ -317,6 +387,7 @@ class DirectModeService: ObservableObject {
     /// canvas mid-selection.
     func sendSelectChord(_ keystroke: SelectActions.SelectKeystroke) {
         guard hasAccessibilityPermission else { return }
+        lastOwnParagraphOrSelectInjectAt = Date()
         suppressEchoes(for: 1.5)
 
         var modifiers: CGEventFlags = []

@@ -116,6 +116,9 @@ class MacDasherViewModel: ObservableObject {
         bridge.onOutput = { [weak self] text in
             guard let self else { return }
             if self.directMode {
+                // Active output supersedes any pending debounced target context seed.
+                self.contextSeedGeneration &+= 1
+                self.contextSeedTask?.cancel()
                 self.directService.injectText(text)
             }
             self.pushEngineText(self.bridge.getOutputText(), insertedUTF16: text.utf16.count)
@@ -124,7 +127,11 @@ class MacDasherViewModel: ObservableObject {
         bridge.onDelete = { [weak self] text in
             guard let self else { return }
             if self.directMode {
-                self.directService.injectDelete(count: text.count)
+                self.contextSeedGeneration &+= 1
+                self.contextSeedTask?.cancel()
+                // RFC 0015 Clause 5: delete one key press per Unicode scalar
+                // (not grapheme cluster), matching macOS target Backspace behaviour.
+                self.directService.injectDelete(count: text.unicodeScalars.count)
             }
             self.pushEngineText(self.bridge.getOutputText(), deletedUTF16: text.utf16.count)
         }
@@ -239,15 +246,22 @@ class MacDasherViewModel: ObservableObject {
         }
     }
 
+    private var contextSeedGeneration: Int = 0
+    private var contextSeedTask: Task<Void, Never>?
+
     private func updateDirectMode() {
         LogManager.kb("directMode=\(directMode)")
         if directMode {
+            directService.onTargetCaretChanged = { [weak self] reason in
+                self?.scheduleContextSeed(reason: reason)
+            }
             directService.startPolling()
             directService.startWatching()
-            directService.onTargetCaretChanged = { [weak self] in
-                self?.handleTargetCaretChanged()
-            }
         } else {
+            contextSeedGeneration &+= 1
+            contextSeedTask?.cancel()
+            contextSeedTask = nil
+            directService.onTargetCaretChanged = nil
             directService.stopPolling()
             directService.stopWatching()
         }
@@ -256,24 +270,88 @@ class MacDasherViewModel: ObservableObject {
     func manualReanchor() {
         guard directMode else { return }
         LogManager.kb("manual re-anchor requested")
-        handleTargetCaretChanged()
+        scheduleContextSeed(reason: "manual re-anchor")
     }
 
-    /// RFC 0019 clause 6: caret moved in the target app's text field —
-    /// re-seed the engine from the field's content at the new caret position.
-    /// Applies the clause-7 seed cap (trailing 100k UTF-16 window).
-    private func handleTargetCaretChanged() {
+    /// RFC 0015 (Amended) / RFC 0019 clause 6: debounced sentence-window context
+    /// seeding from the target application's focused text field.
+    ///
+    /// Mirrors `Dasher-Windows` `SeedContextFromTargetAsync`:
+    /// - 500 ms debounce (`contextSeedGeneration`) so rapid focus/caret churn
+    ///   coalesces and continuous typing (which increments `contextSeedGeneration`
+    ///   on every output/delete) never resets the canvas mid-word.
+    /// - 1500 ms paragraph/select settle guard for `"caret moved"` triggers.
+    /// - Caret-glitch guard (`caretUTF16 < 3 && text.utf16.count > 10`) for `"caret moved"`.
+    /// - Read-failure preservation (keeps existing engine context on AX failure).
+    /// - `ContextSeedPolicy.decide` shadow-compare over trimmed 200-char sentence windows.
+    private func scheduleContextSeed(reason: String) {
         guard directMode else { return }
+        contextSeedGeneration &+= 1
+        let generation = contextSeedGeneration
+        contextSeedTask?.cancel()
+        contextSeedTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled, let self, self.directMode, self.contextSeedGeneration == generation else {
+                return
+            }
+            self.seedContextFromTarget(reason: reason, generation: generation)
+        }
+    }
+
+    private func seedContextFromTarget(reason: String, generation: Int) {
+        guard directMode, contextSeedGeneration == generation else { return }
+
+        // 600 ms own-injection echo guard & 1500 ms paragraph/select settle guard (Windows #58/#79 / RFC 0021)
+        let ownInjectEchoMs = 600
+        let paragraphSettleMs = 1500
+        if reason == "caret moved" {
+            if let elapsedMs = directService.msSinceLastOwnInject,
+               elapsedMs < ownInjectEchoMs {
+                LogManager.kb("Context seed (\(reason)): own-inject echo window (\(elapsedMs)ms since our inject) — skipping")
+                return
+            }
+            if let elapsedMs = directService.msSinceLastOwnParagraphOrSelectInject,
+               elapsedMs < paragraphSettleMs {
+                LogManager.kb("Context seed (\(reason)): paragraph/select settle window (\(elapsedMs)ms since our inject) — skipping")
+                return
+            }
+        }
+
         guard let context = directService.readTargetFieldContext() else {
-            LogManager.kb("seed context: read failed (keeping existing context)")
+            // Read failed (timeout, unsupported control, no focus): preserve
+            // existing engine session context (RFC 0015 Tier 1).
+            LogManager.kb("Context seed (\(reason)): read failed -> keeping existing context")
             return
         }
-        let fullText = context.before + context.after
-        let (cappedText, cappedCaret) = EditorSeedPolicy.apply(
-            to: fullText, caretUTF16: context.before.utf16.count)
-        let caretBytes = bridge.byteOffsetFromUTF16(cappedText, utf16Offset: cappedCaret)
-        LogManager.kb("seed context: utf16=\(cappedText.utf16.count) caret16=\(cappedCaret)")
-        bridge.seedBuffer(cappedText, caretOffset: caretBytes)
+        guard contextSeedGeneration == generation else { return }
+
+        let fullText = context.text
+        let caretUTF16 = context.caretUTF16
+        let totalUTF16 = fullText.utf16.count
+
+        // Caret-glitch guard: target apps can momentarily report caret 0..2
+        // during rapid text transitions in a longer field.
+        if reason == "caret moved" && caretUTF16 < 3 && totalUTF16 > 10 {
+            LogManager.kb("Context seed (\(reason)): caret glitch (pos \(caretUTF16) in \(totalUTF16)-char text) — skipping")
+            return
+        }
+
+        let engineFullText = bridge.getOutputText()
+        let decision = ContextSeedPolicy.decide(
+            engineFullText: engineFullText,
+            targetFullText: fullText,
+            targetCaretUTF16: caretUTF16
+        )
+
+        if decision.action == .skip {
+            LogManager.kb("Context seed (\(reason)): \(decision.reason)")
+            return
+        }
+
+        let caretBytes = bridge.byteOffsetFromUTF16(decision.text, utf16Offset: decision.caretUTF16)
+        // Log lengths only — never log private target text content.
+        LogManager.kb("Context seed (\(reason)): \(decision.text.utf16.count) of \(totalUTF16) utf16, caret u16=\(decision.caretUTF16) -> byte=\(caretBytes)")
+        bridge.seedBuffer(decision.text, caretOffset: caretBytes)
     }
 
     /// Buffered: canvas layout can precede startEngine (migration prompt), in
