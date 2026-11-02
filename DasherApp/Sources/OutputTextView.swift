@@ -190,8 +190,8 @@ struct OutputTextView: View {
     }
 
     private func toolbarMode(for width: CGFloat) -> ToolbarMode {
-        if width >= 280 { return .full }
-        if width >= 160 { return .compact }
+        if width >= 430 { return .full }
+        if width >= 280 { return .compact }
         return .minimal
     }
 
@@ -208,8 +208,33 @@ struct OutputTextView: View {
             toolbarButton(icon: DasherIcon.paste, label: "Paste") { pasteText() }
             toolbarDivider
             toolbarButton(icon: DasherIcon.close, label: "Clear") {
-                UITelemetry.action("main_toolbar", "new")
+                UITelemetry.action("status_bar", "new")
                 viewModel.newMessage()
+            }
+            toolbarDivider
+            repeatToolbarButton(
+                icon: DasherIcon.backspace,
+                label: "Del",
+                repeatIntervalMs: 90,
+                telemetryAction: "backspace"
+            ) {
+                viewModel.editorBackspace()
+            }
+            repeatToolbarButton(
+                icon: DasherIcon.arrowLeft,
+                label: "Left",
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_left"
+            ) {
+                viewModel.editorMoveCaret(delta: -1)
+            }
+            repeatToolbarButton(
+                icon: DasherIcon.arrowRight,
+                label: "Right",
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_right"
+            ) {
+                viewModel.editorMoveCaret(delta: 1)
             }
             Spacer(minLength: 0)
         }
@@ -230,8 +255,30 @@ struct OutputTextView: View {
             iconOnlyButton(icon: DasherIcon.paste) { pasteText() }
             toolbarDivider
             iconOnlyButton(icon: DasherIcon.close) {
-                UITelemetry.action("main_toolbar", "new")
+                UITelemetry.action("status_bar", "new")
                 viewModel.newMessage()
+            }
+            toolbarDivider
+            repeatIconOnlyButton(
+                icon: DasherIcon.backspace,
+                repeatIntervalMs: 90,
+                telemetryAction: "backspace"
+            ) {
+                viewModel.editorBackspace()
+            }
+            repeatIconOnlyButton(
+                icon: DasherIcon.arrowLeft,
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_left"
+            ) {
+                viewModel.editorMoveCaret(delta: -1)
+            }
+            repeatIconOnlyButton(
+                icon: DasherIcon.arrowRight,
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_right"
+            ) {
+                viewModel.editorMoveCaret(delta: 1)
             }
             Spacer(minLength: 0)
         }
@@ -246,12 +293,33 @@ struct OutputTextView: View {
                 stopSpeechButton(showLabel: false)
             }
             turboToggleButton(showLabel: false)
+            repeatIconOnlyButton(
+                icon: DasherIcon.backspace,
+                repeatIntervalMs: 90,
+                telemetryAction: "backspace"
+            ) {
+                viewModel.editorBackspace()
+            }
+            repeatIconOnlyButton(
+                icon: DasherIcon.arrowLeft,
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_left"
+            ) {
+                viewModel.editorMoveCaret(delta: -1)
+            }
+            repeatIconOnlyButton(
+                icon: DasherIcon.arrowRight,
+                repeatIntervalMs: 120,
+                telemetryAction: "arrow_right"
+            ) {
+                viewModel.editorMoveCaret(delta: 1)
+            }
             Menu {
                 Button("Copy All", action: copyAllText)
                 Button("Paste", action: pasteText)
                 Divider()
                 Button("Clear", role: .destructive) {
-                    UITelemetry.action("main_toolbar", "new")
+                    UITelemetry.action("status_bar", "new")
                     viewModel.newMessage()
                 }
             } label: {
@@ -376,6 +444,46 @@ struct OutputTextView: View {
         .buttonStyle(.plain)
     }
 
+    private func repeatToolbarButton(
+        icon: String,
+        label: String,
+        repeatIntervalMs: Int,
+        telemetryAction: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        RepeatActionButton(
+            repeatIntervalMs: repeatIntervalMs,
+            onPressStart: { UITelemetry.action("status_bar", telemetryAction) },
+            action: action
+        ) {
+            VStack(spacing: 3) {
+                LucideIcon(icon, size: 14, color: Color("BarText"))
+                Text(label)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(Color("MutedText"))
+            }
+            .frame(width: 46, height: 36)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+    }
+
+    private func repeatIconOnlyButton(
+        icon: String,
+        repeatIntervalMs: Int,
+        telemetryAction: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        RepeatActionButton(
+            repeatIntervalMs: repeatIntervalMs,
+            onPressStart: { UITelemetry.action("status_bar", telemetryAction) },
+            action: action
+        ) {
+            LucideIcon(icon, size: 14, color: Color("BarText"))
+                .frame(width: 34, height: 34)
+                .background(RoundedRectangle(cornerRadius: 6).fill(Color("ButtonBackground")))
+        }
+    }
+
     private var toolbarDivider: some View {
         Rectangle()
             .fill(Color("Divider"))
@@ -386,18 +494,14 @@ struct OutputTextView: View {
     // MARK: - Actions
 
     private func copyAllText() {
-        UITelemetry.action("main_toolbar", "copy")
+        UITelemetry.action("status_bar", "copy")
         UIPasteboard.general.string = viewModel.outputText
     }
 
     private func pasteText() {
-        UITelemetry.action("main_toolbar", "paste")
-        if let clipboardString = UIPasteboard.general.string {
-            let newText = viewModel.outputText + clipboardString
-            let (capped, cappedCaret) = EditorSeedPolicy.apply(
-                to: newText, caretUTF16: newText.utf16.count)
-            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
-            viewModel.outputText = newText
+        UITelemetry.action("status_bar", "paste")
+        if let clipboardString = UIPasteboard.general.string, !clipboardString.isEmpty {
+            viewModel.editorInsert(clipboardString)
         }
     }
 }
@@ -498,17 +602,25 @@ struct EditableTextViewWrapper: UIViewRepresentable {
     }
 
     func updateUIView(_ tv: UITextView, context: Context) {
-        // Engine push: only update if the text actually differs (user edits
-        // already seeded the buffer, so tv.text == engine text there).
-        if !context.coordinator.isUserEditing && tv.text != viewModel.outputText {
+        // RFC 0019 clause 2: never clobber active IME composition (marked text).
+        guard tv.markedTextRange == nil else { return }
+
+        let newLen = (viewModel.outputText as NSString).length
+        let clampedLoc = max(0, min(viewModel.editorSelection.location, newLen))
+        let clampedLen = max(0, min(viewModel.editorSelection.length, newLen - clampedLoc))
+        let targetRange = NSRange(location: clampedLoc, length: clampedLen)
+
+        let textChanged = tv.text != viewModel.outputText
+        let selectionChanged = tv.selectedRange != targetRange
+
+        if textChanged || selectionChanged {
             context.coordinator.setProgrammatic {
-                let selected = tv.selectedRange
-                tv.text = viewModel.outputText
-                let newLen = (viewModel.outputText as NSString).length
-                tv.selectedRange = NSRange(location: min(selected.location, newLen), length: 0)
+                if textChanged {
+                    tv.text = viewModel.outputText
+                }
+                tv.selectedRange = targetRange
             }
         }
-        context.coordinator.isUserEditing = false
     }
 
     func makeCoordinator() -> Coordinator {
@@ -518,7 +630,6 @@ struct EditableTextViewWrapper: UIViewRepresentable {
     class Coordinator: NSObject, UITextViewDelegate {
         let viewModel: DasherViewModel
         var isProgrammatic = false
-        var isUserEditing = false
 
         init(viewModel: DasherViewModel) {
             self.viewModel = viewModel
@@ -539,11 +650,12 @@ struct EditableTextViewWrapper: UIViewRepresentable {
             // RFC 0019 clause 2: defer seeding during IME composition —
             // the marked text is not committed yet.
             guard tv.markedTextRange == nil else { return }
-            isUserEditing = true
+            let selected = tv.selectedRange
             let (text, caretUTF16) = EditorSeedPolicy.apply(
-                to: tv.text, caretUTF16: tv.selectedRange.location)
+                to: tv.text, caretUTF16: selected.location)
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
             viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.editorSelection = selected
             viewModel.outputText = tv.text
         }
 
@@ -552,29 +664,12 @@ struct EditableTextViewWrapper: UIViewRepresentable {
         func textViewDidChangeSelection(_ tv: UITextView) {
             guard !isProgrammatic else { return }
             guard tv.markedTextRange == nil else { return }
-            let caretUTF16 = tv.selectedRange.location
-            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.text, utf16Offset: caretUTF16)
+            let selected = tv.selectedRange
+            viewModel.editorSelection = selected
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(
+                to: tv.text, caretUTF16: selected.location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
             viewModel.bridge.setOffset(byteOffset)
         }
-    }
-}
-
-
-// MARK: - RFC 0019 clause 7: seed cap
-
-/// Caps the text seeded to the engine at a trailing window of 100k UTF-16
-/// units. Mirrors Dasher-Windows EditorSeedPolicy.
-enum EditorSeedPolicy {
-    static let maxUTF16Units = 100_000
-
-    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
-        let len = text.utf16.count
-        guard len > maxUTF16Units else { return (text, caretUTF16) }
-
-        let dropCount = len - maxUTF16Units
-        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
-        let windowed = String(text[startIndex...])
-        let newCaret = max(0, caretUTF16 - dropCount)
-        return (windowed, newCaret)
     }
 }

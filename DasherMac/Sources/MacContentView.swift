@@ -74,6 +74,7 @@ struct MacContentView: View {
                     LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
                           icon: DasherIcon.controlMode)
                 }
+                .help("Control nodes: move, delete, clear, speak, pause")
 
                 Button(action: {
                     UITelemetry.action("main_toolbar", "settings")
@@ -318,88 +319,6 @@ struct MacContentView: View {
 
     private var directModeMiniBar: some View {
         HStack(spacing: 2) {
-            Button {
-                viewModel.toggleControlMode()
-            } label: {
-                LucideIcon(DasherIcon.controlMode, size: 18, color: viewModel.isControlModeActive ? Color("DasherTeal") : Color("MutedText"))
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                showSettings = true
-            } label: {
-                LucideIcon(DasherIcon.settings, size: 18, color: Color("MutedText"))
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
-
-            Button {
-                currentLayoutPosition = "Right"
-            } label: {
-                LucideIcon(DasherIcon.keyboard, size: 18, color: Color("MutedText"))
-                    .frame(width: 32, height: 32)
-            }
-            .buttonStyle(.plain)
-
-            // ── Direct-mode text actions (RFC 0019, mirrors Windows mini-bar) ──
-
-            // New session: clear text + model context (clause 5)
-            Button {
-                UITelemetry.action("main_toolbar", "new")
-                viewModel.newMessage()
-            } label: {
-                LucideIcon(DasherIcon.close, size: 16, color: Color("MutedText"))
-                    .frame(width: 28, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help("New session (clear text and context)")
-
-            // Copy all typed text to clipboard
-            Button {
-                UITelemetry.action("main_toolbar", "copy")
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(viewModel.outputText, forType: .string)
-            } label: {
-                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
-                    .frame(width: 28, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help("Copy all text")
-
-            // Cut selection in target app (Cmd+X)
-            Button {
-                UITelemetry.action("main_toolbar", "cut")
-                viewModel.directService.sendCmdChord("x")
-            } label: {
-                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
-                    .frame(width: 28, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help("Cut selection in target app")
-
-            // Paste into target app (Cmd+V)
-            Button {
-                UITelemetry.action("main_toolbar", "paste")
-                viewModel.directService.sendCmdChord("v")
-            } label: {
-                LucideIcon(DasherIcon.paste, size: 16, color: Color("MutedText"))
-                    .frame(width: 28, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help("Paste into target app")
-
-            // Select all in target app (Cmd+A)
-            Button {
-                UITelemetry.action("main_toolbar", "select_all")
-                viewModel.directService.sendCmdChord("a")
-            } label: {
-                LucideIcon(DasherIcon.copy, size: 16, color: Color("MutedText"))
-                    .frame(width: 28, height: 32)
-            }
-            .buttonStyle(.plain)
-            .help("Select all in target app")
-
             // Live typing rate in Direct Mode (RFC 0012 direct-entry clause,
             // mirrors Dasher-Windows #39): the bottom bar is hidden here, so
             // users who enable the typing-rate display would otherwise lose
@@ -409,9 +328,132 @@ struct MacContentView: View {
                 Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.white.opacity(0.85))
-                    .padding(.horizontal, 8)
+                    .padding(.horizontal, 6)
                     .padding(.vertical, 2)
             }
+
+            // ── Editing keys first (Windows PR #76 / Android strip parity) ──
+            RepeatActionButton(
+                repeatIntervalMs: 90,
+                onPressStart: { UITelemetry.action("ime_toolbar", "backspace") },
+                action: { viewModel.directService.injectVirtualKey(DirectModeService.keyCodeBackspace) }
+            ) {
+                LucideIcon(DasherIcon.backspace, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .help("Delete (hold to repeat)")
+
+            RepeatActionButton(
+                repeatIntervalMs: 120,
+                onPressStart: { UITelemetry.action("ime_toolbar", "arrow_left") },
+                action: { viewModel.directService.injectVirtualKey(DirectModeService.keyCodeLeftArrow) }
+            ) {
+                LucideIcon(DasherIcon.arrowLeft, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .help("Move caret left (hold to repeat)")
+
+            RepeatActionButton(
+                repeatIntervalMs: 120,
+                onPressStart: { UITelemetry.action("ime_toolbar", "arrow_right") },
+                action: { viewModel.directService.injectVirtualKey(DirectModeService.keyCodeRightArrow) }
+            ) {
+                LucideIcon(DasherIcon.arrowRight, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .help("Move caret right (hold to repeat)")
+
+            Button {
+                UITelemetry.action("ime_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
+                viewModel.toggleControlMode()
+            } label: {
+                LucideIcon(DasherIcon.controlMode, size: 18, color: viewModel.isControlModeActive ? Color("DasherTeal") : Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Control nodes: move, delete, clear, speak, pause")
+
+            // Re-anchor: force a fresh read of the target's sentence around the caret (Windows PR #68)
+            Button {
+                UITelemetry.action("ime_toolbar", "reanchor")
+                viewModel.manualReanchor()
+            } label: {
+                LucideIcon(DasherIcon.reanchor, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Re-anchor predictions to the caret (read the sentence around your cursor)")
+
+            // ── Direct-mode text actions (RFC 0019, mirrors Windows mini-bar) ──
+
+            // New session: clear text + model context (clause 5)
+            Button {
+                UITelemetry.action("ime_toolbar", "new")
+                viewModel.newMessage()
+            } label: {
+                LucideIcon(DasherIcon.newDocument, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("New session (clear text and context)")
+
+            // Copy all typed text to clipboard
+            Button {
+                UITelemetry.action("ime_toolbar", "copy")
+                let engineText = viewModel.bridge.getOutputText()
+                let text = engineText.isEmpty ? viewModel.outputText : engineText
+                if !text.isEmpty {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(text, forType: .string)
+                }
+            } label: {
+                LucideIcon(DasherIcon.copy, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Copy all text")
+
+            // Cut selection in target app (Cmd+X)
+            Button {
+                UITelemetry.action("ime_toolbar", "cut")
+                viewModel.directService.sendCmdChord("x")
+            } label: {
+                LucideIcon(DasherIcon.cut, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Cut selection in target app")
+
+            // Paste into target app (Cmd+V)
+            Button {
+                UITelemetry.action("ime_toolbar", "paste")
+                viewModel.directService.sendCmdChord("v")
+            } label: {
+                LucideIcon(DasherIcon.paste, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Paste into target app")
+
+            Button {
+                UITelemetry.action("ime_toolbar", "settings")
+                showSettings = true
+            } label: {
+                LucideIcon(DasherIcon.settings, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Settings")
+
+            Button {
+                UITelemetry.action("ime_toolbar", "direct_mode", state: "off")
+                currentLayoutPosition = "Right"
+            } label: {
+                LucideIcon(DasherIcon.keyboard, size: 18, color: Color("MutedText"))
+                    .frame(width: 32, height: 32)
+            }
+            .buttonStyle(.plain)
+            .help("Exit Direct Mode")
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 3)
@@ -808,18 +850,60 @@ struct MacOutputTextView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help("Copy all text")
 
                 Button(action: { pasteText() }) {
                     LucideIcon(DasherIcon.paste, size: 12)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help("Paste")
 
-                Button(action: { viewModel.newMessage() }) {
+                Button(action: {
+                    UITelemetry.action("status_bar", "new")
+                    viewModel.newMessage()
+                }) {
                     LucideIcon(DasherIcon.close, size: 12)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .help("New session (clear text and context)")
+
+                Divider()
+                    .frame(height: 18)
+
+                RepeatActionButton(
+                    repeatIntervalMs: 90,
+                    onPressStart: { UITelemetry.action("status_bar", "backspace") },
+                    action: { viewModel.editorBackspace() }
+                ) {
+                    LucideIcon(DasherIcon.backspace, size: 12)
+                        .frame(width: 24, height: 22)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                }
+                .help("Delete (hold to repeat)")
+
+                RepeatActionButton(
+                    repeatIntervalMs: 120,
+                    onPressStart: { UITelemetry.action("status_bar", "arrow_left") },
+                    action: { viewModel.editorMoveCaret(delta: -1) }
+                ) {
+                    LucideIcon(DasherIcon.arrowLeft, size: 12)
+                        .frame(width: 24, height: 22)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                }
+                .help("Move caret left (hold to repeat)")
+
+                RepeatActionButton(
+                    repeatIntervalMs: 120,
+                    onPressStart: { UITelemetry.action("status_bar", "arrow_right") },
+                    action: { viewModel.editorMoveCaret(delta: 1) }
+                ) {
+                    LucideIcon(DasherIcon.arrowRight, size: 12)
+                        .frame(width: 24, height: 22)
+                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                }
+                .help("Move caret right (hold to repeat)")
 
                 Spacer(minLength: 0)
             }
@@ -841,17 +925,15 @@ struct MacOutputTextView: View {
     }
 
     private func copyAllText() {
+        UITelemetry.action("status_bar", "copy")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(viewModel.outputText, forType: .string)
     }
 
     private func pasteText() {
-        if let clipboardString = NSPasteboard.general.string(forType: .string) {
-            let newText = viewModel.outputText + clipboardString
-            let (capped, _) = MacEditorSeedPolicy.apply(
-                to: newText, caretUTF16: newText.utf16.count)
-            viewModel.bridge.seedBuffer(capped, caretOffset: capped.utf8.count)
-            viewModel.outputText = newText
+        UITelemetry.action("status_bar", "paste")
+        if let clipboardString = NSPasteboard.general.string(forType: .string), !clipboardString.isEmpty {
+            viewModel.editorInsert(clipboardString)
         }
     }
 
@@ -1101,15 +1183,25 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {
         guard let tv = scroll.documentView as? NSTextView else { return }
-        if !context.coordinator.isUserEditing && tv.string != viewModel.outputText {
+        // RFC 0019 clause 2: never clobber active IME composition (marked text).
+        guard tv.markedRange().length == 0 else { return }
+
+        let newLen = (viewModel.outputText as NSString).length
+        let clampedLoc = max(0, min(viewModel.editorSelection.location, newLen))
+        let clampedLen = max(0, min(viewModel.editorSelection.length, newLen - clampedLoc))
+        let targetRange = NSRange(location: clampedLoc, length: clampedLen)
+
+        let textChanged = tv.string != viewModel.outputText
+        let selectionChanged = tv.selectedRange() != targetRange
+
+        if textChanged || selectionChanged {
             context.coordinator.setProgrammatic {
-                let selected = tv.selectedRange()
-                tv.string = viewModel.outputText
-                let newLen = (viewModel.outputText as NSString).length
-                tv.setSelectedRange(NSRange(location: min(selected.location, newLen), length: 0))
+                if textChanged {
+                    tv.string = viewModel.outputText
+                }
+                tv.setSelectedRange(targetRange)
             }
         }
-        context.coordinator.isUserEditing = false
     }
 
     func makeCoordinator() -> Coordinator {
@@ -1119,7 +1211,6 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
     class Coordinator: NSObject, NSTextViewDelegate {
         let viewModel: MacDasherViewModel
         var isProgrammatic = false
-        var isUserEditing = false
 
         init(viewModel: MacDasherViewModel) {
             self.viewModel = viewModel
@@ -1135,15 +1226,14 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
             guard !isProgrammatic else { return }
             guard let tv = notification.object as? NSTextView else { return }
             // RFC 0019 clause 2: defer during IME composition (marked text).
-            // Set isUserEditing first so concurrent engine pushes don't
-            // rewrite the text view mid-composition.
-            isUserEditing = true
             guard tv.markedRange().length == 0 else { return }
             // RFC 0019 clause 7: seed cap — trailing 100k UTF-16 window.
-            let (text, caretUTF16) = MacEditorSeedPolicy.apply(
-                to: tv.string, caretUTF16: tv.selectedRange().location)
+            let selected = tv.selectedRange()
+            let (text, caretUTF16) = EditorSeedPolicy.apply(
+                to: tv.string, caretUTF16: selected.location)
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
             viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.editorSelection = selected
             viewModel.outputText = tv.string
         }
 
@@ -1152,27 +1242,12 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
             guard let tv = notification.object as? NSTextView else { return }
             // RFC 0019 clause 2: no re-anchoring during IME composition.
             guard tv.markedRange().length == 0 else { return }
-            let caretUTF16 = tv.selectedRange().location
-            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(tv.string, utf16Offset: caretUTF16)
+            let selected = tv.selectedRange()
+            viewModel.editorSelection = selected
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(
+                to: tv.string, caretUTF16: selected.location)
+            let byteOffset = viewModel.bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
             viewModel.bridge.setOffset(byteOffset)
         }
-    }
-}
-
-
-// MARK: - RFC 0019 clause 7: seed cap (macOS)
-
-enum MacEditorSeedPolicy {
-    static let maxUTF16Units = 100_000
-
-    static func apply(to text: String, caretUTF16: Int) -> (text: String, caretUTF16: Int) {
-        let len = text.utf16.count
-        guard len > maxUTF16Units else { return (text, caretUTF16) }
-
-        let dropCount = len - maxUTF16Units
-        let startIndex = text.utf16.index(text.utf16.startIndex, offsetBy: dropCount)
-        let windowed = String(text[startIndex...])
-        let newCaret = max(0, caretUTF16 - dropCount)
-        return (windowed, newCaret)
     }
 }

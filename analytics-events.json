@@ -128,7 +128,8 @@
             "main_toolbar",
             "status_bar",
             "ime_toolbar",
-            "ime_topbar"
+            "ime_topbar",
+            "control_tree"
           ]
         },
         "action": {
@@ -141,19 +142,28 @@
             "game_mode",
             "settings",
             "copy",
+            "copy_selection",
             "paste",
             "cut",
             "select_all",
             "share",
+            "speak",
+            "stop_speak",
             "emoji_toggle",
             "speed_up",
             "speed_down",
+            "backspace",
+            "arrow_left",
+            "arrow_right",
             "layout",
+            "direct_mode",
             "control_mode",
+            "reanchor",
             "turbo",
             "float",
             "dock",
-            "hide"
+            "hide",
+            "select"
           ]
         },
         "state": {

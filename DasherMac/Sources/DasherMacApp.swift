@@ -314,7 +314,7 @@ struct MacDasherSettingsView: View {
             if param.name == "Simulate Transparency" { return false }
             guard DasherSettingsSection.section(for: param) == section else { return false }
             if section != .input { return true }
-            if param.subgroup.isEmpty { return true }
+            if param.subgroup.isEmpty || param.subgroup == "Control" { return true }
             return activeSubgroups.contains(param.subgroup)
         }
     }
