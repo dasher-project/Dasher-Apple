@@ -619,6 +619,7 @@ struct EditableTextViewWrapper: UIViewRepresentable {
                     tv.text = viewModel.outputText
                 }
                 tv.selectedRange = targetRange
+                tv.scrollRangeToVisible(targetRange)
             }
         }
     }
@@ -655,6 +656,7 @@ struct EditableTextViewWrapper: UIViewRepresentable {
                 to: tv.text, caretUTF16: selected.location)
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
             viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.selectAnchorUTF16 = nil
             viewModel.editorSelection = selected
             viewModel.outputText = tv.text
         }
@@ -665,6 +667,7 @@ struct EditableTextViewWrapper: UIViewRepresentable {
             guard !isProgrammatic else { return }
             guard tv.markedTextRange == nil else { return }
             let selected = tv.selectedRange
+            viewModel.selectAnchorUTF16 = nil
             viewModel.editorSelection = selected
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(
                 to: tv.text, caretUTF16: selected.location)

@@ -1200,6 +1200,7 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
                     tv.string = viewModel.outputText
                 }
                 tv.setSelectedRange(targetRange)
+                tv.scrollRangeToVisible(targetRange)
             }
         }
     }
@@ -1233,6 +1234,7 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
                 to: tv.string, caretUTF16: selected.location)
             let byteOffset = viewModel.bridge.byteOffsetFromUTF16(text, utf16Offset: caretUTF16)
             viewModel.bridge.seedBuffer(text, caretOffset: byteOffset)
+            viewModel.selectAnchorUTF16 = nil
             viewModel.editorSelection = selected
             viewModel.outputText = tv.string
         }
@@ -1243,6 +1245,7 @@ struct MacEditableTextViewWrapper: NSViewRepresentable {
             // RFC 0019 clause 2: no re-anchoring during IME composition.
             guard tv.markedRange().length == 0 else { return }
             let selected = tv.selectedRange()
+            viewModel.selectAnchorUTF16 = nil
             viewModel.editorSelection = selected
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(
                 to: tv.string, caretUTF16: selected.location)

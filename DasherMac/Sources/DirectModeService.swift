@@ -19,7 +19,10 @@ class DirectModeService: ObservableObject {
     private var echoSuppressionUntil = Date.distantPast
 
     func suppressEchoes(for interval: TimeInterval = 0.3) {
-        echoSuppressionUntil = Date().addingTimeInterval(interval)
+        let candidate = Date().addingTimeInterval(interval)
+        if candidate > echoSuppressionUntil {
+            echoSuppressionUntil = candidate
+        }
     }
 
     private var isEchoSuppressed: Bool {
@@ -224,6 +227,9 @@ class DirectModeService: ObservableObject {
         }
         if text == "\n" {
             LogManager.kb("  injectKey return")
+            // Paragraph / Return settle guard (Windows #79): suppress AX caret
+            // echoes for 1500 ms after our own newline injection.
+            suppressEchoes(for: 1.5)
             postKeycode(36)
             return
         }
@@ -292,6 +298,8 @@ class DirectModeService: ObservableObject {
     static let keyCodeBackspace: CGKeyCode = 51   // kVK_Delete (0x33)
     static let keyCodeLeftArrow: CGKeyCode = 123  // kVK_LeftArrow (0x7B)
     static let keyCodeRightArrow: CGKeyCode = 124 // kVK_RightArrow (0x7C)
+    static let keyCodeDownArrow: CGKeyCode = 125  // kVK_DownArrow (0x7D)
+    static let keyCodeUpArrow: CGKeyCode = 126    // kVK_UpArrow (0x7E)
 
     /// Inject a single virtual key press + release into the target application
     /// (used by the Direct Mode editing keys strip: Backspace, Left, Right).
@@ -300,6 +308,41 @@ class DirectModeService: ObservableObject {
         suppressEchoes()
         LogManager.kb("  injectVirtualKey code=\(keyCode)")
         postKeycode(keyCode)
+    }
+
+    /// RFC 0021: send a Direct Mode selection chord (`Shift+Arrow`,
+    /// `Shift+Opt+Arrow`, `Shift+Opt+Up/Down`, or `Cmd+A`) to the target app.
+    /// Extends the 1500 ms own-injection settle window (RFC 0021 / Windows #79)
+    /// so selection-induced `AXSelectedTextChanged` events do not re-seed the
+    /// canvas mid-selection.
+    func sendSelectChord(_ keystroke: SelectActions.SelectKeystroke) {
+        guard hasAccessibilityPermission else { return }
+        suppressEchoes(for: 1.5)
+
+        var modifiers: CGEventFlags = []
+        if keystroke.shift { modifiers.insert(.maskShift) }
+        if keystroke.option { modifiers.insert(.maskAlternate) }
+        if keystroke.command { modifiers.insert(.maskCommand) }
+
+        let code = CGKeyCode(keystroke.keyCode)
+        LogManager.kb("  select chord: shift=\(keystroke.shift) opt=\(keystroke.option) cmd=\(keystroke.command) code=\(code)")
+
+        // Use a private event source so physical HID modifiers (e.g. holding Shift
+        // for momentary Dasher Turbo) do not bleed into the chord, and preserve
+        // intrinsic arrow-key flags (.maskNumericPad, .maskSecondaryFn) so Cocoa
+        // NSTextView selection key-bindings resolve properly.
+        let src = CGEventSource(stateID: .privateState)
+        let explicitModifiers: CGEventFlags = [.maskShift, .maskAlternate, .maskCommand, .maskControl]
+        if let down = CGEvent(keyboardEventSource: src, virtualKey: code, keyDown: true) {
+            down.flags.subtract(explicitModifiers)
+            down.flags.formUnion(modifiers)
+            postEvent(down)
+        }
+        if let up = CGEvent(keyboardEventSource: src, virtualKey: code, keyDown: false) {
+            up.flags.subtract(explicitModifiers)
+            up.flags.formUnion(modifiers)
+            postEvent(up)
+        }
     }
 
     private func postKeycode(_ code: CGKeyCode) {
