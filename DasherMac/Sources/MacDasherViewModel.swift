@@ -7,6 +7,10 @@ import UniformTypeIdentifiers
 class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
     @Published var editorSelection: NSRange = NSRange(location: 0, length: 0)
+    /// RFC 0021 clause 4: active-end state machine anchor for editor-mode
+    /// `Select` actions (resets when the user manually moves the caret/selection
+    /// or edits text).
+    var selectAnchorUTF16: Int?
 
     // MARK: - RFC 0019: Editor contract
     // The NSTextView Coordinator owns the sync directly.
@@ -22,16 +26,18 @@ class MacDasherViewModel: ObservableObject {
             outputText = text
         }
         let newLen = outputText.utf16.count
+        let priorCaret = selectAnchorUTF16 ?? (editorSelection.location + editorSelection.length)
         let newCaret: Int
-        if editorSelection.location >= oldLen {
+        if priorCaret >= oldLen {
             newCaret = newLen
         } else if insertedUTF16 > 0 {
-            newCaret = min(newLen, editorSelection.location + insertedUTF16)
+            newCaret = min(newLen, priorCaret + insertedUTF16)
         } else if deletedUTF16 > 0 {
-            newCaret = min(newLen, max(0, editorSelection.location - deletedUTF16))
+            newCaret = min(newLen, max(0, priorCaret - deletedUTF16))
         } else {
-            newCaret = min(editorSelection.location, newLen)
+            newCaret = min(priorCaret, newLen)
         }
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: newCaret, length: 0)
     }
     @Published var isPlaying: Bool = true
@@ -137,6 +143,9 @@ class MacDasherViewModel: ObservableObject {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(text, forType: .string)
             }
+        }
+        bridge.onCustomAction = { [weak self] name, attrs in
+            self?.handleCustomAction(name: name, attrs: attrs)
         }
 
         let savedConfig = AccessConfiguration.current
@@ -356,6 +365,7 @@ class MacDasherViewModel: ObservableObject {
     func newMessage() {
         bridge.reset()
         outputText = ""
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: 0, length: 0)
         resetTypingStats()
     }
@@ -364,6 +374,7 @@ class MacDasherViewModel: ObservableObject {
         bridge.reset()
         let newLen = text.utf16.count
         outputText = text
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: newLen, length: 0)
         let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: text, caretUTF16: newLen)
         let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
@@ -383,6 +394,7 @@ class MacDasherViewModel: ObservableObject {
             selectionEnd: end
         )
         outputText = newText
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: newCaret, length: 0)
         let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
         let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
@@ -399,6 +411,7 @@ class MacDasherViewModel: ObservableObject {
         )
         guard newText != outputText || editorSelection.length > 0 else { return }
         outputText = newText
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: newCaret, length: 0)
         let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
         let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
@@ -415,10 +428,43 @@ class MacDasherViewModel: ObservableObject {
             delta: delta
         )
         guard newCaret != editorSelection.location || editorSelection.length > 0 else { return }
+        selectAnchorUTF16 = nil
         editorSelection = NSRange(location: newCaret, length: 0)
         let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: newCaret)
         let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
         bridge.setOffset(byteOffset)
+    }
+
+    // MARK: - RFC 0021: Control-mode Select dispatch
+
+    func handleCustomAction(name: String, attrs: [String: String]) {
+        guard name == "select", !isGameModeActive else { return }
+        guard let (dist, dir) = SelectActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
+            LogManager.kb("select: unknown attributes dist=\(attrs["dist"] ?? "(nil)") forward=\(attrs["forward"] ?? "(nil)") - no-op")
+            return
+        }
+
+        let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
+        if directMode {
+            let ks = SelectActions.keystroke(dist: dist, dir: dir)
+            directService.sendSelectChord(ks)
+            UITelemetry.action("control_tree", "select", state: stateStr)
+        } else {
+            let start = editorSelection.location
+            let end = editorSelection.location + editorSelection.length
+            let bounds = SelectActions.editorBounds(
+                text: outputText,
+                selectionStart: start,
+                selectionEnd: end,
+                dist: dist,
+                dir: dir,
+                hadSelection: editorSelection.length > 0,
+                anchorUTF16: selectAnchorUTF16
+            )
+            selectAnchorUTF16 = (bounds.start == bounds.end) ? nil : bounds.anchorUTF16
+            editorSelection = NSRange(location: bounds.start, length: max(0, bounds.end - bounds.start))
+            UITelemetry.action("control_tree", "select", state: stateStr)
+        }
     }
 
     var shareText: String {

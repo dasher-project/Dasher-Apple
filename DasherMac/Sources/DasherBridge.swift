@@ -122,6 +122,7 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     var onSpeak: ((String, Bool) -> Void)?
     var onParameterChange: ((Int) -> Void)?
     var onClipboard: ((String) -> Void)?
+    var onCustomAction: ((String, [String: String]) -> Void)?
 
     private(set) var lastError: String?
 
@@ -220,6 +221,29 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
                     let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
                     let str = String(cString: text)
                     DispatchQueue.main.async { instance.onClipboard?(str) }
+                }, retained)
+                // RFC 0021: register the "select" custom action BEFORE any
+                // dasher_set_screen_size call so control.xml parsing includes
+                // the Select subtree when the control box is realized.
+                dasher_register_action(newCtx, "select", { namePtr, attrCount, attrKeys, attrValues, userData in
+                    guard let namePtr = namePtr, let userData = userData else { return }
+                    let instance = Unmanaged<DasherBridge>.fromOpaque(userData).takeUnretainedValue()
+                    let name = String(cString: namePtr)
+                    var attrs: [String: String] = [:]
+                    if attrCount > 0, let keys = attrKeys, let values = attrValues {
+                        let count = Int(attrCount)
+                        attrs.reserveCapacity(count)
+                        for i in 0..<count {
+                            if let kPtr = keys[i] {
+                                let k = String(cString: kPtr)
+                                let v = values[i].map { String(cString: $0) } ?? ""
+                                attrs[k] = v
+                            }
+                        }
+                    }
+                    DispatchQueue.main.async {
+                        instance.onCustomAction?(name, attrs)
+                    }
                 }, retained)
 
             // Device locale for engine strings (RFC 0003), then the initial
