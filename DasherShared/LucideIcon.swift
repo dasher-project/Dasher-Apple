@@ -25,18 +25,18 @@ public struct LucideIcon: View {
     public var body: some View {
         Group {
             #if canImport(UIKit)
-            if let image = UIImage(lucideId: name) {
+            if let image = UIImage.lucideIcon(name, size: size) {
                 Image(uiImage: image)
                     .renderingMode(.template)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .interpolation(.high)
             }
             #elseif canImport(AppKit)
-            if let image = NSImage.image(lucideId: name) {
+            if let image = NSImage.lucideIcon(name, size: size) {
                 Image(nsImage: image)
                     .renderingMode(.template)
                     .resizable()
-                    .aspectRatio(contentMode: .fit)
+                    .interpolation(.high)
             }
             #endif
         }
@@ -117,3 +117,48 @@ public enum DasherIcon {
     public static let eye = "eye"
     public static let mute = "volume-x"
 }
+
+
+/// Normalized icon loading.
+///
+/// The compiled asset catalog ships each Lucide glyph as a Vector rendition
+/// plus 18pt/36pt raster fallbacks; which one `image(forResource:)` hands
+/// back — and the point size it reports — varies by SDK. Binaries built
+/// with the Xcode 26.6 SDK rendered toolbar *menu* labels (layout picker,
+/// alphabet-picker chevron) with the glyph's aspect distorted: a square
+/// glyph drawn as a narrow pill. Rasterizing to an exact square at the
+/// requested size before handing the image to SwiftUI makes the result
+/// aspect-proof under every menu/toolbar metric path and SDK.
+#if canImport(AppKit)
+import AppKit
+
+public extension NSImage {
+    static func lucideIcon(_ id: String, size: CGFloat) -> NSImage? {
+        guard let source = NSImage.image(lucideId: id) else { return nil }
+        let normalized = NSImage(size: NSSize(width: size, height: size))
+        normalized.lockFocus()
+        source.draw(in: NSRect(x: 0, y: 0, width: size, height: size),
+                    from: .zero, operation: .sourceOver, fraction: 1.0)
+        normalized.unlockFocus()
+        return normalized
+    }
+}
+#endif
+
+#if canImport(UIKit)
+import UIKit
+
+public extension UIImage {
+    static func lucideIcon(_ id: String, size: CGFloat) -> UIImage? {
+        guard let source = UIImage(lucideId: id) else { return nil }
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        let scale = UIScreen.main.scale
+        format.scale = scale
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
+        return renderer.image { _ in
+            source.draw(in: CGRect(x: 0, y: 0, width: size, height: size))
+        }
+    }
+}
+#endif
