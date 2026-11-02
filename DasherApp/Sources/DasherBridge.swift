@@ -83,7 +83,9 @@ enum DasherSettingsSection: String, CaseIterable {
     }
 
     static func section(for param: DasherParameterInfo) -> DasherSettingsSection {
-        if param.name == "Control Mode" || param.name == "Turbo Mode" { return .customization }
+        // Control Mode belongs in Input (Windows PR #75 parity) so users can
+        // discover and toggle the control node from Settings > Input.
+        if param.name == "Turbo Mode" { return .customization }
         if param.group == "Game Mode" { return .gameMode }
         if param.group == "Output" { return .output }
         if param.group == "Language" { return .language }

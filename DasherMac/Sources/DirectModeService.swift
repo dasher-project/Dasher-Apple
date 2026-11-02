@@ -289,6 +289,19 @@ class DirectModeService: ObservableObject {
         }
     }
 
+    static let keyCodeBackspace: CGKeyCode = 51   // kVK_Delete (0x33)
+    static let keyCodeLeftArrow: CGKeyCode = 123  // kVK_LeftArrow (0x7B)
+    static let keyCodeRightArrow: CGKeyCode = 124 // kVK_RightArrow (0x7C)
+
+    /// Inject a single virtual key press + release into the target application
+    /// (used by the Direct Mode editing keys strip: Backspace, Left, Right).
+    func injectVirtualKey(_ keyCode: CGKeyCode) {
+        guard hasAccessibilityPermission else { return }
+        suppressEchoes()
+        LogManager.kb("  injectVirtualKey code=\(keyCode)")
+        postKeycode(keyCode)
+    }
+
     private func postKeycode(_ code: CGKeyCode) {
         let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true)
         postEvent(down)

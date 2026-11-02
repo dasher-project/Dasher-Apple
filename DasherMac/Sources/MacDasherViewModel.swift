@@ -6,19 +6,33 @@ import UniformTypeIdentifiers
 @MainActor
 class MacDasherViewModel: ObservableObject {
     @Published var outputText: String = ""
+    @Published var editorSelection: NSRange = NSRange(location: 0, length: 0)
 
     // MARK: - RFC 0019: Editor contract
     // The NSTextView Coordinator owns the sync directly.
     // RFC 0019 clause 7: when over the seed cap, the pane keeps the full
     // text — don't overwrite with the engine's truncated window buffer.
-    func pushEngineText(_ text: String) {
-        if outputText.utf16.count > MacEditorSeedPolicy.maxUTF16Units {
-            if text.utf16.count > outputText.utf16.count {
+    func pushEngineText(_ text: String, insertedUTF16: Int = 0, deletedUTF16: Int = 0) {
+        let oldLen = outputText.utf16.count
+        if oldLen > EditorSeedPolicy.maxUTF16Units {
+            if text.utf16.count > oldLen {
                 outputText = text
             }
         } else {
             outputText = text
         }
+        let newLen = outputText.utf16.count
+        let newCaret: Int
+        if editorSelection.location >= oldLen {
+            newCaret = newLen
+        } else if insertedUTF16 > 0 {
+            newCaret = min(newLen, editorSelection.location + insertedUTF16)
+        } else if deletedUTF16 > 0 {
+            newCaret = min(newLen, max(0, editorSelection.location - deletedUTF16))
+        } else {
+            newCaret = min(editorSelection.location, newLen)
+        }
+        editorSelection = NSRange(location: newCaret, length: 0)
     }
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
@@ -98,7 +112,7 @@ class MacDasherViewModel: ObservableObject {
             if self.directMode {
                 self.directService.injectText(text)
             }
-            self.pushEngineText(self.bridge.getOutputText())
+            self.pushEngineText(self.bridge.getOutputText(), insertedUTF16: text.utf16.count)
         }
 
         bridge.onDelete = { [weak self] text in
@@ -106,7 +120,7 @@ class MacDasherViewModel: ObservableObject {
             if self.directMode {
                 self.directService.injectDelete(count: text.count)
             }
-            self.outputText = self.bridge.getOutputText()
+            self.pushEngineText(self.bridge.getOutputText(), deletedUTF16: text.utf16.count)
         }
 
         bridge.onSpeak = { [weak self] text, interrupt in
@@ -128,10 +142,17 @@ class MacDasherViewModel: ObservableObject {
         let savedConfig = AccessConfiguration.current
 
         let bitrateKey = bridge.findParameterKey("LP_MAX_BITRATE")
+        let controlModeKey = bridge.findParameterKey("BP_CONTROL_MODE")
         bridge.onParameterChange = { [weak self] key in
-            guard key == bitrateKey else { return }
-            Task { @MainActor in
-                self?.speed = Double(self?.bridge.speedPercent ?? 100) / 100.0
+            if key == bitrateKey {
+                Task { @MainActor in
+                    self?.speed = Double(self?.bridge.speedPercent ?? 100) / 100.0
+                }
+            } else if key == controlModeKey {
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.isControlModeActive = self.bridge.getBoolParameter(key: controlModeKey)
+                }
             }
         }
         // RFC 0018 two-phase start: engine create + locale on a background
@@ -143,6 +164,7 @@ class MacDasherViewModel: ObservableObject {
             guard let self else { return }
             savedConfig.apply(to: self.bridge)
             self.speed = Double(self.bridge.speedPercent) / 100.0
+            self.isControlModeActive = self.bridge.getBoolParameter(key: controlModeKey)
         }
     }
 
@@ -222,6 +244,12 @@ class MacDasherViewModel: ObservableObject {
         }
     }
 
+    func manualReanchor() {
+        guard directMode else { return }
+        LogManager.kb("manual re-anchor requested")
+        handleTargetCaretChanged()
+    }
+
     /// RFC 0019 clause 6: caret moved in the target app's text field —
     /// re-seed the engine from the field's content at the new caret position.
     /// Applies the clause-7 seed cap (trailing 100k UTF-16 window).
@@ -232,7 +260,7 @@ class MacDasherViewModel: ObservableObject {
             return
         }
         let fullText = context.before + context.after
-        let (cappedText, cappedCaret) = MacEditorSeedPolicy.apply(
+        let (cappedText, cappedCaret) = EditorSeedPolicy.apply(
             to: fullText, caretUTF16: context.before.utf16.count)
         let caretBytes = bridge.byteOffsetFromUTF16(cappedText, utf16Offset: cappedCaret)
         LogManager.kb("seed context: utf16=\(cappedText.utf16.count) caret16=\(cappedCaret)")
@@ -328,12 +356,69 @@ class MacDasherViewModel: ObservableObject {
     func newMessage() {
         bridge.reset()
         outputText = ""
+        editorSelection = NSRange(location: 0, length: 0)
         resetTypingStats()
     }
 
     func openText(_ text: String) {
         bridge.reset()
+        let newLen = text.utf16.count
         outputText = text
+        editorSelection = NSRange(location: newLen, length: 0)
+        let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: text, caretUTF16: newLen)
+        let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+        bridge.seedBuffer(windowed, caretOffset: byteOffset)
+    }
+
+    // MARK: - Editing keys strip (editor mode)
+
+    func editorInsert(_ inserted: String) {
+        guard !inserted.isEmpty else { return }
+        let start = editorSelection.location
+        let end = editorSelection.location + editorSelection.length
+        let (newText, newCaret) = EditorKeyActions.insert(
+            text: inserted,
+            into: outputText,
+            selectionStart: start,
+            selectionEnd: end
+        )
+        outputText = newText
+        editorSelection = NSRange(location: newCaret, length: 0)
+        let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
+        let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+        bridge.seedBuffer(windowed, caretOffset: byteOffset)
+    }
+
+    func editorBackspace() {
+        let start = editorSelection.location
+        let end = editorSelection.location + editorSelection.length
+        let (newText, newCaret) = EditorKeyActions.backspace(
+            text: outputText,
+            selectionStart: start,
+            selectionEnd: end
+        )
+        guard newText != outputText || editorSelection.length > 0 else { return }
+        outputText = newText
+        editorSelection = NSRange(location: newCaret, length: 0)
+        let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
+        let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+        bridge.seedBuffer(windowed, caretOffset: byteOffset)
+    }
+
+    func editorMoveCaret(delta: Int) {
+        let start = editorSelection.location
+        let end = editorSelection.location + editorSelection.length
+        let newCaret = EditorKeyActions.moveCaret(
+            text: outputText,
+            selectionStart: start,
+            selectionEnd: end,
+            delta: delta
+        )
+        guard newCaret != editorSelection.location || editorSelection.length > 0 else { return }
+        editorSelection = NSRange(location: newCaret, length: 0)
+        let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: newCaret)
+        let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+        bridge.setOffset(byteOffset)
     }
 
     var shareText: String {
