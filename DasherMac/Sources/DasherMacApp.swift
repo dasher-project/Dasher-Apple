@@ -258,6 +258,8 @@ struct MacDasherSettingsView: View {
                     VStack(spacing: 24) {
                         AnalyticsPrivacySection()
                         Divider()
+                        DiagnosticLoggingSection()
+                        Divider()
                         V5MigrationSettingsSection()
                         Divider()
                         ResetSettingsSection {
@@ -417,11 +419,6 @@ struct MacDasherSettingsView: View {
             ForEach(params) { param in
                 parameterRow(param)
             }
-
-            Divider()
-                .padding(.vertical, 4)
-
-            DiagnosticLoggingSection()
         }
     }
 

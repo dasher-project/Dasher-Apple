@@ -83,7 +83,7 @@ public struct AnalyticsPrivacySection: View {
             // Privacy tab (interim until RFC 0006's About section exists). Uses
             // AnalyticsService.displayVersion so it always matches telemetry.
             VStack(alignment: .leading, spacing: 6) {
-                Text("Dasher collects anonymous analytics to understand usage and fix crashes. No typed text, clipboard contents, or personal info is ever collected. See the open event schema at github.com/dasher-project/Dasher-Apple.")
+                Text("Dasher collects anonymous analytics to understand usage and fix crashes. No typed text, clipboard, or personal info is ever collected. See the open event schema at github.com/dasher-project/Dasher-Apple.")
                 Text("Dasher \(AnalyticsService.displayVersion)")
             }
         }

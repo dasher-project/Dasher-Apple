@@ -59,7 +59,7 @@ public struct LucideLabel: View {
 
     public var body: some View {
         Label {
-            Text(title)
+            Text(LocalizedStringKey(title))
         } icon: {
             LucideIcon(icon, size: iconSize)
         }
