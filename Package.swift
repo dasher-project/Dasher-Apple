@@ -30,5 +30,12 @@ let package = Package(
             ],
             path: "DasherSpeech"
         ),
+        .testTarget(
+            name: "DasherSharedTests",
+            dependencies: [
+                .target(name: "DasherShared"),
+            ],
+            path: "Tests/DasherSharedTests"
+        ),
     ]
 )

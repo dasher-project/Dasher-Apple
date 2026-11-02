@@ -1,5 +1,6 @@
 import Cocoa
 import CoreGraphics
+import DasherShared
 
 @MainActor
 class DirectModeService: ObservableObject {
@@ -102,12 +103,18 @@ class DirectModeService: ObservableObject {
         let focusErr = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef)
         guard focusErr == .success,
               let focusedCF = focusedRef,
-              CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else { return nil }
+              CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else {
+            LogManager.kb("  [AX] no focused element for pid=\(pid) err=\(focusErr.rawValue)")
+            return nil
+        }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
 
         var valueRef: CFTypeRef?
         let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
-        guard valueErr == .success, let value = valueRef as? String else { return nil }
+        guard valueErr == .success, let value = valueRef as? String else {
+            LogManager.kb("  [AX] kAXValueAttribute unavailable for pid=\(pid) err=\(valueErr.rawValue)")
+            return nil
+        }
 
         // Caret position (selectedTextRange gives (loc, len))
         var rangeRef: CFTypeRef?
@@ -123,6 +130,7 @@ class DirectModeService: ObservableObject {
         }
 
         let nsValue = value as NSString
+        LogManager.kb("  [AX] read \(nsValue.length) utf16, caret16=\(caretOffset)")
         let before = nsValue.substring(to: min(caretOffset, nsValue.length))
         let after = nsValue.substring(from: min(caretOffset, nsValue.length))
         return (before, after)
@@ -172,6 +180,7 @@ class DirectModeService: ObservableObject {
                 DispatchQueue.main.async {
                     self?.lastTargetApp = app
                     self?.targetAppName = app.localizedName ?? "Unknown"
+                    LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier)")
                     // Re-attach the AX observer to the new target's pid —
                     // the observer is per-process, so switching apps without
                     // this leaves the watcher on the old pid (dead).
@@ -209,10 +218,12 @@ class DirectModeService: ObservableObject {
         suppressEchoes()
 
         if text == "\u{08}" {
+            LogManager.kb("  injectKey backspace")
             postKeycode(51)
             return
         }
         if text == "\n" {
+            LogManager.kb("  injectKey return")
             postKeycode(36)
             return
         }
@@ -220,6 +231,7 @@ class DirectModeService: ObservableObject {
         // UTF-16 code units are exactly what keyboardSetUnicodeString wants —
         // using unicodeScalars truncates non-BMP characters (emoji → garbage).
         let unichars = Array(text.utf16)
+        LogManager.kb("  injectText utf16=\(unichars.count)")
         unichars.withUnsafeBufferPointer { buf in
             let event = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true)
             event?.keyboardSetUnicodeString(stringLength: buf.count, unicodeString: buf.baseAddress)
@@ -234,6 +246,7 @@ class DirectModeService: ObservableObject {
     func injectDelete(count: Int) {
         guard hasAccessibilityPermission else { return }
         suppressEchoes()
+        LogManager.kb("  injectDelete count=\(count)")
         for _ in 0..<count {
             let down = CGEvent(keyboardEventSource: nil, virtualKey: 51, keyDown: true)
             postEvent(down)

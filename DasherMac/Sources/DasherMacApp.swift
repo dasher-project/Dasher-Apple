@@ -23,6 +23,7 @@ struct DasherMacApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
+        LogManager.initialize(currentVersion: AnalyticsService.displayVersion)
         AnalyticsService.shared.initialize()
         CrashReporter.shared.install()
     }
@@ -416,6 +417,11 @@ struct MacDasherSettingsView: View {
             ForEach(params) { param in
                 parameterRow(param)
             }
+
+            Divider()
+                .padding(.vertical, 4)
+
+            DiagnosticLoggingSection()
         }
     }
 
