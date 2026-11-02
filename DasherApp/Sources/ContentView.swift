@@ -420,20 +420,28 @@ struct ContentView: View {
                         barDivider
                         layoutPicker
                         barDivider
-                        toolbarButton(
-                            icon: DasherIcon.gameMode,
-                            label: viewModel.isGameModeActive ? "Game On" : "Game"
-                        ) {
-                            UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
-                            viewModel.toggleGameMode()
+                        if viewModel.isGameModeActive {
+                            toolbarButton(icon: DasherIcon.gameMode, label: "Game On") {
+                                UITelemetry.action("main_toolbar", "game_mode", state: "off")
+                                viewModel.toggleGameMode()
+                            }
+                        } else {
+                            toolbarButton(icon: DasherIcon.gameMode, label: "Game") {
+                                UITelemetry.action("main_toolbar", "game_mode", state: "on")
+                                viewModel.toggleGameMode()
+                            }
                         }
                         barDivider
-                        toolbarButton(
-                            icon: DasherIcon.controlMode,
-                            label: viewModel.isControlModeActive ? "Leave" : "Control"
-                        ) {
-                            UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
-                            viewModel.toggleControlMode()
+                        if viewModel.isControlModeActive {
+                            toolbarButton(icon: DasherIcon.controlMode, label: "Leave") {
+                                UITelemetry.action("main_toolbar", "control_mode", state: "off")
+                                viewModel.toggleControlMode()
+                            }
+                        } else {
+                            toolbarButton(icon: DasherIcon.controlMode, label: "Control") {
+                                UITelemetry.action("main_toolbar", "control_mode", state: "on")
+                                viewModel.toggleControlMode()
+                            }
                         }
                         barDivider
                         toolbarButton(icon: DasherIcon.settings, label: "Prefs") {
@@ -483,7 +491,7 @@ struct ContentView: View {
         Button(action: action) {
             VStack(spacing: 4) {
                 LucideIcon(icon, size: 16, color: Color("DeepNavy"))
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.system(size: 11, weight: .medium))
                     .foregroundColor(Color("BarText"))
             }
@@ -625,12 +633,16 @@ struct ContentView: View {
                 Spacer(minLength: 0)
 
                 if viewModel.showTypingRate {
-                    Text(viewModel.typingWPMMax > 0
-                         ? "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
-                         : "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(Color("BarText"))
-                        .padding(.horizontal, 8)
+                    Group {
+                        if viewModel.typingWPMMax > 0 {
+                            Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))")
+                        } else {
+                            Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
+                        }
+                    }
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(Color("BarText"))
+                    .padding(.horizontal, 8)
                 }
             }
             .padding(.horizontal, 12)
@@ -837,9 +849,15 @@ struct ContentView: View {
             }
         } label: {
             HStack(spacing: 3) {
-                Text(isOn ? "Speech on" : "Speech off")
-                    .font(.system(size: 13))
-                    .foregroundColor(Color("BarText"))
+                Group {
+                    if isOn {
+                        Text("Speech on")
+                    } else {
+                        Text("Speech off")
+                    }
+                }
+                .font(.system(size: 13))
+                .foregroundColor(Color("BarText"))
                 LucideIcon(DasherIcon.chevronDown, size: 8, color: Color("MutedText"))
             }
         }

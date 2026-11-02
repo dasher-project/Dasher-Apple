@@ -89,7 +89,11 @@ public struct SpeechSettingsView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: service.isSpeaking ? "stop.fill" : "play.fill")
-                        Text(service.isSpeaking ? "Stop" : "Preview")
+                        if service.isSpeaking {
+                            Text("Stop")
+                        } else {
+                            Text("Preview")
+                        }
                     }
                 }
                 .buttonStyle(.borderless)
@@ -109,13 +113,13 @@ public struct SpeechSettingsView: View {
 
             Picker("Rate", selection: $service.speechRate) {
                 ForEach(SpeechRate.allCases, id: \.self) { rate in
-                    Text(rateDisplayName(rate)).tag(rate)
+                    Text(LocalizedStringKey(rateDisplayName(rate))).tag(rate)
                 }
             }
 
             Picker("Pitch", selection: $service.speechPitch) {
                 ForEach(SpeechPitch.allCases, id: \.self) { pitch in
-                    Text(pitchDisplayName(pitch)).tag(pitch)
+                    Text(LocalizedStringKey(pitchDisplayName(pitch))).tag(pitch)
                 }
             }
 

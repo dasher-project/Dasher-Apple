@@ -181,7 +181,7 @@ public struct TrainingTextManagementSection: View {
                 statusMessage = "Training data reset. Restart Dasher to apply."
             }
         } message: {
-            Text("This deletes your accumulated training data files. Very recent typing from the current session may still influence predictions until Dasher is restarted. This cannot be undone.")
+            Text("This deletes your accumulated training data. The language model will return to built-in defaults on next launch. This cannot be undone.")
         }
         .alert("Training", isPresented: Binding(
             get: { statusMessage != nil },

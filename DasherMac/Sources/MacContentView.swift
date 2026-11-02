@@ -62,8 +62,11 @@ struct MacContentView: View {
                         UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
                         viewModel.toggleGameMode()
                     }) {
-                        LucideLabel(viewModel.isGameModeActive ? "Game On" : "Game Mode",
-                              icon: DasherIcon.gameMode)
+                        if viewModel.isGameModeActive {
+                            LucideLabel("Game On", icon: DasherIcon.gameMode)
+                        } else {
+                            LucideLabel("Game Mode", icon: DasherIcon.gameMode)
+                        }
                     }
                 }
 
@@ -71,8 +74,11 @@ struct MacContentView: View {
                     UITelemetry.action("main_toolbar", "control_mode", state: viewModel.isControlModeActive ? "off" : "on")
                     viewModel.toggleControlMode()
                 }) {
-                    LucideLabel(viewModel.isControlModeActive ? "Leave" : "Control",
-                          icon: DasherIcon.controlMode)
+                    if viewModel.isControlModeActive {
+                        LucideLabel("Leave", icon: DasherIcon.controlMode)
+                    } else {
+                        LucideLabel("Control", icon: DasherIcon.controlMode)
+                    }
                 }
                 .help("Control nodes: move, delete, clear, speak, pause")
 
@@ -453,7 +459,7 @@ struct MacContentView: View {
                     .frame(width: 32, height: 32)
             }
             .buttonStyle(.plain)
-            .help("Exit Direct Mode")
+            .help("Toggle keyboard mode")
         }
         .padding(.horizontal, 4)
         .padding(.vertical, 3)
@@ -481,12 +487,16 @@ struct MacContentView: View {
             Spacer(minLength: 0)
 
             if viewModel.showTypingRate {
-                Text(viewModel.typingWPMMax > 0
-                     ? "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))"
-                     : "\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 8)
+                Group {
+                    if viewModel.typingWPMMax > 0 {
+                        Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm · max \(Int(viewModel.typingWPMMax)) · avg \(Int(viewModel.typingWPMAvg))")
+                    } else {
+                        Text("\(String(format: "%.1f", viewModel.typingCPS)) cps · \(Int(viewModel.typingWPM)) wpm")
+                    }
+                }
+                .font(.caption.weight(.medium))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 8)
             }
         }
         .padding(.horizontal, 12)

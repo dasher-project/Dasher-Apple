@@ -80,6 +80,7 @@ struct DasherSettingsView: View {
                 List {
                     if selectedSection == .privacy {
                         AnalyticsPrivacySection()
+                        DiagnosticLoggingSection()
                         KeyboardSetupSection()
                         ResetSettingsSection {
                             viewModel.bridge.resetToDefaults()
@@ -322,8 +323,6 @@ struct DasherSettingsView: View {
             ForEach(params) { param in
                 parameterRow(param)
             }
-
-            DiagnosticLoggingSection()
         } header: {
             Text("Input")
         }
