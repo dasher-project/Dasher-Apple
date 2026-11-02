@@ -835,91 +835,99 @@ struct MacOutputTextView: View {
 
     private var outputContent: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 8) {
-                Button(action: {
+            // Horizontal scroll (iOS toolbar pattern): the fixed-width
+            // buttons exceed a narrowed pane's width, and an overflowing
+            // HStack makes the whole output VStack wider than the pane —
+            // SwiftUI then centers it, pushing the editor's left edge
+            // (caret included) outside the pane's leading border, which
+            // read as phantom left padding on the text.
+            ScrollView(.horizontal) {
+                HStack(spacing: 8) {
+                    Button(action: {
                     let current = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
                     viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
-                }) {
+                    }) {
                     let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
                     LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 12)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
 
-                Button(action: {
+                    Button(action: {
                     turboActive.toggle()
                     viewModel.bridge.keyEvent(key: 101, pressed: turboActive)
-                }) {
+                    }) {
                     LucideIcon(DasherIcon.turbo, size: 12, color: turboActive ? .accentColor : .secondary)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
 
-                Button(action: { copyAllText() }) {
+                    Button(action: { copyAllText() }) {
                     LucideIcon(DasherIcon.copy, size: 12)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("Copy all text")
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Copy all text")
 
-                Button(action: { pasteText() }) {
+                    Button(action: { pasteText() }) {
                     LucideIcon(DasherIcon.paste, size: 12)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("Paste")
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("Paste")
 
-                Button(action: {
+                    Button(action: {
                     UITelemetry.action("status_bar", "new")
                     viewModel.newMessage()
-                }) {
+                    }) {
                     LucideIcon(DasherIcon.close, size: 12)
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .help("New session (clear text and context)")
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .help("New session (clear text and context)")
 
-                Divider()
+                    Divider()
                     .frame(height: 18)
 
-                RepeatActionButton(
+                    RepeatActionButton(
                     repeatIntervalMs: 90,
                     onPressStart: { UITelemetry.action("status_bar", "backspace") },
                     action: { viewModel.editorBackspace() }
-                ) {
+                    ) {
                     LucideIcon(DasherIcon.backspace, size: 12)
-                        .frame(width: 24, height: 22)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                    .frame(width: 24, height: 22)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
                 }
-                .help("Delete (hold to repeat)")
+                    .help("Delete (hold to repeat)")
 
-                RepeatActionButton(
+                    RepeatActionButton(
                     repeatIntervalMs: 120,
                     onPressStart: { UITelemetry.action("status_bar", "arrow_left") },
                     action: { viewModel.editorMoveCaret(delta: -1) }
-                ) {
+                    ) {
                     LucideIcon(DasherIcon.arrowLeft, size: 12)
-                        .frame(width: 24, height: 22)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                    .frame(width: 24, height: 22)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
                 }
-                .help("Move caret left (hold to repeat)")
+                    .help("Move caret left (hold to repeat)")
 
-                RepeatActionButton(
+                    RepeatActionButton(
                     repeatIntervalMs: 120,
                     onPressStart: { UITelemetry.action("status_bar", "arrow_right") },
                     action: { viewModel.editorMoveCaret(delta: 1) }
-                ) {
+                    ) {
                     LucideIcon(DasherIcon.arrowRight, size: 12)
-                        .frame(width: 24, height: 22)
-                        .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
+                    .frame(width: 24, height: 22)
+                    .background(RoundedRectangle(cornerRadius: 4).fill(Color(nsColor: .controlColor)))
                 }
-                .help("Move caret right (hold to repeat)")
+                    .help("Move caret right (hold to repeat)")
 
                 Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 8)
-            .frame(height: 36)
-            .background(Color(nsColor: .controlBackgroundColor))
+                }
+                .padding(.horizontal, 8)
+                }
+                    .frame(height: 36)
+                    .background(Color(nsColor: .controlBackgroundColor))
 
             Divider()
 
