@@ -1,4 +1,5 @@
 import Foundation
+import DasherShared
 
 #if canImport(UIKit)
 import UIKit
@@ -92,7 +93,12 @@ class DasherBridge: InputMethodBridge {
     private let dataDir: String
 
     init(dataDir: String, userDir: String? = nil) {
-        self.userDir = userDir ?? dataDir
+        let resolvedUserDir = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: userDir,
+            fallbackDataDir: dataDir
+        )
+        TrainingDataManager.migrateStrandedTrainingFiles(in: resolvedUserDir)
+        self.userDir = resolvedUserDir
         self.dataDir = dataDir
         // Two-phase start (RFC 0018 pattern, mirrors Dasher-Android): init is
         // deliberately cheap — no engine work — so the first UI frame never
@@ -388,6 +394,47 @@ class DasherBridge: InputMethodBridge {
     func setSpeedPercent(_ percent: Int) {
         guard let ctx = ctx else { return }
         dasher_set_speed_percent(ctx, Int32(percent))
+    }
+
+    // MARK: - Training text management (Fixes #53; DasherCore #84/#85/#86)
+
+    static var capiVersion: Int {
+        Int(dasher_capi_version())
+    }
+
+    var currentTrainingPath: String? {
+        guard let ctx = ctx, let cStr = dasher_get_training_path(ctx) else { return nil }
+        let path = String(cString: cStr)
+        return path.isEmpty ? nil : path
+    }
+
+    var userTrainingFileSize: Int64 {
+        TrainingDataManager.fileSize(engineReportedPath: currentTrainingPath, userDir: userDir)
+    }
+
+    var userTrainingSizeDescription: String {
+        TrainingDataManager.sizeDescription(bytes: userTrainingFileSize)
+    }
+
+    func importTrainingText(_ text: String, sourceFileURL: URL? = nil) throws {
+        try TrainingDataManager.persistImportedTrainingText(
+            text,
+            sourceFileURL: sourceFileURL,
+            engineReportedPath: currentTrainingPath,
+            userDir: userDir
+        )
+
+        if let ctx = ctx {
+            _ = dasher_import_training_text(ctx, text)
+        }
+    }
+
+    func exportTrainingText() -> String? {
+        TrainingDataManager.exportTrainingText(engineReportedPath: currentTrainingPath, userDir: userDir)
+    }
+
+    func resetTrainingData() {
+        TrainingDataManager.resetTrainingData(in: userDir)
     }
 
     // MARK: - Parameter schema

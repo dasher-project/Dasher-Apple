@@ -373,15 +373,36 @@ public struct V5MigrationService {
 
         guard let entries = try? fm.contentsOfDirectory(atPath: v5UserDataDir) else { return }
 
-        // Ensure dest + subdirs exist
-        let subdirs = ["alphabets", "colours", "control", "training"]
+        // Ensure dest + subdirs exist (training_*.txt lives at destDir root
+        // per DasherCore #84/#85/#86).
+        let subdirs = ["alphabets", "colours", "control"]
         try? fm.createDirectory(atPath: destDir, withIntermediateDirectories: true)
         for sub in subdirs {
             try? fm.createDirectory(atPath: "\(destDir)/\(sub)", withIntermediateDirectories: true)
         }
 
         for entry in entries {
-            // Route to the correct v6 subdirectory (matching DasherCore's ScanFiles layout).
+            let srcPath = "\(v5UserDataDir)/\(entry)"
+
+            // Training files live at destDir root (<userDir>/training_*.txt)
+            // and merge into any existing v6 adaptive training file instead of
+            // being skipped if the user typed before migrating (Fixes #53).
+            if entry.hasPrefix("training_") && entry.hasSuffix(".txt") {
+                let destURL = URL(fileURLWithPath: destDir, isDirectory: true).appendingPathComponent(entry)
+                let srcURL = URL(fileURLWithPath: srcPath)
+                do {
+                    if try TrainingDataManager.migrateV5TrainingFile(from: srcURL, to: destURL) {
+                        result.importedFiles.append(entry)
+                    } else {
+                        result.skippedFiles.append((entry, "Training data already present in v6 root"))
+                    }
+                } catch {
+                    result.skippedFiles.append((entry, "Copy failed: \(error.localizedDescription)"))
+                }
+                continue
+            }
+
+            // Route to the correct v6 location (matching DasherCore's ScanFiles layout).
             let subdir: String
             let overwrite: Bool
 
@@ -392,13 +413,10 @@ public struct V5MigrationService {
             } else if entry.hasPrefix("control.") && entry.hasSuffix(".xml") {
                 // control.xml overwrites the bundled default — user's custom tree wins
                 subdir = "control"; overwrite = true
-            } else if entry.hasPrefix("training_") && entry.hasSuffix(".txt") {
-                subdir = "training"; overwrite = false
             } else {
                 continue
             }
 
-            let srcPath = "\(v5UserDataDir)/\(entry)"
             let destPath = "\(destDir)/\(subdir)/\(entry)"
 
             if fm.fileExists(atPath: destPath) && !overwrite {

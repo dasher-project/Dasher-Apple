@@ -48,6 +48,19 @@ struct VisionSettingsView: View {
                     }
                 }
 
+                TrainingTextManagementSection(
+                    userTrainingFileSize: viewModel.bridge.userTrainingFileSize,
+                    userTrainingSizeDescription: viewModel.bridge.userTrainingSizeDescription,
+                    sizeProvider: {
+                        (viewModel.bridge.userTrainingFileSize, viewModel.bridge.userTrainingSizeDescription)
+                    },
+                    onImportFile: { text, url in
+                        try viewModel.bridge.importTrainingText(text, sourceFileURL: url)
+                    },
+                    onExport: { viewModel.bridge.exportTrainingText() },
+                    onReset: { viewModel.bridge.resetTrainingData() }
+                )
+
                 Section {
                     Toggle("Pause When Looking Away", isOn: Binding(
                         get: { viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_STOP_OUTSIDE")) },

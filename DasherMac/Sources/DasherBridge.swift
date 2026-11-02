@@ -124,7 +124,12 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     private(set) var lastError: String?
 
     init(dataDir: String, userDir: String? = nil) {
-        self.userDir = userDir ?? dataDir
+        let resolvedUserDir = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: userDir,
+            fallbackDataDir: dataDir
+        )
+        TrainingDataManager.migrateStrandedTrainingFiles(in: resolvedUserDir)
+        self.userDir = resolvedUserDir
         self.dataDir = dataDir
         // Two-phase start (RFC 0018 pattern, mirrors Dasher-Android): init is
         // deliberately cheap — no engine work — so the first UI frame never
@@ -537,74 +542,49 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
         dasher_set_speed_percent(ctx, Int32(percent))
     }
 
-    // MARK: - Training text management
+    // MARK: - Training text management (Fixes #53; DasherCore #84/#85/#86)
 
-    /// The user-writable training directory.
-    private var userTrainingDirURL: URL {
-        URL(fileURLWithPath: userDir).appendingPathComponent("training", isDirectory: true)
+    static var capiVersion: Int {
+        Int(dasher_capi_version())
     }
 
-    /// Finds any training_*.txt file in the user directory.
-    private func trainingFileURL() -> URL? {
-        let fm = FileManager.default
-        let dir = userTrainingDirURL
-        if let files = try? fm.contentsOfDirectory(atPath: dir.path) {
-            let trainingFiles = files.filter { $0.hasPrefix("training_") && $0.hasSuffix(".txt") }
-            if let first = trainingFiles.first {
-                return dir.appendingPathComponent(first)
-            }
-        }
-        return nil
+    /// Engine-reported user training file path (`<userDir>/training_<alphabet>.txt`)
+    /// once realized; `nil` before `dasher_set_screen_size`.
+    var currentTrainingPath: String? {
+        guard let ctx = ctx, let cStr = dasher_get_training_path(ctx) else { return nil }
+        let path = String(cString: cStr)
+        return path.isEmpty ? nil : path
     }
 
     var userTrainingFileSize: Int64 {
-        guard let url = trainingFileURL(),
-              let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
-              let size = attrs[.size] as? NSNumber else { return 0 }
-        return size.int64Value
+        TrainingDataManager.fileSize(engineReportedPath: currentTrainingPath, userDir: userDir)
     }
 
     var userTrainingSizeDescription: String {
-        let bytes = userTrainingFileSize
-        if bytes == 0 { return "No custom training data" }
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return formatter.string(fromByteCount: bytes)
+        TrainingDataManager.sizeDescription(bytes: userTrainingFileSize)
     }
 
-    func importTrainingText(_ text: String) {
-        guard let ctx = ctx else { return }
-        dasher_import_training_text(ctx, text)
+    func importTrainingText(_ text: String, sourceFileURL: URL? = nil) throws {
+        // Persist FIRST (disk is the source of truth at startup), with the 10 MB
+        // cap, self-import guard, and newline boundary enforced by TrainingDataManager.
+        try TrainingDataManager.persistImportedTrainingText(
+            text,
+            sourceFileURL: sourceFileURL,
+            engineReportedPath: currentTrainingPath,
+            userDir: userDir
+        )
 
-        let dir = userTrainingDirURL
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = trainingFileURL() ?? dir.appendingPathComponent("training_english_GB.txt")
-        if let data = text.data(using: .utf8) {
-            if FileManager.default.fileExists(atPath: url.path),
-               let handle = try? FileHandle(forWritingTo: url) {
-                handle.seekToEndOfFile()
-                handle.write(data)
-                handle.closeFile()
-            } else {
-                try? data.write(to: url)
-            }
+        if let ctx = ctx {
+            _ = dasher_import_training_text(ctx, text)
         }
     }
 
     func exportTrainingText() -> String? {
-        guard let url = trainingFileURL(),
-              FileManager.default.fileExists(atPath: url.path),
-              let data = try? Data(contentsOf: url) else { return nil }
-        return String(data: data, encoding: .utf8)
+        TrainingDataManager.exportTrainingText(engineReportedPath: currentTrainingPath, userDir: userDir)
     }
 
     func resetTrainingData() {
-        let dir = userTrainingDirURL
-        if let files = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
-            for file in files where file.hasPrefix("training_") && file.hasSuffix(".txt") {
-                try? FileManager.default.removeItem(atPath: dir.appendingPathComponent(file).path)
-            }
-        }
+        TrainingDataManager.resetTrainingData(in: userDir)
     }
 
     // MARK: - Parameter schema

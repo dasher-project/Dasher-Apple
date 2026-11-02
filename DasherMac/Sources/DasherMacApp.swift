@@ -472,7 +472,12 @@ struct MacDasherSettingsView: View {
             TrainingTextManagementSection(
                 userTrainingFileSize: viewModel.bridge.userTrainingFileSize,
                 userTrainingSizeDescription: viewModel.bridge.userTrainingSizeDescription,
-                onImport: { viewModel.bridge.importTrainingText($0) },
+                sizeProvider: {
+                    (viewModel.bridge.userTrainingFileSize, viewModel.bridge.userTrainingSizeDescription)
+                },
+                onImportFile: { text, url in
+                    try viewModel.bridge.importTrainingText(text, sourceFileURL: url)
+                },
                 onExport: { viewModel.bridge.exportTrainingText() },
                 onReset: { viewModel.bridge.resetTrainingData() }
             )
