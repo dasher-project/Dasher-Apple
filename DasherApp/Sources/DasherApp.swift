@@ -9,6 +9,7 @@ struct DasherApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        LogManager.initialize(currentVersion: AnalyticsService.displayVersion)
         AnalyticsService.shared.initialize()
     }
 

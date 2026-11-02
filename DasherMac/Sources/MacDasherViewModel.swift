@@ -206,6 +206,7 @@ class MacDasherViewModel: ObservableObject {
     }
 
     private func updateDirectMode() {
+        LogManager.kb("directMode=\(directMode)")
         if directMode {
             directService.startPolling()
             directService.startWatching()
@@ -222,11 +223,16 @@ class MacDasherViewModel: ObservableObject {
     /// re-seed the engine from the field's content at the new caret position.
     /// Applies the clause-7 seed cap (trailing 100k UTF-16 window).
     private func handleTargetCaretChanged() {
-        guard directMode, let context = directService.readTargetFieldContext() else { return }
+        guard directMode else { return }
+        guard let context = directService.readTargetFieldContext() else {
+            LogManager.kb("seed context: read failed (keeping existing context)")
+            return
+        }
         let fullText = context.before + context.after
         let (cappedText, cappedCaret) = MacEditorSeedPolicy.apply(
             to: fullText, caretUTF16: context.before.utf16.count)
         let caretBytes = bridge.byteOffsetFromUTF16(cappedText, utf16Offset: cappedCaret)
+        LogManager.kb("seed context: utf16=\(cappedText.utf16.count) caret16=\(cappedCaret)")
         bridge.seedBuffer(cappedText, caretOffset: caretBytes)
     }
 

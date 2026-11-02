@@ -322,6 +322,8 @@ struct DasherSettingsView: View {
             ForEach(params) { param in
                 parameterRow(param)
             }
+
+            DiagnosticLoggingSection()
         } header: {
             Text("Input")
         }

@@ -29,6 +29,10 @@ jobs:
           # palette-fills regression (legacy-only palettes shipped while the
           # engine consolidated to v6). Fail the build if it drifts again.
           diff -rq DasherCore/Data/colours DasherEngine/Resources/Data/colours --exclude=Makefile.am --exclude='*.py' --exclude='*.dtd'
+          diff -rq DasherCore/Data/control DasherEngine/Resources/Data/control --exclude=Makefile.am
+
+      - name: Run DasherShared unit tests
+        run: swift test
 
       - name: Install xcodegen
         run: brew install xcodegen
