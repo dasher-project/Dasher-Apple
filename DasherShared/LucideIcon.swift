@@ -129,17 +129,38 @@ public enum DasherIcon {
 /// glyph drawn as a narrow pill. Rasterizing to an exact square at the
 /// requested size before handing the image to SwiftUI makes the result
 /// aspect-proof under every menu/toolbar metric path and SDK.
+// Review round 1: rasterization is cached per (id, size) — LucideIcon body
+// re-evaluates on every typing-rate update and re-rasterizing ~26 glyphs
+// per keystroke was wasteful. The backing scale is taken from the screen
+// explicitly (lockFocus alone can silently pick 1x in offscreen contexts,
+// producing blurry Retina output).
 #if canImport(AppKit)
 import AppKit
 
+private let lucideAppKitCache = NSCache<NSString, NSImage>()
+
 public extension NSImage {
     static func lucideIcon(_ id: String, size: CGFloat) -> NSImage? {
+        let key = "\(id)-\(Int(size))" as NSString
+        if let cached = lucideAppKitCache.object(forKey: key) { return cached }
         guard let source = NSImage.image(lucideId: id) else { return nil }
-        let normalized = NSImage(size: NSSize(width: size, height: size))
-        normalized.lockFocus()
+        let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let pixels = max(1, Int(size * scale))
+        guard let rep = NSBitmapImageRep(
+            bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels,
+            bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+            colorSpaceName: NSColorSpaceName.deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else {
+            return source
+        }
+        rep.size = NSSize(width: size, height: size)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
         source.draw(in: NSRect(x: 0, y: 0, width: size, height: size),
                     from: .zero, operation: .sourceOver, fraction: 1.0)
-        normalized.unlockFocus()
+        NSGraphicsContext.restoreGraphicsState()
+        let normalized = NSImage(size: NSSize(width: size, height: size))
+        normalized.addRepresentation(rep)
+        lucideAppKitCache.setObject(normalized, forKey: key)
         return normalized
     }
 }
@@ -148,17 +169,23 @@ public extension NSImage {
 #if canImport(UIKit)
 import UIKit
 
+private let lucideUIKitCache = NSCache<NSString, UIImage>()
+
 public extension UIImage {
     static func lucideIcon(_ id: String, size: CGFloat) -> UIImage? {
+        let key = "\(id)-\(Int(size))" as NSString
+        if let cached = lucideUIKitCache.object(forKey: key) { return cached }
         guard let source = UIImage(lucideId: id) else { return nil }
+        // Format default() already carries the trait-collection display
+        // scale; no UIScreen.main reference (deprecated, wrong off-device).
         let format = UIGraphicsImageRendererFormat.default()
         format.opaque = false
-        let scale = UIScreen.main.scale
-        format.scale = scale
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size), format: format)
-        return renderer.image { _ in
+        let normalized = renderer.image { _ in
             source.draw(in: CGRect(x: 0, y: 0, width: size, height: size))
         }
+        lucideUIKitCache.setObject(normalized, forKey: key)
+        return normalized
     }
 }
 #endif
