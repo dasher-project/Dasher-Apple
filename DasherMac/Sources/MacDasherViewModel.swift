@@ -64,7 +64,10 @@ class MacDasherViewModel: ObservableObject {
         let sharedURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier
         )
-        let userDir = sharedURL?.path ?? dataPath
+        let userDir = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: sharedURL?.path,
+            fallbackDataDir: dataPath
+        )
         self.dataPath = dataPath
         self.bridge = DasherBridge(dataDir: dataPath, userDir: userDir)
 
