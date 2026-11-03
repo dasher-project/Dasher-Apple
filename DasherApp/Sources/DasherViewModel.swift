@@ -385,7 +385,12 @@ class DasherViewModel: ObservableObject {
     // MARK: - RFC 0021: Control-mode Select dispatch
 
     func handleCustomAction(name: String, attrs: [String: String]) {
-        guard name == "select", !isGameModeActive else { return }
+        guard !isGameModeActive else { return }
+        if name == "move" || name == "delete" {
+            handleMoveDelete(name: name, attrs: attrs)
+            return
+        }
+        guard name == "select" else { return }
         guard let (dist, dir) = SelectActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
             return
         }
@@ -405,6 +410,44 @@ class DasherViewModel: ObservableObject {
         editorSelection = NSRange(location: bounds.start, length: max(0, bounds.end - bounds.start))
         let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
         UITelemetry.action("control_tree", "select", state: stateStr)
+    }
+
+    /// RFC 0021 amendment (engine v0.2.28): Move/Delete editor-mode handling.
+    /// The iOS app has no direct mode; moves and deletions apply measured
+    /// UTF-16 caret moves / deletion ranges to the output pane and re-seed.
+    private func handleMoveDelete(name: String, attrs: [String: String]) {
+        guard let (dist, dir) = MoveDeleteActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
+            return
+        }
+        let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
+
+        switch name {
+        case "move":
+            let caret = MoveDeleteActions.moveCaret(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard caret != editorSelection.location || editorSelection.length > 0 else { return }
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: caret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: caret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            bridge.setOffset(byteOffset)
+            UITelemetry.action("control_tree", "move", state: stateStr)
+        case "delete":
+            let (newText, newCaret) = MoveDeleteActions.deleteRange(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard newText != outputText else { return }
+            outputText = newText
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: newCaret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            // Text changed: replace the edit buffer (setOffset only moves the
+            // cursor — deleted text would resurrect on the next output).
+            bridge.seedBuffer(windowed, caretOffset: byteOffset)
+            UITelemetry.action("control_tree", "delete", state: stateStr)
+        default:
+            break
+        }
     }
 
     var shareText: String {

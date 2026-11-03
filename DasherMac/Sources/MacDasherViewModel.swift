@@ -516,7 +516,12 @@ class MacDasherViewModel: ObservableObject {
     // MARK: - RFC 0021: Control-mode Select dispatch
 
     func handleCustomAction(name: String, attrs: [String: String]) {
-        guard name == "select", !isGameModeActive else { return }
+        guard !isGameModeActive else { return }
+        if name == "move" || name == "delete" {
+            handleMoveDelete(name: name, attrs: attrs)
+            return
+        }
+        guard name == "select" else { return }
         guard let (dist, dir) = SelectActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
             LogManager.kb("select: unknown attributes dist=\(attrs["dist"] ?? "(nil)") forward=\(attrs["forward"] ?? "(nil)") - no-op")
             return
@@ -542,6 +547,73 @@ class MacDasherViewModel: ObservableObject {
             selectAnchorUTF16 = (bounds.start == bounds.end) ? nil : bounds.anchorUTF16
             editorSelection = NSRange(location: bounds.start, length: max(0, bounds.end - bounds.start))
             UITelemetry.action("control_tree", "select", state: stateStr)
+        }
+    }
+
+    /// RFC 0021 amendment (engine v0.2.28): Move/Delete ride the
+    /// registered-action surface. Direct mode sends native movement/deletion
+    /// keystrokes to the target app; editor mode applies measured UTF-16
+    /// caret moves / deletion ranges to the output pane (and re-seeds).
+    private func handleMoveDelete(name: String, attrs: [String: String]) {
+        guard let (dist, dir) = MoveDeleteActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
+            LogManager.kb("\(name): unknown attributes dist=\(attrs["dist"] ?? "(nil)") forward=\(attrs["forward"] ?? "(nil)") - no-op")
+            return
+        }
+        let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
+
+        if directMode {
+            // Native-keystroke fidelity: sentence/paragraph deletes fall back
+            // to word/line chords on macOS — tag the applied granularity so
+            // field data never reads sentence-accurate when it was not
+            // (mirrors Dasher-Windows #92's fallback= telemetry).
+            var applied = stateStr
+            if name == "delete" {
+                if dist == .sentence { applied += ",fallback=word" }
+                if dist == .paragraph { applied += ",fallback=line" }
+            }
+            if dist == .all, name == "delete" {
+                // Composite: select-all (Cmd+A) then Delete — the select
+                // keystroke helper exists precisely for this.
+                directService.sendSelectChord(SelectActions.keystroke(dist: .all, dir: .backward))
+                if let chord = MoveDeleteActions.deleteKeystroke(dist: .char, dir: .backward) {
+                    directService.sendSelectChord(chord)
+                }
+            } else if name == "move" {
+                directService.sendSelectChord(MoveDeleteActions.moveKeystroke(dist: dist, dir: dir))
+            } else if let chord = MoveDeleteActions.deleteKeystroke(dist: dist, dir: dir) {
+                directService.sendSelectChord(chord)
+            }
+            UITelemetry.action("control_tree", name, state: applied)
+            return
+        }
+
+        switch name {
+        case "move":
+            let caret = MoveDeleteActions.moveCaret(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard caret != editorSelection.location || editorSelection.length > 0 else { return }
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: caret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: caret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            bridge.setOffset(byteOffset)
+            UITelemetry.action("control_tree", "move", state: stateStr)
+        case "delete":
+            let (newText, newCaret) = MoveDeleteActions.deleteRange(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard newText != outputText else { return }
+            outputText = newText
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: newCaret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            // Text changed: the edit buffer must be replaced (setOffset only
+            // moves the cursor and the deleted text would resurrect on the
+            // next output) — RFC 0019 clause 4.
+            bridge.seedBuffer(windowed, caretOffset: byteOffset)
+            UITelemetry.action("control_tree", "delete", state: stateStr)
+        default:
+            break
         }
     }
 

@@ -288,6 +288,12 @@ public enum SelectActions {
         }
     }
 
+    /// Snap a caret to a code-point boundary (public wrapper for tests and
+    /// the Move/Delete helpers).
+    public static func snapCaret(units: [UInt16], caret: Int, dir: SelectDirection) -> Int {
+        max(0, min(snapToCodePoint(units: units, index: max(0, min(caret, units.count)), dir: dir), units.count))
+    }
+
     /// Snap a UTF-16 index so it never splits a surrogate pair.
     private static func snapToCodePoint(units: [UInt16], index: Int, dir: SelectDirection) -> Int {
         let len = units.count

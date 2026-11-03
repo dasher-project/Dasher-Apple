@@ -368,6 +368,13 @@ public struct DiagnosticLoggingSection: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
 
+                // RFC 0022: testers hand over the actual files — share sheet
+                // on iOS/visionOS, Finder reveal on macOS.
+                Button("Export logs") { exportLogs() }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                    .disabled(logFiles.isEmpty)
+
                 Text(logSizeText)
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -378,5 +385,52 @@ public struct DiagnosticLoggingSection: View {
             advancedLogging = LogManager.advancedLogging
             logSizeText = LogManager.totalLogSizeDescription()
         }
+        #if canImport(UIKit)
+        .sheet(isPresented: $showExport, onDismiss: { exportURLs = [] }) {
+            if !exportURLs.isEmpty {
+                LogShareSheet(activityItems: exportURLs)
+            }
+        }
+        #endif
+    }
+
+    // MARK: - RFC 0022 log export
+
+    #if canImport(UIKit)
+    @State private var showExport = false
+    @State private var exportURLs: [URL] = []
+    #endif
+
+    private var logFiles: [URL] {
+        let dir = LogManager.logDirectory
+        return (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil))?
+            .filter { $0.pathExtension == "log" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent } ?? []
+    }
+
+    private func exportLogs() {
+        let urls = logFiles
+        guard !urls.isEmpty else { return }
+        #if os(macOS)
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+        #elseif canImport(UIKit)
+        exportURLs = urls
+        showExport = true
+        #endif
     }
 }
+
+#if canImport(UIKit)
+import UIKit
+
+/// Minimal share sheet for log file URLs (iOS / visionOS).
+struct LogShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+#endif

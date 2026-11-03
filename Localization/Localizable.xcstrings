@@ -10407,6 +10407,9 @@
         }
       }
     },
+    "Export logs": {
+      "localizations": {}
+    },
     "Export Training Text": {
       "localizations": {
         "af": {
