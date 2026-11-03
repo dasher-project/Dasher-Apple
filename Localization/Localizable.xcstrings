@@ -2391,31 +2391,31 @@
         "cs": {
           "stringUnit": {
             "state": "translated",
-            "value": "Car"
+            "value": "Automaticky"
           }
         },
         "da": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bil"
+            "value": "Automatisk"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automatisch"
           }
         },
         "el": {
           "stringUnit": {
             "state": "translated",
-            "value": "Αυτο"
+            "value": "Αυτόματο"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Coche"
+            "value": "Automático"
           }
         },
         "fa": {
@@ -2427,13 +2427,13 @@
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automaattinen"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Voiture"
+            "value": "Automatique"
           }
         },
         "gu": {
@@ -2451,13 +2451,13 @@
         "hu": {
           "stringUnit": {
             "state": "translated",
-            "value": "Autó"
+            "value": "Automatikus"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automatico"
           }
         },
         "kn": {
@@ -2481,7 +2481,7 @@
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automatisch"
           }
         },
         "pa": {
@@ -2499,25 +2499,25 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automático"
           }
         },
         "pt-PT": {
           "stringUnit": {
             "state": "translated",
-            "value": "Auto"
+            "value": "Automático"
           }
         },
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Авто"
+            "value": "Автоматически"
           }
         },
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Bil"
+            "value": "Automatisk"
           }
         },
         "sw": {
@@ -2553,7 +2553,7 @@
         "zh-CN": {
           "stringUnit": {
             "state": "translated",
-            "value": "汽车"
+            "value": "自动"
           }
         },
         "zu": {
