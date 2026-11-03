@@ -41,6 +41,10 @@ public struct LucideIcon: View {
             #endif
         }
         .frame(width: size, height: size)
+        // SDK 26.5 SwiftUI menu/toolbar layouts can propose a non-square
+        // frame for label icons (the distorted-toolbar-pill report); the
+        // fixed square frame is the ideal size, so refuse other proposals.
+        .fixedSize()
         .foregroundStyle(color ?? .primary)
     }
 }
