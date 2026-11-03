@@ -21,11 +21,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>DasherGitCommit</key>
-<<<<<<< Updated upstream
 	<string>e221ff1</string>
-=======
-	<string>69de16e</string>
->>>>>>> Stashed changes
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.utilities</string>
 	<key>LSMinimumSystemVersion</key>
