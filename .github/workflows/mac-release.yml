@@ -23,6 +23,19 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Select newest Xcode 27 (icon-rendering parity with local builds)
+        run: |
+          ls /Applications | grep -E "^Xcode" || true
+          for X in Xcode_27.2 Xcode_27.1 Xcode_27.0 Xcode_27; do
+            if [ -d "/Applications/$X.app" ]; then
+              echo "Selecting $X"
+              sudo xcode-select -s "/Applications/$X.app"
+              xcodebuild -version
+              exit 0
+            fi
+          done
+          echo "::warning::No Xcode 27 found - building with $(xcodebuild -version | head -1). Menu-label icons may render aspect-distorted (SDK 26.5 SwiftUI menu metrics).
+
       - name: Import Developer ID certificate
         env:
           MAC_DEVELOPER_ID_P12: ${{ secrets.MAC_DEVELOPER_ID_P12 }}
