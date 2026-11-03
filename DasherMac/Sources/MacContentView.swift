@@ -309,6 +309,13 @@ struct MacContentView: View {
                 .opacity(viewModel.directOpacity)
                 .ignoresSafeArea()
         )
+        // RFC: the slider drives the WHOLE floating window (canvas included),
+        // not just the material layers — window alpha multiplies every view.
+        .onChange(of: viewModel.directOpacity) { _, newValue in
+            NSApp.windows
+                .first(where: { $0.level == .floating && $0.isVisible })?
+                .alphaValue = newValue
+        }
     }
 
     private var targetAppIndicator: some View {
@@ -717,6 +724,7 @@ struct MacContentView: View {
                 window.isOpaque = false
                 window.hasShadow = false
                 window.backgroundColor = .clear
+                window.alphaValue = viewModel.directOpacity
                 window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
             } else {
                 window.level = .normal
