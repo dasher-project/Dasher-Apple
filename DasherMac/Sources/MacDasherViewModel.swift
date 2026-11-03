@@ -516,7 +516,12 @@ class MacDasherViewModel: ObservableObject {
     // MARK: - RFC 0021: Control-mode Select dispatch
 
     func handleCustomAction(name: String, attrs: [String: String]) {
-        guard name == "select", !isGameModeActive else { return }
+        guard !isGameModeActive else { return }
+        if name == "move" || name == "delete" {
+            handleMoveDelete(name: name, attrs: attrs)
+            return
+        }
+        guard name == "select" else { return }
         guard let (dist, dir) = SelectActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
             LogManager.kb("select: unknown attributes dist=\(attrs["dist"] ?? "(nil)") forward=\(attrs["forward"] ?? "(nil)") - no-op")
             return
@@ -542,6 +547,60 @@ class MacDasherViewModel: ObservableObject {
             selectAnchorUTF16 = (bounds.start == bounds.end) ? nil : bounds.anchorUTF16
             editorSelection = NSRange(location: bounds.start, length: max(0, bounds.end - bounds.start))
             UITelemetry.action("control_tree", "select", state: stateStr)
+        }
+    }
+
+    /// RFC 0021 amendment (engine v0.2.28): Move/Delete ride the
+    /// registered-action surface. Direct mode sends native movement/deletion
+    /// keystrokes to the target app; editor mode applies measured UTF-16
+    /// caret moves / deletion ranges to the output pane (and re-seeds).
+    private func handleMoveDelete(name: String, attrs: [String: String]) {
+        guard let (dist, dir) = MoveDeleteActions.parse(dist: attrs["dist"], forward: attrs["forward"]) else {
+            LogManager.kb("\(name): unknown attributes dist=\(attrs["dist"] ?? "(nil)") forward=\(attrs["forward"] ?? "(nil)") - no-op")
+            return
+        }
+        let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
+
+        if directMode {
+            if dist == .all, name == "delete" {
+                // Composite: select-all then delete, two chords with the same
+                // echo suppression as any own-inject.
+                directService.sendSelectChord(MoveDeleteActions.moveKeystroke(dist: .all, dir: .backward))
+                if let chord = MoveDeleteActions.deleteKeystroke(dist: .char, dir: .backward) {
+                    directService.sendSelectChord(chord)
+                }
+            } else if name == "move" {
+                directService.sendSelectChord(MoveDeleteActions.moveKeystroke(dist: dist, dir: dir))
+            } else if let chord = MoveDeleteActions.deleteKeystroke(dist: dist, dir: dir) {
+                directService.sendSelectChord(chord)
+            }
+            UITelemetry.action("control_tree", name, state: stateStr)
+            return
+        }
+
+        switch name {
+        case "move":
+            let caret = MoveDeleteActions.moveCaret(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: caret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: caret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            bridge.setOffset(byteOffset)
+            UITelemetry.action("control_tree", "move", state: stateStr)
+        case "delete":
+            let (newText, newCaret) = MoveDeleteActions.deleteRange(
+                text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard newText != outputText else { return }
+            outputText = newText
+            selectAnchorUTF16 = nil
+            editorSelection = NSRange(location: newCaret, length: 0)
+            let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
+            let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
+            bridge.setOffset(byteOffset)
+            UITelemetry.action("control_tree", "delete", state: stateStr)
+        default:
+            break
         }
     }
 
