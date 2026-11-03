@@ -50,6 +50,7 @@
 {"key": "Dwell Duration", "source": "Dwell Duration", "context": "DasherApp/Sources/DasherSettingsView.swift:307"}
 {"key": "Enable Dasher under Settings → General → Keyboard → Keyboards, then turn on Allow Full Access so Dasher can speak and learn.", "source": "Enable Dasher under Settings → General → Keyboard → Keyboards, then turn on Allow Full Access so Dasher can speak and learn.", "context": "DasherApp/Sources/KeyboardSetupSection.swift:28"}
 {"key": "Enable tilt input first to access calibration.", "source": "Enable tilt input first to access calibration.", "context": "DasherShared/AccessSettingsView.swift:146"}
+{"key": "Export logs", "source": "Export logs", "context": "DasherShared/LogManager.swift:373"}
 {"key": "Export Training Text", "source": "Export Training Text", "context": "DasherShared/TrainingTextManagement.swift:94"}
 {"key": "Eye Gaze", "source": "Eye Gaze", "context": "DasherVision/Sources/VisionSettingsView.swift:91"}
 {"key": "Fast", "source": "Fast", "context": "DasherShared/AccessSettingsView.swift:111"}

@@ -386,7 +386,7 @@ public struct DiagnosticLoggingSection: View {
             logSizeText = LogManager.totalLogSizeDescription()
         }
         #if canImport(UIKit)
-        .sheet(isPresented: $showExport) {
+        .sheet(isPresented: $showExport, onDismiss: { exportURLs = [] }) {
             if !exportURLs.isEmpty {
                 LogShareSheet(activityItems: exportURLs)
             }

@@ -4,7 +4,7 @@ import Foundation
 /// subtrees ride the registered-action surface — frontends call
 /// `dasher_register_action(ctx, "move"/"delete", ...)` and receive the node
 /// attributes verbatim. Distances: `char | word | sentence | paragraph | all`;
-/// direction: `forward | no`.
+/// direction: `yes | no`.
 public enum MoveDeleteDistance: String, Equatable, Sendable {
     case char
     case word
@@ -115,12 +115,13 @@ public enum MoveDeleteActions {
 
     /// Editor-mode deletion over `text`: removes the span between the caret and
     /// the boundary implied by `(dist, dir)`, returning the new text and caret.
-    /// `all` clears the document (both directions).
+    /// `all` clears the document (both directions). The caret is snapped to a
+    /// code-point boundary before the span is computed.
     public static func deleteRange(text: String, caret: Int, dist: MoveDeleteDistance, dir: SelectDirection)
         -> (text: String, caret: Int) {
         let units = Array(text.utf16)
         let len = units.count
-        let from = max(0, min(caret, len))
+        let from = SelectActions.snapCaret(units: units, caret: caret, dir: dir)
 
         var start: Int
         var end: Int
@@ -192,7 +193,7 @@ public enum MoveDeleteActions {
             guard k > 0 else { return 0 }
             var target = k
             while target < i && (units[target] == 0x20 || units[target] == 0x000A || units[target] == 0x000D) { target += 1 }
-            return max(target, 0)
+            return target
         }
     }
 }

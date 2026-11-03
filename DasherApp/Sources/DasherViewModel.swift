@@ -425,6 +425,7 @@ class DasherViewModel: ObservableObject {
         case "move":
             let caret = MoveDeleteActions.moveCaret(
                 text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard caret != editorSelection.location || editorSelection.length > 0 else { return }
             selectAnchorUTF16 = nil
             editorSelection = NSRange(location: caret, length: 0)
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: caret)
@@ -440,7 +441,9 @@ class DasherViewModel: ObservableObject {
             editorSelection = NSRange(location: newCaret, length: 0)
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
             let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
-            bridge.setOffset(byteOffset)
+            // Text changed: replace the edit buffer (setOffset only moves the
+            // cursor — deleted text would resurrect on the next output).
+            bridge.seedBuffer(windowed, caretOffset: byteOffset)
             UITelemetry.action("control_tree", "delete", state: stateStr)
         default:
             break

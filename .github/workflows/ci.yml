@@ -30,7 +30,6 @@ jobs:
           # engine consolidated to v6). Fail the build if it drifts again.
           diff -rq DasherCore/Data/colours DasherEngine/Resources/Data/colours --exclude=Makefile.am --exclude='*.py' --exclude='*.dtd'
           diff -rq DasherCore/Data/control DasherEngine/Resources/Data/control --exclude=Makefile.am
-          diff -rq DasherCore/Data/control DasherEngine/Resources/Data/control --exclude=Makefile.am
 
       - name: Guard Localizable.xcstrings against shared catalogue drift (RFC 0003)
         run: python3 Localization/gen-from-shared.py --check

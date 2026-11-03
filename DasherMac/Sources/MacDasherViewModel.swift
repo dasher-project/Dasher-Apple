@@ -562,10 +562,19 @@ class MacDasherViewModel: ObservableObject {
         let stateStr = "dist=\(dist.rawValue),forward=\(dir == .forward ? "yes" : "no")"
 
         if directMode {
+            // Native-keystroke fidelity: sentence/paragraph deletes fall back
+            // to word/line chords on macOS — tag the applied granularity so
+            // field data never reads sentence-accurate when it was not
+            // (mirrors Dasher-Windows #92's fallback= telemetry).
+            var applied = stateStr
+            if name == "delete" {
+                if dist == .sentence { applied += ",fallback=word" }
+                if dist == .paragraph { applied += ",fallback=line" }
+            }
             if dist == .all, name == "delete" {
-                // Composite: select-all then delete, two chords with the same
-                // echo suppression as any own-inject.
-                directService.sendSelectChord(MoveDeleteActions.moveKeystroke(dist: .all, dir: .backward))
+                // Composite: select-all (Cmd+A) then Delete — the select
+                // keystroke helper exists precisely for this.
+                directService.sendSelectChord(SelectActions.keystroke(dist: .all, dir: .backward))
                 if let chord = MoveDeleteActions.deleteKeystroke(dist: .char, dir: .backward) {
                     directService.sendSelectChord(chord)
                 }
@@ -574,7 +583,7 @@ class MacDasherViewModel: ObservableObject {
             } else if let chord = MoveDeleteActions.deleteKeystroke(dist: dist, dir: dir) {
                 directService.sendSelectChord(chord)
             }
-            UITelemetry.action("control_tree", name, state: stateStr)
+            UITelemetry.action("control_tree", name, state: applied)
             return
         }
 
@@ -582,6 +591,7 @@ class MacDasherViewModel: ObservableObject {
         case "move":
             let caret = MoveDeleteActions.moveCaret(
                 text: outputText, caret: editorSelection.location, dist: dist, dir: dir)
+            guard caret != editorSelection.location || editorSelection.length > 0 else { return }
             selectAnchorUTF16 = nil
             editorSelection = NSRange(location: caret, length: 0)
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: outputText, caretUTF16: caret)
@@ -597,7 +607,10 @@ class MacDasherViewModel: ObservableObject {
             editorSelection = NSRange(location: newCaret, length: 0)
             let (windowed, windowedCaret) = EditorSeedPolicy.apply(to: newText, caretUTF16: newCaret)
             let byteOffset = bridge.byteOffsetFromUTF16(windowed, utf16Offset: windowedCaret)
-            bridge.setOffset(byteOffset)
+            // Text changed: the edit buffer must be replaced (setOffset only
+            // moves the cursor and the deleted text would resurrect on the
+            // next output) — RFC 0019 clause 4.
+            bridge.seedBuffer(windowed, caretOffset: byteOffset)
             UITelemetry.action("control_tree", "delete", state: stateStr)
         default:
             break
