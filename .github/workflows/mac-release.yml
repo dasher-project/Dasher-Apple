@@ -162,6 +162,8 @@ jobs:
         with:
           files: build/Dasher-${{ github.ref_name }}.dmg
           generate_release_notes: true
+          # RFC 0023 §1: -rc.N tags are prereleases — don't mark them "Latest".
+          prerelease: ${{ contains(github.ref_name, '-rc.') }}
 
       - name: Cleanup keychain
         if: always()
