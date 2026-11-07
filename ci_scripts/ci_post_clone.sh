@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -eu
 
 echo "=== Dasher CI Post-Clone ==="
 
@@ -7,6 +7,27 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 
 echo "Initializing DasherCore submodule..."
 git submodule update --init --recursive
+
+echo "Stamping tag-derived versions into project.yml (RFC 0023 §1)..."
+if ! git fetch --tags origin 2>/dev/null; then
+    echo "WARNING: could not fetch tags — versions may fall back to the project.yml constants" >&2
+fi
+eval "$(Scripts/version-from-tag.sh)"
+if [ -z "${MARKETING_VERSION:-}" ] || [ -z "${CURRENT_PROJECT_VERSION:-}" ]; then
+    echo "ERROR: Scripts/version-from-tag.sh emitted no version — refusing to stamp empty values" >&2
+    exit 1
+fi
+sed -i '' "s/MARKETING_VERSION: \".*\"/MARKETING_VERSION: \"$MARKETING_VERSION\"/g" project.yml
+sed -i '' "s/CURRENT_PROJECT_VERSION: \".*\"/CURRENT_PROJECT_VERSION: \"$CURRENT_PROJECT_VERSION\"/g" project.yml
+if ! grep -q "MARKETING_VERSION: \"$MARKETING_VERSION\"" project.yml; then
+    echo "ERROR: MARKETING_VERSION stamp into project.yml did not apply" >&2
+    exit 1
+fi
+if ! grep -q "CURRENT_PROJECT_VERSION: \"$CURRENT_PROJECT_VERSION\"" project.yml; then
+    echo "ERROR: CURRENT_PROJECT_VERSION stamp into project.yml did not apply" >&2
+    exit 1
+fi
+echo "Version: $MARKETING_VERSION ($CURRENT_PROJECT_VERSION)"
 
 echo "Copying locale strings..."
 mkdir -p DasherEngine/Resources/Data/Strings

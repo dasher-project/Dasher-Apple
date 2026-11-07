@@ -12,10 +12,34 @@ jobs:
     # fail loudly instead of burning hours of runner time.
     timeout-minutes: 45
     steps:
+      - name: Reject tags outside the RFC 0023 §1 scheme
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # Aligned scheme: vMAJOR.MINOR.PATCH with MAJOR >= 6, optional -rc.N.
+          # Retires the -mac-beta suffix and blocks legacy/odd tags from
+          # triggering releases with wrong-looking DMG names.
+          if ! [[ "$REF_NAME" =~ ^v(6|[7-9]|[1-9][0-9]+)\.[0-9]+\.[0-9]+(-rc\.[0-9]+)?$ ]]; then
+            echo "::error::Tag '$REF_NAME' does not match the RFC 0023 §1 scheme (vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-rc.N). The -mac-beta suffix is retired."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          # Full history + tags: versions derive from git describe (RFC 0023 §1).
+          fetch-depth: 0
+
+      - name: Derive version from tag (RFC 0023 §1)
+        run: |
+          eval "$("$GITHUB_WORKSPACE/Scripts/version-from-tag.sh")"
+          echo "Building version $MARKETING_VERSION ($CURRENT_PROJECT_VERSION)"
+          {
+            echo "MARKETING_VERSION=$MARKETING_VERSION"
+            echo "CURRENT_PROJECT_VERSION=$CURRENT_PROJECT_VERSION"
+          } >> "$GITHUB_ENV"
 
       - name: Install xcodegen
         run: brew install xcodegen
@@ -57,7 +81,9 @@ jobs:
             -archivePath build/Dasher.xcarchive \
             DEVELOPMENT_TEAM=${{ secrets.MAC_TEAM_ID }} \
             CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="-"
+            CODE_SIGN_IDENTITY="-" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
 
       - name: Export
         env:

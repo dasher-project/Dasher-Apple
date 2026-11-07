@@ -23,6 +23,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: CAPI compatibility gate (RFC 0023 item 3)
+        run: Scripts/check-capi.sh
+
       - name: Guard bundled engine data against drift
         run: |
           # The curated DasherEngine/Resources/Data copy caused the
