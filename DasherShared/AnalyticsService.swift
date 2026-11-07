@@ -21,6 +21,13 @@ public final class AnalyticsService {
     private init() {}
 
     public var isOptedIn: Bool { settings.optedIn }
+
+    /// RFC 0023 item 4: the bundled DasherCore's version, reported on every
+    /// event. Set once at engine creation by the bridge
+    /// (`dasher_get_engine_version()`, DasherCore#109 — static storage);
+    /// "unknown" until then (events before engine creation are rare). The
+    /// bridge layer calls this — DasherShared cannot import the C header.
+    public static var engineVersion: String = "unknown"
     public var hasPrompted: Bool { settings.promptShown }
     public var anonymousId: String { distinctId }
 
@@ -76,6 +83,8 @@ public final class AnalyticsService {
             "platform": platformName,
             "app_variant": appVariant,
             "app_version": appVersion,
+            // RFC 0023 item 4 — engine pin drift visible in PostHog.
+            "engine_version": Self.engineVersion,
             // RFC 0001 promises no location data. PostHog Cloud derives $geoip_*
             // (city, postal code, lat/lon) from the client IP even with project
             // IP anonymisation on — this per-event flag is the only way to stop it.
