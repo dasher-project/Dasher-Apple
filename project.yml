@@ -186,7 +186,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: "Dasher"
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.ios
         INFOPLIST_FILE: DasherApp/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
@@ -270,7 +270,7 @@ targets:
           cp -f "${SRCROOT}/DasherCore/Strings/"*.json "$DEST/Strings/" 2>/dev/null || true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.Keyboard
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.ios.Keyboard
         INFOPLIST_FILE: DasherKeyboard/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
@@ -292,7 +292,7 @@ targets:
         com.apple.security.application-groups:
           - group.at.dasher.Dasher
         keychain-access-groups:
-          - "$(AppIdentifierPrefix)at.dasher.Dasher"
+          - "$(AppIdentifierPrefix)at.dasher.Dasher.ios"
 
   DasherMac:
     type: application
@@ -497,7 +497,7 @@ targets:
     settings:
       base:
         PRODUCT_NAME: "Dasher"
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.watchapp
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.ios.watchapp
         INFOPLIST_FILE: DasherWatch/Info.plist
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "6.0.0"
