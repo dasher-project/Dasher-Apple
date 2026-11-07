@@ -16,40 +16,6 @@
     {
       "layers" : [
         {
-          "image-name" : "Image 9.png",
-          "name" : "Target Region",
-          "position" : {
-            "scale" : 1.2,
-            "translation-in-points" : [
-              324.5703125,
-              -337.7578125
-            ]
-          }
-        },
-        {
-          "image-name" : "Image 8.png",
-          "name" : "Canvas Region",
-          "position" : {
-            "scale" : 1,
-            "translation-in-points" : [
-              161.6328125,
-              -155.5703125
-            ]
-          }
-        }
-      ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.35
-      },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.35
-      }
-    },
-    {
-      "layers" : [
-        {
           "blend-mode" : "normal",
           "glass" : false,
           "image-name" : "Image 10.png",
@@ -79,6 +45,40 @@
       "shadow" : {
         "kind" : "neutral",
         "opacity" : 0.2
+      }
+    },
+    {
+      "layers" : [
+        {
+          "image-name" : "Image 9.png",
+          "name" : "Target Region",
+          "position" : {
+            "scale" : 1.2,
+            "translation-in-points" : [
+              324.5703125,
+              -337.7578125
+            ]
+          }
+        },
+        {
+          "image-name" : "Image 8.png",
+          "name" : "Canvas Region",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              161.6328125,
+              -155.5703125
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.35
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.35
       }
     }
   ],
