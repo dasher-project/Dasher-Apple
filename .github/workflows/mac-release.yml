@@ -7,7 +7,11 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: macos-latest
+    # xcode-27 image: GH ships one Xcode major per macOS image, so macos-latest
+    # (macOS 26) carries only Xcode 26.x — whose SDK distorts toolbar icons
+    # (#65/#67, v6.0.0-rc.1 regression). Preview label today; the toolchain
+    # guard below fails loudly if the image rotates away from Xcode 27.
+    runs-on: xcode-27
     # Export normally completes in under a minute; if signing hangs again,
     # fail loudly instead of burning hours of runner time.
     timeout-minutes: 45
@@ -47,8 +51,35 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Require Xcode 27+ (stretched-icon toolchain guard, #67)
+        run: |
+          # The square-raster fix (#65) does NOT hold on Xcode 26.6/SDK 26.5:
+          # v0.1.15 contained it and still shipped stretched toolbar icons.
+          # Xcode 27 renders correctly (verified locally, #67). The #68
+          # "repair" dropped the selection entirely, so v6.0.0-rc.1 silently
+          # rebuilt with Xcode_26.6 — this guard makes that impossible: pick
+          # the newest installed Xcode 27+ or fail the release loudly.
+          BEST=""
+          for APP in /Applications/Xcode*.app; do
+            [ -d "$APP" ] || continue
+            MAJOR=$(DEVELOPER_DIR="$APP/Contents/Developer" xcodebuild -version 2>/dev/null | head -1 | sed 's/[^0-9]*//;s/\..*//')
+            if [ -n "$MAJOR" ] && [ "$MAJOR" -ge 27 ]; then BEST="$APP"; fi
+          done
+          if [ -z "$BEST" ]; then
+            echo "::error::No Xcode 27+ installed on this runner. Release builds must not use the Xcode 26.6/SDK 26.5 toolchain (stretched toolbar icons regression, #65/#67). Pin runs-on to an image that ships Xcode 27 (e.g. macos-26)."
+            exit 1
+          fi
+          echo "DEVELOPER_DIR=$BEST/Contents/Developer" >> "$GITHUB_ENV"
+          echo "Selected $BEST"
+
       - name: Toolchain info
-        run: xcode-select -p && xcodebuild -version
+        run: |
+          xcodebuild -version
+          VER=$(xcodebuild -version | head -1 | sed 's/[^0-9]*//;s/\..*//')
+          if [ "$VER" -lt 27 ]; then
+            echo "::error::Build would run on Xcode $VER — SDK 26.5 distorts toolbar icon metrics (#65/#67)."
+            exit 1
+          fi
 
       - name: Import Developer ID certificate
         env:
@@ -162,6 +193,8 @@ jobs:
         with:
           files: build/Dasher-${{ github.ref_name }}.dmg
           generate_release_notes: true
+          # RFC 0023 §1: -rc.N tags are prereleases — don't mark them "Latest".
+          prerelease: ${{ contains(github.ref_name, '-rc.') }}
 
       - name: Cleanup keychain
         if: always()

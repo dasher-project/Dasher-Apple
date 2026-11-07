@@ -534,8 +534,10 @@ class DasherBridge: InputMethodBridge {
     }
 
     /// RFC 0023 item 4: publish the running engine's version to analytics.
-    /// Called once at bridge init; the string is static storage in the engine.
-    private static func publishEngineVersion() {
+    /// Called from the detached bootstrap task, so it must NOT inherit
+    /// DasherBridge's MainActor isolation: it only reads the engine's static
+    /// version storage and writes the plain static AnalyticsService.engineVersion.
+    private nonisolated static func publishEngineVersion() {
         AnalyticsService.engineVersion = String(cString: dasher_get_engine_version())
     }
 
