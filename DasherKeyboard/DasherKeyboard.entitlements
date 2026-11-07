@@ -12,7 +12,7 @@
 	<true/>
 	<key>keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)at.dasher.Dasher</string>
+		<string>$(AppIdentifierPrefix)at.dasher.Dasher.ios</string>
 	</array>
 </dict>
 </plist>
