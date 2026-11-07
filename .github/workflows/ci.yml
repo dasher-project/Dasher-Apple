@@ -15,7 +15,11 @@ on:
 jobs:
   build:
     name: Build (DasherMac)
-    runs-on: macos-latest
+    # xcode-27 image: GH ships one Xcode major per macOS image, so macos-latest
+    # (macOS 26) carries only Xcode 26.x — whose SDK distorts toolbar icons
+    # (#65/#67). Preview label today; the toolchain guard below fails loudly if
+    # the image rotates away from Xcode 27.
+    runs-on: xcode-27
 
     steps:
       - name: Checkout

@@ -7,7 +7,11 @@ on:
 
 jobs:
   build-and-release:
-    runs-on: macos-latest
+    # xcode-27 image: GH ships one Xcode major per macOS image, so macos-latest
+    # (macOS 26) carries only Xcode 26.x — whose SDK distorts toolbar icons
+    # (#65/#67, v6.0.0-rc.1 regression). Preview label today; the toolchain
+    # guard below fails loudly if the image rotates away from Xcode 27.
+    runs-on: xcode-27
     # Export normally completes in under a minute; if signing hangs again,
     # fail loudly instead of burning hours of runner time.
     timeout-minutes: 45
