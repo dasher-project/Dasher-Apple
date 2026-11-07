@@ -16,34 +16,8 @@
     {
       "layers" : [
         {
-          "blend-mode" : "darken",
-          "glass" : false,
-          "image-name" : "Image 11.png",
-          "name" : "Image 11",
-          "position" : {
-            "scale" : 1.6,
-            "translation-in-points" : [
-              232.234375,
-              -273.671875
-            ]
-          }
-        },
-        {
-          "blend-mode" : "darken",
-          "glass" : false,
-          "image-name" : "Image 10.png",
-          "name" : "Image 10",
-          "position" : {
-            "scale" : 1.6,
-            "translation-in-points" : [
-              -85.1953125,
-              96.5859375
-            ]
-          }
-        },
-        {
           "image-name" : "Image 9.png",
-          "name" : "Image 9",
+          "name" : "Target Region",
           "position" : {
             "scale" : 1.2,
             "translation-in-points" : [
@@ -53,9 +27,8 @@
           }
         },
         {
-          "blend-mode" : "normal",
           "image-name" : "Image 8.png",
-          "name" : "Image 8",
+          "name" : "Canvas Region",
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
@@ -67,11 +40,45 @@
       ],
       "shadow" : {
         "kind" : "neutral",
-        "opacity" : 0.5
+        "opacity" : 0.35
       },
       "translucency" : {
         "enabled" : true,
-        "value" : 0.5
+        "value" : 0.35
+      }
+    },
+    {
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : false,
+          "image-name" : "Image 10.png",
+          "name" : "Letter a",
+          "position" : {
+            "scale" : 1.6,
+            "translation-in-points" : [
+              -85.1953125,
+              96.5859375
+            ]
+          }
+        },
+        {
+          "blend-mode" : "normal",
+          "glass" : false,
+          "image-name" : "Image 11.png",
+          "name" : "Letter b",
+          "position" : {
+            "scale" : 1.6,
+            "translation-in-points" : [
+              232.234375,
+              -273.671875
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.2
       }
     }
   ],
