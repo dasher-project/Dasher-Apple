@@ -167,6 +167,9 @@ class DasherBridge: InputMethodBridge {
             let newCtx = dasher_create(dataDir, userDir, &errorMsg)
             let err = errorMsg.map { String(cString: $0) }
             guard let newCtx else { return (nil, err) }
+                // RFC 0023 item 4: the engine is live — publish its version
+                // to the analytics default properties (static func).
+                Self.publishEngineVersion()
                 let retained = Unmanaged.passUnretained(self).toOpaque()
                 dasher_set_output_callback(newCtx, { eventType, text, userData in
                     guard let text = text, let userData = userData else { return }
@@ -528,6 +531,12 @@ class DasherBridge: InputMethodBridge {
 
     static var capiVersion: Int {
         Int(dasher_capi_version())
+    }
+
+    /// RFC 0023 item 4: publish the running engine's version to analytics.
+    /// Called once at bridge init; the string is static storage in the engine.
+    private static func publishEngineVersion() {
+        AnalyticsService.engineVersion = String(cString: dasher_get_engine_version())
     }
 
     /// Engine-reported user training file path (`<userDir>/training_<alphabet>.txt`)
