@@ -32,6 +32,10 @@ settings:
   base:
     CLANG_CXX_LANGUAGE_STANDARD: c++17
     CLANG_CXX_LIBRARY: libc++
+    # RFC 0023 item 3: minimum engine CAPI level this frontend requires.
+    # Enforced by the CAPI Gate build phase (DasherCoreTemplate) via
+    # Scripts/check-capi.sh, and by CI before anything is built.
+    REQUIRED_DASHER_CAPI_VERSION: "3"
     DEVELOPMENT_TEAM: TRKU383G7Z
     CODE_SIGN_IDENTITY: "Apple Development"
     CODE_SIGN_STYLE: Automatic
@@ -65,6 +69,15 @@ targetTemplates:
           - "$(SRCROOT)/DasherCore/src"
           - "$(SRCROOT)/DasherCore/src/DasherCore"
           - "$(SRCROOT)/DasherCore/Thirdparty/pugixml/src"
+    preBuildScripts:
+      - name: CAPI Gate
+        basedOnDependencyAnalysis: false
+        script: |
+          # RFC 0023 item 3: fail the build if the pinned DasherCore's
+          # DASHER_CAPI_VERSION is below the declared minimum
+          # (settings.base REQUIRED_DASHER_CAPI_VERSION). Twin of
+          # Dasher-Windows' Scripts/check-capi.ps1 + Directory.Build.props.
+          "$SRCROOT/Scripts/check-capi.sh" "$SRCROOT/DasherCore/src/dasher.h" "${REQUIRED_DASHER_CAPI_VERSION:-}"
 
   PugixmlTemplate:
     type: library.static
