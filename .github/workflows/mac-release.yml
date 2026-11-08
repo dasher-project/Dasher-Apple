@@ -12,9 +12,10 @@ jobs:
     # (#65/#67, v6.0.0-rc.1 regression). Preview label today; the toolchain
     # guard below fails loudly if the image rotates away from Xcode 27.
     runs-on: xcode-27
-    # Export normally completes in under a minute; if signing hangs again,
-    # fail loudly instead of burning hours of runner time.
-    timeout-minutes: 45
+    # The full build+export+codesign legitimately takes ~45-60 min since the
+    # Xcode 27 settings adoption (v6.0.0's first run died on the old 45 cap
+    # mid-codesign). 90 still bounds a signing hang without burning hours.
+    timeout-minutes: 90
     steps:
       - name: Reject tags outside the RFC 0023 §1 scheme
         if: startsWith(github.ref, 'refs/tags/')
