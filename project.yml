@@ -32,6 +32,9 @@ settings:
   base:
     CLANG_CXX_LANGUAGE_STANDARD: c++17
     CLANG_CXX_LIBRARY: libc++
+    # Xcode 27 recommended-settings hygiene (silences update recommendations)
+    DEAD_CODE_STRIPPING: YES
+    ASSETCATALOG_GENERATE_ASSET_SYMBOLS: YES
     # RFC 0023 item 3: minimum engine CAPI level this frontend requires.
     # Enforced by the CAPI Gate build phase (DasherCoreTemplate) via
     # Scripts/check-capi.sh, and by CI before anything is built.
@@ -353,6 +356,10 @@ targets:
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
         MARKETING_VERSION: "6.0.0"
         CURRENT_PROJECT_VERSION: "1"
+        # macOS distribution is Developer-ID/notarized (mac-release.yml) —
+        # hardened runtime in the project means the archive is hardened
+        # before the re-sign step, not only after it.
+        ENABLE_HARDENED_RUNTIME: YES
         CODE_SIGN_IDENTITY: "Apple Development"
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: TRKU383G7Z
