@@ -4,8 +4,6 @@ options:
   deploymentTarget:
     iOS: "17.0"
     macOS: "14.0"
-    visionOS: "1.0"
-    watchOS: "9.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
   fileTypes:
@@ -104,6 +102,9 @@ targets:
   pugixml_visionos:
     platform: visionOS
     templates: [PugixmlTemplate]
+    settings:
+      base:
+        XROS_DEPLOYMENT_TARGET: "$(RECOMMENDED_XROS_DEPLOYMENT_TARGET)"
 
   DasherCore_ios:
     platform: iOS
@@ -120,16 +121,25 @@ targets:
   DasherCore_visionos:
     platform: visionOS
     templates: [DasherCoreTemplate]
+    settings:
+      base:
+        XROS_DEPLOYMENT_TARGET: "$(RECOMMENDED_XROS_DEPLOYMENT_TARGET)"
     dependencies:
       - target: pugixml_visionos
 
   pugixml_watchos:
     platform: watchOS
     templates: [PugixmlTemplate]
+    settings:
+      base:
+        WATCHOS_DEPLOYMENT_TARGET: "$(RECOMMENDED_WATCHOS_DEPLOYMENT_TARGET)"
 
   DasherCore_watchos:
     platform: watchOS
     templates: [DasherCoreTemplate]
+    settings:
+      base:
+        WATCHOS_DEPLOYMENT_TARGET: "$(RECOMMENDED_WATCHOS_DEPLOYMENT_TARGET)"
     dependencies:
       - target: pugixml_watchos
 
@@ -390,6 +400,9 @@ targets:
   DasherVision:
     type: application
     platform: visionOS
+    settings:
+      base:
+        XROS_DEPLOYMENT_TARGET: "$(RECOMMENDED_XROS_DEPLOYMENT_TARGET)"
     sources:
       - path: DasherVision
         excludes:
@@ -467,6 +480,9 @@ targets:
   DasherWatch:
     type: application
     platform: watchOS
+    settings:
+      base:
+        WATCHOS_DEPLOYMENT_TARGET: "$(RECOMMENDED_WATCHOS_DEPLOYMENT_TARGET)"
     sources:
       - path: DasherWatch
         excludes:
