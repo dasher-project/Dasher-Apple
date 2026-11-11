@@ -43,7 +43,7 @@ Use scratch text. The first three checks need mouse clicks only after you select
 | --- | --- | --- |
 | Activate without a key press | Open TextEdit with `😀 left replace right`. Select the probe input source. Click in the text. | The panel appears. **Read Context** shows the editor caret. Clicking the panel leaves the editor focused. |
 | Replace a selection | Double-click `replace`. Click **Read Context**, then **Insert Marker**. | The text becomes `😀 left DasherProbe right`. The panel shows `Insert readback matched.` |
-| Delete by range | Click **Read Context**. Click **Delete Marker**. | The marker disappears. Both surrounding spaces stay in place. The panel shows `Delete readback matched.` |
+| Test InputMethodKit range deletion | Place the caret after the full marker. Click **Read Context**, then **Delete Marker**. | TextEdit leaves the marker in place and reports `Delete unconfirmed`. In other editors, record whether the marker disappears. |
 | Reject a moved caret | Read at one position. Click at another position. Click **Insert Marker** without a fresh read. | The probe requests a fresh read. The text stays the same. |
 | Switch identical fields | Open `fixture.html` in Safari or Chrome. Read one field, then click at the same position in the other field. Click **Insert Marker**. | The text in both fields stays the same. The probe requests a fresh read. |
 | Switch apps | Read in TextEdit. Focus a different editor. Click **Insert Marker** without a fresh read. | The probe requests a fresh read. Neither editor changes. |
@@ -70,7 +70,7 @@ If the switch is on but the probe still asks for access, restart the probe. Sele
 
 The build, code signature, and mock-client tests passed on macOS 27.3. macOS registered, enabled, and selected the input source. The previous input source was restored.
 
-The live test confirmed insertion in TextEdit and Safari. TextEdit returned the same caret and context after the range delete. The Backspace test still needs a live result.
+The live test confirmed insertion in TextEdit and Safari. In TextEdit, range deletion left the marker in place. Backspace at the caret deleted one character and the readback matched. Backspace over the full selection and the same checks in other editors still need live results.
 
 ## Restore your input source
 
