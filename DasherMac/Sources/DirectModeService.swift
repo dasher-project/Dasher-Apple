@@ -2,6 +2,16 @@ import Cocoa
 import CoreGraphics
 import DasherShared
 
+struct DirectFieldContext: Equatable, Sendable {
+    let text: String
+    let caretUTF16: Int
+    // The input method returns a window ending at the selection. Keep its
+    // document position for change detection even when two windows match.
+    let inputMethodSelection: NSRange?
+
+    var sourceName: String { inputMethodSelection == nil ? "AX" : "InputMethodKit" }
+}
+
 @MainActor
 class DirectModeService: ObservableObject {
     @Published var isActive = false
@@ -59,17 +69,11 @@ class DirectModeService: ObservableObject {
     private var axObserver: AXObserver?
     private var watchedElement: AXUIElement?
 
-    /// Cross-app AX notifications are best-effort: well-behaved NSTextView apps
-    /// post kAXSelectedTextChanged on caret moves, but several major apps
-    /// (BBEdit's custom text engine, Electron/Code editors) do not. While
-    /// Windows gets guaranteed events from TSF, macOS has no equivalent — so
-    /// Direct Mode pairs the observer with a low-frequency poll of the focused
-    /// field, re-seeding only when the (text, caret) tuple actually changed.
+    /// Some editors omit AX notifications for caret changes. Poll the focused
+    /// field through the active input method or Accessibility as a fallback.
     private var contextPollTimer: Timer?
     private let contextPollQueue = DispatchQueue(label: "at.dasher.directmode.context-poll", qos: .utility)
-    private var lastPolledText: String?
-    private var lastPolledLength: Int?
-    private var lastPolledCaret: Int?
+    private var lastPolledContext: DirectFieldContext?
     private var loggedPollReadFailure = false
     private var isPollReadInFlight = false
     private var pollEpoch = 0
@@ -126,9 +130,9 @@ class DirectModeService: ObservableObject {
         // Re-registration means focus moved (same app) or the target changed:
         // reset the poll baseline so a change carried over from the previous
         // field/target cannot be silently absorbed.
-        lastPolledText = nil
-        lastPolledLength = nil
-        lastPolledCaret = nil
+        lastPolledContext = nil
+        pollEpoch += 1
+        isPollReadInFlight = false
 
         // Watch focus changes on the app element — tabbing between text fields
         // within the same app fires this; re-register the caret notification
@@ -160,9 +164,7 @@ class DirectModeService: ObservableObject {
         // Baseline is unknown: the first successful poll sets it silently so
         // startup does not fire a spurious re-seed (the "target changed"
         // trigger already seeded once). Later diffs fire the normal pipeline.
-        lastPolledText = nil
-        lastPolledLength = nil
-        lastPolledCaret = nil
+        lastPolledContext = nil
         loggedPollReadFailure = false
         isPollReadInFlight = false
         pollEpoch += 1
@@ -177,9 +179,7 @@ class DirectModeService: ObservableObject {
         contextPollTimer?.invalidate()
         contextPollTimer = nil
         pollEpoch += 1
-        lastPolledText = nil
-        lastPolledLength = nil
-        lastPolledCaret = nil
+        lastPolledContext = nil
         isPollReadInFlight = false
     }
 
@@ -197,18 +197,14 @@ class DirectModeService: ObservableObject {
             return
         }
         let pid = appTarget.processIdentifier
-        let prev = (text: lastPolledText, length: lastPolledLength, caret: lastPolledCaret)
         let epoch = pollEpoch
-        var frontPid: pid_t?
-        if let front = NSWorkspace.shared.frontmostApplication,
-           front.bundleIdentifier != Bundle.main.bundleIdentifier {
-            frontPid = front.processIdentifier
-        }
+        let frontPid = externalForegroundProcess()
+        let canUseAccessibility = hasAccessibilityPermission
         isPollReadInFlight = true
         contextPollQueue.async { [weak self] in
             guard let self else { return }
-            let read = self.readFocusedField(pid: pid, frontPid: frontPid)
-            DispatchQueue.main.async { self.finishContextPoll(read: read, snapshot: prev, pid: pid, epoch: epoch) }
+            let read = self.readFocusedField(pid: pid, frontPid: frontPid, canUseAccessibility: canUseAccessibility)
+            DispatchQueue.main.async { self.finishContextPoll(read: read, pid: pid, epoch: epoch) }
         }
     }
 
@@ -220,37 +216,32 @@ class DirectModeService: ObservableObject {
     ///     ContextSeedPolicy engine-ahead check skips when already in sync);
     ///   - a USER caret move during the window is caught by that same post-
     ///     window compare instead of being swallowed.
-    private func finishContextPoll(read: (text: String, caretUTF16: Int, failure: String?)?, snapshot: (text: String?, length: Int?, caret: Int?), pid: pid_t, epoch: Int) {
-        isPollReadInFlight = false
+    private func finishContextPoll(read: ContextRead, pid: pid_t, epoch: Int) {
         // Epoch mismatch = completion from a stop/start toggle boundary: the
         // stop already reset the in-flight flag; a new epoch may have its own
         // read in flight, so leave it alone.
         guard epoch == pollEpoch else { return }
+        isPollReadInFlight = false
         guard isActive, let appTarget = lastTargetApp, appTarget.processIdentifier == pid else { return }
-        guard let read, read.failure == nil else {
+        guard let context = read.context else {
             if !loggedPollReadFailure {
                 loggedPollReadFailure = true
-                LogManager.kb("  [AX] poll: focused field unreadable for pid=\(pid) — \(read?.failure ?? "unknown")")
+                LogManager.kb("  Direct Mode poll: focused field unreadable for pid=\(pid) — \(read.failure ?? "unknown")")
             }
             return
         }
+        guard isCurrentTarget(pid, context: context) else { return }
         loggedPollReadFailure = false
 
         if isEchoSuppressed || isWithinOwnInjectEcho || isWithinOwnParagraphOrSelectSettle {
             return   // no-op tick: baseline deliberately stays stale (see above)
         }
 
-        let baselineKnown = (snapshot.text != nil)
-        var changed = baselineKnown && (read.caretUTF16 != snapshot.caret || read.text.utf16.count != snapshot.length)
-        if !changed, baselineKnown, let prev = snapshot.text {
-            changed = (prev != read.text)   // same length + caret: content may still differ (1:1 replace)
-        }
-        lastPolledText = read.text
-        lastPolledLength = read.text.utf16.count
-        lastPolledCaret = read.caretUTF16
+        let changed = lastPolledContext.map { $0 != context } ?? (context.inputMethodSelection != nil)
+        lastPolledContext = context
 
         if changed {
-            LogManager.kb("  [AX] poll detected caret/context change (utf16=\(read.text.utf16.count), caret16=\(read.caretUTF16))")
+            LogManager.kb("  [\(context.sourceName)] poll detected caret/context change (utf16=\(context.text.utf16.count), caret16=\(context.caretUTF16))")
             onTargetCaretChanged?("caret moved")
         }
     }
@@ -267,54 +258,61 @@ class DirectModeService: ObservableObject {
         watchedElement = nil
     }
 
-    /// Reads the focused text field's content + caret via AX, for engine
-    /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3). Main-thread wrapper:
-    /// resolves the target/front pids, then delegates to the pure
-    /// `readFocusedField` (which the context poller also runs on the
-    /// utility queue). A 300 ms timeout on the AX messages prevents an
-    /// unresponsive target from stalling the caller (Windows' hard budget, PR #52).
-    func readTargetFieldContext(logging: Bool = true) -> (text: String, caretUTF16: Int)? {
-        guard hasAccessibilityPermission,
-              let appTarget = lastTargetApp,
-              !appTarget.isTerminated else { return nil }
-        let pid = appTarget.processIdentifier
-
-        // Stale-target guard: if another non-Dasher app has become frontmost
-        // mid-debounce, do not read from a backgrounded window.
-        if let front = NSWorkspace.shared.frontmostApplication,
-           front.bundleIdentifier != Bundle.main.bundleIdentifier,
-           front.processIdentifier != pid {
-            if logging { LogManager.kb("  [AX] skipping read: target pid=\(pid) is not frontmost (front=\(front.processIdentifier))") }
-            return nil
-        }
-
-        let read = readFocusedField(pid: pid, frontPid: nil)
-        guard read.failure == nil else {
-            if logging { LogManager.kb("  [AX] read failed for pid=\(pid): \(read.failure ?? "unknown")") }
-            return nil
-        }
-        if logging { LogManager.kb("  [AX] read \(read.text.utf16.count) utf16, caret16=\(read.caretUTF16)") }
-        return (read.text, read.caretUTF16)
+    private func externalForegroundProcess() -> pid_t? {
+        guard let front = NSWorkspace.shared.frontmostApplication,
+              front.bundleIdentifier != Bundle.main.bundleIdentifier else { return nil }
+        return front.processIdentifier
     }
 
-    /// Pure, thread-safe AX read of the focused field. No logging, no shared
-    /// mutable state — safe from `contextPollQueue`. `frontPid != nil` (and
-    /// ≠ pid) means a non-Dasher app is frontmost: refuse, so a backgrounded
-    /// target is never read mid-debounce.
-    nonisolated private func readFocusedField(pid: pid_t, frontPid: pid_t?) -> (text: String, caretUTF16: Int, failure: String?) {
+    private func isCurrentTarget(_ pid: pid_t, context: DirectFieldContext) -> Bool {
+        guard isActive, let target = lastTargetApp,
+              target.processIdentifier == pid, !target.isTerminated else { return false }
+        let frontPid = externalForegroundProcess()
+        return frontPid == pid || (frontPid == nil && context.inputMethodSelection == nil)
+    }
+
+    func readTargetFieldContext() async -> DirectFieldContext? {
+        guard let appTarget = lastTargetApp, !appTarget.isTerminated else { return nil }
+        let pid = appTarget.processIdentifier
+        let frontPid = externalForegroundProcess()
+        let canUseAccessibility = hasAccessibilityPermission
+        let read: ContextRead = await withCheckedContinuation { continuation in
+            contextPollQueue.async {
+                continuation.resume(returning: self.readFocusedField(
+                    pid: pid, frontPid: frontPid, canUseAccessibility: canUseAccessibility
+                ))
+            }
+        }
+        guard let context = read.context else {
+            LogManager.kb("  Direct Mode read failed for pid=\(pid): \(read.failure ?? "unknown")")
+            return nil
+        }
+        guard isCurrentTarget(pid, context: context) else { return nil }
+        LogManager.kb("  [\(context.sourceName)] read \(context.text.utf16.count) utf16, caret16=\(context.caretUTF16)")
+        return context
+    }
+
+    private typealias ContextRead = (context: DirectFieldContext?, failure: String?)
+
+    nonisolated private func readFocusedField(pid: pid_t, frontPid: pid_t?, canUseAccessibility: Bool) -> ContextRead {
+        if let frontPid, frontPid != pid {
+            return (nil, "target pid=\(pid) is not frontmost (front=\(frontPid))")
+        }
+        if frontPid == pid, let snapshot = DasherReadInputMethodContext(pid) {
+            let prefix = snapshot.prefix
+            return (DirectFieldContext(text: prefix, caretUTF16: prefix.utf16.count, inputMethodSelection: snapshot.selection), nil)
+        }
+        guard canUseAccessibility else { return (nil, "Accessibility access unavailable") }
+
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.3)
-
-        if let frontPid, frontPid != pid {
-            return ("", 0, "target pid=\(pid) is not frontmost (front=\(frontPid))")
-        }
 
         var focusedRef: CFTypeRef?
         let focusErr = AXUIElementCopyAttributeValue(app, kAXFocusedUIElementAttribute as CFString, &focusedRef)
         guard focusErr == .success,
               let focusedCF = focusedRef,
               CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else {
-            return ("", 0, "no focused element (err=\(focusErr.rawValue))")
+            return (nil, "no focused element (err=\(focusErr.rawValue))")
         }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
         AXUIElementSetMessagingTimeout(focused, 0.3)
@@ -322,7 +320,7 @@ class DirectModeService: ObservableObject {
         var valueRef: CFTypeRef?
         let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
         guard valueErr == .success, let value = valueRef as? String else {
-            return ("", 0, "kAXValueAttribute unavailable (err=\(valueErr.rawValue))")
+            return (nil, "kAXValueAttribute unavailable (err=\(valueErr.rawValue))")
         }
 
         let nsLength = (value as NSString).length
@@ -341,7 +339,7 @@ class DirectModeService: ObservableObject {
             }
         }
 
-        return (value, caretOffset, nil)
+        return (DirectFieldContext(text: value, caretUTF16: caretOffset, inputMethodSelection: nil), nil)
     }
 
     func checkAccessibility() {

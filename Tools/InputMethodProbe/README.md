@@ -72,7 +72,9 @@ The build, code signature, and mock-client tests passed on macOS 27.3. macOS reg
 
 The live test confirmed insertion in TextEdit and Safari. In TextEdit, range deletion left the marker in place. Backspace at the caret deleted one character and the readback matched. Backspace over the selected marker also removed one adjacent space. The probe reported caret 7, one UTF-16 unit before the expected position. This matches [AppKit's smart delete behavior](https://developer.apple.com/documentation/appkit/nstextview/smartinsertdeleteenabled).
 
-The next test is to read context after caret and field changes in BBEdit and a browser editor. The Dasher integration needs to use the actual text and caret after Backspace to keep the language model in sync.
+BBEdit returned context at the caret and rejected an edit after the selection changed. Insert and Backspace passed readback checks. The range delete left the original context and caret in place.
+
+See the [Dasher Direct Input test](../../DasherInputMethod/README.md) to check context reads in the Dasher canvas.
 
 ## Restore your input source
 
