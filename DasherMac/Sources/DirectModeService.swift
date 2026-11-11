@@ -59,6 +59,17 @@ class DirectModeService: ObservableObject {
     private var axObserver: AXObserver?
     private var watchedElement: AXUIElement?
 
+    /// Cross-app AX notifications are best-effort: well-behaved NSTextView apps
+    /// post kAXSelectedTextChanged on caret moves, but several major apps
+    /// (BBEdit's custom text engine, Electron/Code editors) do not. While
+    /// Windows gets guaranteed events from TSF, macOS has no equivalent — so
+    /// Direct Mode pairs the observer with a low-frequency poll of the focused
+    /// field, re-seeding only when the (text, caret) tuple actually changed.
+    private var contextPollTimer: Timer?
+    private var lastPolledText: String?
+    private var lastPolledCaret: Int?
+    private var loggedPollReadFailure = false
+
     /// AXObserver-based caret watcher. NotificationCenter only delivers AX
     /// notifications for elements in our own process; cross-process watching
     /// requires AXObserverCreate(pid:) + per-element notification registration
@@ -105,6 +116,7 @@ class DirectModeService: ObservableObject {
 
         if let prev = watchedElement {
             AXObserverRemoveNotification(observer, prev, kAXSelectedTextChangedNotification as CFString)
+            AXObserverRemoveNotification(observer, prev, kAXValueChangedNotification as CFString)
             watchedElement = nil
         }
 
@@ -120,7 +132,56 @@ class DirectModeService: ObservableObject {
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
         AXUIElementSetMessagingTimeout(focused, 0.3)
         AXObserverAddNotification(observer, focused, kAXSelectedTextChangedNotification as CFString, refcon)
+        // Text edits fire AXValueChanged even where selection notifications are
+        // missing; both funnel into the same debounced re-seed pipeline.
+        AXObserverAddNotification(observer, focused, kAXValueChangedNotification as CFString, refcon)
         watchedElement = focused
+    }
+
+    func startContextPolling() {
+        stopContextPolling()
+        // Baseline is unknown: the first successful poll sets it silently so
+        // startup does not fire a spurious re-seed (the "target changed"
+        // trigger already seeded once). Later diffs fire the normal pipeline.
+        lastPolledText = nil
+        lastPolledCaret = nil
+        loggedPollReadFailure = false
+        contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
+            self?.pollTargetContext()
+        }
+    }
+
+    func stopContextPolling() {
+        contextPollTimer?.invalidate()
+        contextPollTimer = nil
+        lastPolledText = nil
+        lastPolledCaret = nil
+    }
+
+    /// Poll the focused field and fire the standard "caret moved" pipeline
+    /// when the (text, caret) tuple differs from the previous poll. The
+    /// 500 ms debounce / echo / settle guards in MacDasherViewModel all apply
+    /// unchanged — the poller is just one more trigger source.
+    private func pollTargetContext() {
+        guard isActive, let appTarget = lastTargetApp, !appTarget.isTerminated else { return }
+        guard let ctx = readTargetFieldContext(logging: false) else {
+            if !loggedPollReadFailure {
+                loggedPollReadFailure = true
+                LogManager.kb("  [AX] poll: focused field unreadable for pid=\(appTarget.processIdentifier) — app may not expose text context")
+            }
+            return
+        }
+        loggedPollReadFailure = false
+
+        let baselineKnown = (lastPolledText != nil)
+        let changed = baselineKnown && (ctx.text != lastPolledText || ctx.caretUTF16 != lastPolledCaret)
+        lastPolledText = ctx.text
+        lastPolledCaret = ctx.caretUTF16
+
+        if changed {
+            LogManager.kb("  [AX] poll detected caret/context change (utf16=\(ctx.text.utf16.count), caret16=\(ctx.caretUTF16))")
+            onTargetCaretChanged?("caret moved")
+        }
     }
 
     private func stopCaretWatcher() {
@@ -138,7 +199,7 @@ class DirectModeService: ObservableObject {
     /// re-seeding (RFC 0019 clause 6 / RFC 0015 tier 3). A 300 ms timeout on
     /// the AX messages prevents an unresponsive target from stalling the
     /// caret watcher (Windows' hard budget, PR #52).
-    func readTargetFieldContext() -> (text: String, caretUTF16: Int)? {
+    func readTargetFieldContext(logging: Bool = true) -> (text: String, caretUTF16: Int)? {
         guard hasAccessibilityPermission,
               let appTarget = lastTargetApp,
               !appTarget.isTerminated else { return nil }
@@ -161,7 +222,7 @@ class DirectModeService: ObservableObject {
         guard focusErr == .success,
               let focusedCF = focusedRef,
               CFGetTypeID(focusedCF) == AXUIElementGetTypeID() else {
-            LogManager.kb("  [AX] no focused element for pid=\(pid) err=\(focusErr.rawValue)")
+            if logging { LogManager.kb("  [AX] no focused element for pid=\(pid) err=\(focusErr.rawValue)") }
             return nil
         }
         let focused = unsafeBitCast(focusedCF, to: AXUIElement.self)
@@ -170,7 +231,7 @@ class DirectModeService: ObservableObject {
         var valueRef: CFTypeRef?
         let valueErr = AXUIElementCopyAttributeValue(focused, kAXValueAttribute as CFString, &valueRef)
         guard valueErr == .success, let value = valueRef as? String else {
-            LogManager.kb("  [AX] kAXValueAttribute unavailable for pid=\(pid) err=\(valueErr.rawValue)")
+            if logging { LogManager.kb("  [AX] kAXValueAttribute unavailable for pid=\(pid) err=\(valueErr.rawValue)") }
             return nil
         }
 
@@ -190,7 +251,9 @@ class DirectModeService: ObservableObject {
             }
         }
 
-        LogManager.kb("  [AX] read \(nsLength) utf16, caret16=\(caretOffset)")
+        if logging {
+            LogManager.kb("  [AX] read \(nsLength) utf16, caret16=\(caretOffset)")
+        }
         return (value, caretOffset)
     }
 
@@ -262,6 +325,9 @@ class DirectModeService: ObservableObject {
         }
         // Attach the caret watcher now that lastTargetApp is resolved.
         startCaretWatcher()
+        // Polling safety net: catches caret moves in apps whose AX never
+        // posts selection notifications (BBEdit, Electron editors, ...).
+        startContextPolling()
         if lastTargetApp != nil {
             onTargetCaretChanged?("target changed")
         }
@@ -269,6 +335,7 @@ class DirectModeService: ObservableObject {
 
     func stopWatching() {
         stopCaretWatcher()
+        stopContextPolling()
         if let observer = frontmostObserver {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
             frontmostObserver = nil
