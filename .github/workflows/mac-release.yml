@@ -118,6 +118,12 @@ jobs:
             CURRENT_PROJECT_VERSION="$CURRENT_PROJECT_VERSION"
 
       - name: Export
+        id: export
+        # exportArchive has hung silently for 50+ min twice (v0.1.9, rc.3) —
+        # profile/identity resolution against ASC going headless. Bound it and
+        # let the fallback below sign the archive product directly.
+        continue-on-error: true
+        timeout-minutes: 8
         env:
           MAC_TEAM_ID: ${{ secrets.MAC_TEAM_ID }}
         run: |
@@ -149,7 +155,15 @@ jobs:
 
       - name: Re-sign with Developer ID + inject icon
         run: |
+          # Export path preferred; fallback = sign the archive product
+          # directly (it is Apple-Development-signed from `archive`, so the
+          # Developer ID re-sign below is required either way).
           APP="build/export/Dasher.app"
+          if [ ! -d "$APP" ]; then
+            echo "::warning::exportArchive unavailable — signing the archive product directly"
+            mkdir -p build/export
+            cp -R "build/Dasher.xcarchive/Products/Applications/Dasher.app" "$APP"
+          fi
 
           # Copy pre-compiled .icns (generated locally from the .icon file)
           cp DasherMac/Resources/DasherIcon.icns "$APP/Contents/Resources/DasherIcon.icns"
@@ -166,6 +180,7 @@ jobs:
           codesign -dv "$APP" 2>&1 | head -5
 
       - name: Notarize and staple app
+        timeout-minutes: 20
         env:
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER: ${{ secrets.ASC_API_KEY_ISSUER }}
