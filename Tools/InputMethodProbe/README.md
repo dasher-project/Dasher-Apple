@@ -64,13 +64,15 @@ If the switch is on but the probe still asks for access, restart the probe. Sele
 
 1. Place the caret immediately after `DasherProbe` in the scratch field.
 2. Click **Read Context**. Then click **Backspace**. Check that the text changes to `DasherProb` and the panel shows `Backspace readback matched.`
-3. Restore the full marker. Select `DasherProbe` with the mouse. Click **Read Context**. Then click **Backspace**. Check that the marker disappears and both surrounding spaces stay in place.
+3. Restore the full marker. Select `DasherProbe` with the mouse. Click **Read Context**. Then click **Backspace**. Record the text left in the field and the caret position reported by the probe.
 
 ## Results so far
 
 The build, code signature, and mock-client tests passed on macOS 27.3. macOS registered, enabled, and selected the input source. The previous input source was restored.
 
-The live test confirmed insertion in TextEdit and Safari. In TextEdit, range deletion left the marker in place. Backspace at the caret deleted one character and the readback matched. Backspace over the full selection and the same checks in other editors still need live results.
+The live test confirmed insertion in TextEdit and Safari. In TextEdit, range deletion left the marker in place. Backspace at the caret deleted one character and the readback matched. Backspace over the selected marker also removed one adjacent space. The probe reported caret 7, one UTF-16 unit before the expected position. This matches [AppKit's smart delete behavior](https://developer.apple.com/documentation/appkit/nstextview/smartinsertdeleteenabled).
+
+The next test is to read context after caret and field changes in BBEdit and a browser editor. The Dasher integration needs to use the actual text and caret after Backspace to keep the language model in sync.
 
 ## Restore your input source
 
