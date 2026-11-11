@@ -1,6 +1,12 @@
 #import <Carbon/Carbon.h>
 #import <Foundation/Foundation.h>
 
+typedef NS_ENUM(NSUInteger, ProbeOperation) {
+    ProbeInsertMarker,
+    ProbeDeleteMarker,
+    ProbeBackspace
+};
+
 @interface ProbeSnapshot : NSObject
 @property NSRange selection;
 @property (copy) NSString *before;
@@ -17,4 +23,4 @@
 @end
 
 ProbeSnapshot *CaptureProbeSnapshot(id<IMKTextInput> client);
-ProbeEdit *PlanProbeEdit(ProbeSnapshot *snapshot, BOOL deleting);
+ProbeEdit *PlanProbeEdit(ProbeSnapshot *snapshot, ProbeOperation operation);

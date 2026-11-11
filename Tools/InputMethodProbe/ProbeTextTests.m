@@ -39,15 +39,32 @@ int main(void) {
         ProbeSnapshot *first = snapshot(client);
         check([first.before isEqualToString:@"😀 left "], "reads UTF-16 context before a selection");
         check([first.selectedText isEqualToString:@"replace"], "reads the entire selection");
-        check(!PlanProbeEdit(first, YES), "refuses marker deletion over a selection");
+        check(!PlanProbeEdit(first, ProbeDeleteMarker), "refuses marker deletion over a selection");
+        check(!PlanProbeEdit(first, ProbeBackspace), "refuses Backspace over ordinary selected text");
 
-        ProbeEdit *insert = PlanProbeEdit(first, NO);
+        ProbeEdit *insert = PlanProbeEdit(first, ProbeInsertMarker);
         [client insertText:insert.replacement replacementRange:insert.range];
         check([client.text isEqualToString:@"😀 left DasherProbe right"], "replaces the exact selection");
         check([insert matchesReadback:snapshot(client)], "verifies insertion through a fresh read");
         check(![first matchesSnapshot:snapshot(client)], "invalidates a stale selection");
 
-        ProbeEdit *remove = PlanProbeEdit(snapshot(client), YES);
+        ScratchClient *keyClient = [ScratchClient new];
+        keyClient.text = client.text;
+        keyClient.selectedRange = client.selectedRange;
+        ProbeEdit *backspace = PlanProbeEdit(snapshot(keyClient), ProbeBackspace);
+        [keyClient insertText:backspace.replacement replacementRange:backspace.range];
+        check([keyClient.text isEqualToString:@"😀 left DasherProb right"], "checks a single-character Backspace at the caret");
+        check([backspace matchesReadback:snapshot(keyClient)], "matches the result of Backspace at the caret");
+        check(!PlanProbeEdit(snapshot(keyClient), ProbeBackspace), "refuses a second Backspace after the marker changes");
+
+        keyClient.text = client.text;
+        keyClient.selectedRange = [keyClient.text rangeOfString:@"DasherProbe"];
+        backspace = PlanProbeEdit(snapshot(keyClient), ProbeBackspace);
+        [keyClient insertText:backspace.replacement replacementRange:backspace.range];
+        check([keyClient.text isEqualToString:@"😀 left  right"], "checks Backspace over a selected marker");
+        check([backspace matchesReadback:snapshot(keyClient)], "matches the result of Backspace over a selection");
+
+        ProbeEdit *remove = PlanProbeEdit(snapshot(client), ProbeDeleteMarker);
         client.ignoresReplacementRange = YES;
         [client insertText:remove.replacement replacementRange:remove.range];
         check(![remove matchesReadback:snapshot(client)], "detects an ignored deletion range");
@@ -55,13 +72,13 @@ int main(void) {
         [client insertText:remove.replacement replacementRange:remove.range];
         check([client.text isEqualToString:@"😀 left  right"], "deletes only the marker");
         check([remove matchesReadback:snapshot(client)], "verifies deletion through a fresh read");
-        check(!PlanProbeEdit(snapshot(client), YES), "refuses deletion of ordinary text");
+        check(!PlanProbeEdit(snapshot(client), ProbeDeleteMarker), "refuses deletion of ordinary text");
 
         client.selectedRange = NSMakeRange(0, 0);
         check([snapshot(client).before isEqualToString:@""], "accepts a caret at document start");
         client.text = @"DasherProbe right";
         client.selectedRange = NSMakeRange(11, 0);
-        remove = PlanProbeEdit(snapshot(client), YES);
+        remove = PlanProbeEdit(snapshot(client), ProbeDeleteMarker);
         [client insertText:remove.replacement replacementRange:remove.range];
         check([client.text isEqualToString:@" right"], "deletes the marker at document start");
         check([remove matchesReadback:snapshot(client)], "accepts empty context after deletion at document start");

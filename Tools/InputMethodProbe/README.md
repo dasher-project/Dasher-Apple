@@ -2,7 +2,7 @@
 
 This standalone probe tests mouse-only access to the focused editor through InputMethodKit. Its floating panel belongs to the input method process.
 
-**Read Context** checks the selection and reads up to 32 UTF-16 units before it. **Insert Marker** replaces the selection with `DasherProbe`. **Delete Marker** deletes that marker immediately before the caret. Each edit needs a fresh context read. The panel shows ranges and results. It does not display or log editor text.
+**Read Context** checks the selection and reads up to 32 UTF-16 units before it. **Insert Marker** replaces the selection with `DasherProbe`. **Delete Marker** asks the input method client to delete that marker. **Backspace** sends one key press after a context check. Each edit needs a fresh context read. The panel shows ranges and results. It does not display or log editor text.
 
 ## Build and install
 
@@ -56,11 +56,19 @@ Check the resulting text in the editor after each edit. The panel checks the car
 
 If the panel reports `Delete unconfirmed`, record the rest of the message and check whether `DasherProbe` remains in the editor. The probe checks again if the editor returns its old caret and text. It sends the delete only once.
 
+## Test Backspace
+
+Add **Dasher IME Probe** in **System Settings → Privacy & Security → Accessibility**. Select the installed app in `~/Library/Input Methods`. This permission lets the probe send the Backspace key event.
+
+1. Place the caret immediately after `DasherProbe` in the scratch field.
+2. Click **Read Context**. Then click **Backspace**. Check that the text changes to `DasherProb` and the panel shows `Backspace readback matched.`
+3. Restore the full marker. Select `DasherProbe` with the mouse. Click **Read Context**. Then click **Backspace**. Check that the marker disappears and both surrounding spaces stay in place.
+
 ## Results so far
 
 The build, code signature, and mock-client tests passed on macOS 27.3. macOS registered, enabled, and selected the input source. The previous input source was restored.
 
-The live test confirmed insertion in TextEdit and Safari. The original probe could not confirm deletion in TextEdit. The new status shows which part of the readback differs. Repeat the delete test before Dasher uses this path in Direct Mode.
+The live test confirmed insertion in TextEdit and Safari. TextEdit returned the same caret and context after the range delete. The Backspace test still needs a live result.
 
 ## Restore your input source
 

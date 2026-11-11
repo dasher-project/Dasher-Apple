@@ -9,7 +9,7 @@ mkdir -p "$app/Contents/MacOS"
 plutil -lint "$source_dir/Info.plist"
 cp "$source_dir/Info.plist" "$app/Contents/Info.plist"
 xcrun clang -fobjc-arc -Wall -Wextra -Werror -mmacosx-version-min=14.0 \
-    -framework AppKit -framework Carbon -framework InputMethodKit \
+    -framework AppKit -framework Carbon -framework CoreGraphics -framework InputMethodKit \
     "$source_dir/main.m" "$source_dir/ProbeText.m" -o "$app/Contents/MacOS/DasherInputMethodProbe"
 codesign --force --sign - "$app"
 codesign --verify --strict "$app"

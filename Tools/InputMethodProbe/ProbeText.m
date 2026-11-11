@@ -47,13 +47,21 @@ ProbeSnapshot *CaptureProbeSnapshot(id<IMKTextInput> client) {
     return snapshot;
 }
 
-ProbeEdit *PlanProbeEdit(ProbeSnapshot *snapshot, BOOL deleting) {
+ProbeEdit *PlanProbeEdit(ProbeSnapshot *snapshot, ProbeOperation operation) {
     ProbeEdit *edit = [ProbeEdit new];
-    if (deleting) {
-        if (snapshot.selection.length || ![snapshot.before hasSuffix:ProbeMarker]) return nil;
-        edit.range = NSMakeRange(snapshot.selection.location - ProbeMarker.length, ProbeMarker.length);
+    if (operation == ProbeBackspace && snapshot.selection.length) {
+        if (![snapshot.selectedText isEqualToString:ProbeMarker]) return nil;
+        edit.range = snapshot.selection;
         edit.replacement = @"";
-        edit.expectedBefore = [snapshot.before substringToIndex:snapshot.before.length - ProbeMarker.length];
+        edit.expectedBefore = snapshot.before;
+        return edit;
+    }
+    if (operation != ProbeInsertMarker) {
+        if (snapshot.selection.length || ![snapshot.before hasSuffix:ProbeMarker]) return nil;
+        NSUInteger length = operation == ProbeBackspace ? 1 : ProbeMarker.length;
+        edit.range = NSMakeRange(snapshot.selection.location - length, length);
+        edit.replacement = @"";
+        edit.expectedBefore = [snapshot.before substringToIndex:snapshot.before.length - length];
         return edit;
     }
 

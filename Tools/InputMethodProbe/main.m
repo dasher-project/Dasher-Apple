@@ -19,6 +19,21 @@ static ProbePanel *panel;
 static NSTextField *status;
 static NSArray<NSButton *> *panelButtons;
 
+static BOOL PostBackspace(pid_t process) {
+    CGEventRef down = CGEventCreateKeyboardEvent(NULL, kVK_Delete, true);
+    CGEventRef up = CGEventCreateKeyboardEvent(NULL, kVK_Delete, false);
+    BOOL posted = down && up;
+    if (posted) {
+        CGEventSetFlags(down, 0);
+        CGEventSetFlags(up, 0);
+        CGEventPostToPid(process, down);
+        CGEventPostToPid(process, up);
+    }
+    if (down) CFRelease(down);
+    if (up) CFRelease(up);
+    return posted;
+}
+
 @implementation DasherProbeController {
     ProbeSnapshot *_snapshot;
     NSString *_bundleID;
@@ -34,7 +49,7 @@ static NSArray<NSButton *> *panelButtons;
 
 - (void)showPanel {
     if (!panel) {
-        panel = [[ProbePanel alloc] initWithContentRect:NSMakeRect(0, 0, 400, 140)
+        panel = [[ProbePanel alloc] initWithContentRect:NSMakeRect(0, 0, 490, 140)
             styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskNonactivatingPanel
             backing:NSBackingStoreBuffered defer:NO];
         panel.title = @"Dasher IME Probe";
@@ -48,7 +63,8 @@ static NSArray<NSButton *> *panelButtons;
         NSButton *read = [NSButton buttonWithTitle:@"Read Context" target:nil action:@selector(readContext:)];
         NSButton *insert = [NSButton buttonWithTitle:@"Insert Marker" target:nil action:@selector(insertMarker:)];
         NSButton *remove = [NSButton buttonWithTitle:@"Delete Marker" target:nil action:@selector(deleteMarker:)];
-        panelButtons = @[read, insert, remove];
+        NSButton *backspace = [NSButton buttonWithTitle:@"Backspace" target:nil action:@selector(backspace:)];
+        panelButtons = @[read, insert, remove, backspace];
         NSStackView *buttons = [NSStackView stackViewWithViews:panelButtons];
         NSStackView *stack = [NSStackView stackViewWithViews:@[status, buttons]];
         stack.orientation = NSUserInterfaceLayoutOrientationVertical;
@@ -134,15 +150,20 @@ static NSArray<NSButton *> *panelButtons;
 
 - (void)insertMarker:(id)sender {
     (void)sender;
-    [self editDeletingMarker:NO];
+    [self applyEdit:ProbeInsertMarker name:@"Insert"];
 }
 
 - (void)deleteMarker:(id)sender {
     (void)sender;
-    [self editDeletingMarker:YES];
+    [self applyEdit:ProbeDeleteMarker name:@"Delete"];
 }
 
-- (void)editDeletingMarker:(BOOL)deleting {
+- (void)backspace:(id)sender {
+    (void)sender;
+    [self applyEdit:ProbeBackspace name:@"Backspace"];
+}
+
+- (void)applyEdit:(ProbeOperation)operation name:(NSString *)name {
     if (_verifying || activeController != self) return;
     ProbeSnapshot *previous = _snapshot;
     _snapshot = nil;
@@ -158,22 +179,38 @@ static NSArray<NSButton *> *panelButtons;
         return;
     }
 
-    ProbeEdit *edit = PlanProbeEdit(current, deleting);
+    ProbeEdit *edit = PlanProbeEdit(current, operation);
     if (!edit) {
-        [self report:@"Delete rejected. Place the caret immediately after the marker."];
+        [self report:operation == ProbeBackspace
+            ? @"Backspace rejected. Select the marker or place the caret immediately after it."
+            : @"Delete rejected. Place the caret immediately after the marker."];
         return;
     }
+    if (operation == ProbeBackspace && !CGPreflightPostEventAccess()) {
+        [self report:@"Backspace needs Accessibility access for Dasher IME Probe in System Settings."];
+        return;
+    }
+    if (session != _session || [self foregroundClientProcess] != current.process) return;
+
     _verifying = YES;
     [self report:@"Checking editor readback…"];
-    id<IMKTextInput> client = [self client];
-    [client insertText:edit.replacement replacementRange:edit.range];
+    if (operation == ProbeBackspace) {
+        if (!PostBackspace(current.process)) {
+            _verifying = NO;
+            [self report:@"Could not create the Backspace key event."];
+            return;
+        }
+    } else {
+        id<IMKTextInput> client = [self client];
+        [client insertText:edit.replacement replacementRange:edit.range];
+    }
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        [self checkEdit:edit previous:current session:session deleting:deleting readAgain:YES];
+        [self checkEdit:edit previous:current session:session name:name readAgain:YES];
     });
 }
 
 - (void)checkEdit:(ProbeEdit *)edit previous:(ProbeSnapshot *)previous session:(NSUInteger)session
-        deleting:(BOOL)deleting readAgain:(BOOL)readAgain {
+            name:(NSString *)name readAgain:(BOOL)readAgain {
     if (session != _session || activeController != self) return;
     ProbeSnapshot *after = [self capture];
     if (session != _session || activeController != self) return;
@@ -184,18 +221,17 @@ static NSArray<NSButton *> *panelButtons;
         // An editor can report its old selection while it applies the edit.
         // Check once more without sending another edit.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-            [self checkEdit:edit previous:previous session:session deleting:deleting readAgain:NO];
+            [self checkEdit:edit previous:previous session:session name:name readAgain:NO];
         });
         return;
     }
 
     _verifying = NO;
     if (sameEditor && [edit matchesReadback:after]) {
-        [self report:deleting ? @"Delete readback matched." : @"Insert readback matched."];
+        [self report:[NSString stringWithFormat:@"%@ readback matched.", name]];
         return;
     }
 
-    NSString *operation = deleting ? @"Delete" : @"Insert";
     NSUInteger expectedCaret = edit.range.location + edit.replacement.length;
     NSString *detail;
     if (!sameEditor) {
@@ -208,7 +244,7 @@ static NSArray<NSButton *> *panelButtons;
     } else {
         detail = @"Caret matches, but the text before it differs.";
     }
-    [self report:[NSString stringWithFormat:@"%@ unconfirmed. %@", operation, detail]];
+    [self report:[NSString stringWithFormat:@"%@ unconfirmed. %@", name, detail]];
 }
 
 @end
