@@ -72,6 +72,7 @@ class DirectModeService: ObservableObject {
     private var lastPolledCaret: Int?
     private var loggedPollReadFailure = false
     private var isPollReadInFlight = false
+    private var pollEpoch = 0
 
     /// AXObserver-based caret watcher. NotificationCenter only delivers AX
     /// notifications for elements in our own process; cross-process watching
@@ -164,6 +165,7 @@ class DirectModeService: ObservableObject {
         lastPolledCaret = nil
         loggedPollReadFailure = false
         isPollReadInFlight = false
+        pollEpoch += 1
         contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
             // Timer fires on the main run loop; the hop makes MainActor
             // isolation explicit (matches startPolling's style).
@@ -174,6 +176,7 @@ class DirectModeService: ObservableObject {
     func stopContextPolling() {
         contextPollTimer?.invalidate()
         contextPollTimer = nil
+        pollEpoch += 1
         lastPolledText = nil
         lastPolledLength = nil
         lastPolledCaret = nil
@@ -186,8 +189,16 @@ class DirectModeService: ObservableObject {
     private func pollTargetContext() {
         guard isActive, !isPollReadInFlight,
               let appTarget = lastTargetApp, !appTarget.isTerminated else { return }
+        // No-op during our own echo/settle windows: the AX read would be
+        // discarded by finishContextPoll anyway — skip the IPC entirely. The
+        // baseline stays stale by design; the first post-window tick compares
+        // against it and fires.
+        if isEchoSuppressed || isWithinOwnInjectEcho || isWithinOwnParagraphOrSelectSettle {
+            return
+        }
         let pid = appTarget.processIdentifier
         let prev = (text: lastPolledText, length: lastPolledLength, caret: lastPolledCaret)
+        let epoch = pollEpoch
         var frontPid: pid_t?
         if let front = NSWorkspace.shared.frontmostApplication,
            front.bundleIdentifier != Bundle.main.bundleIdentifier {
@@ -197,7 +208,7 @@ class DirectModeService: ObservableObject {
         contextPollQueue.async { [weak self] in
             guard let self else { return }
             let read = self.readFocusedField(pid: pid, frontPid: frontPid)
-            DispatchQueue.main.async { self.finishContextPoll(read: read, snapshot: prev, pid: pid) }
+            DispatchQueue.main.async { self.finishContextPoll(read: read, snapshot: prev, pid: pid, epoch: epoch) }
         }
     }
 
@@ -209,8 +220,12 @@ class DirectModeService: ObservableObject {
     ///     ContextSeedPolicy engine-ahead check skips when already in sync);
     ///   - a USER caret move during the window is caught by that same post-
     ///     window compare instead of being swallowed.
-    private func finishContextPoll(read: (text: String, caretUTF16: Int, failure: String?)?, snapshot: (text: String?, length: Int?, caret: Int?), pid: pid_t) {
+    private func finishContextPoll(read: (text: String, caretUTF16: Int, failure: String?)?, snapshot: (text: String?, length: Int?, caret: Int?), pid: pid_t, epoch: Int) {
         isPollReadInFlight = false
+        // Epoch mismatch = completion from a stop/start toggle boundary: the
+        // stop already reset the in-flight flag; a new epoch may have its own
+        // read in flight, so leave it alone.
+        guard epoch == pollEpoch else { return }
         guard isActive, let appTarget = lastTargetApp, appTarget.processIdentifier == pid else { return }
         guard let read, read.failure == nil else {
             if !loggedPollReadFailure {
