@@ -71,6 +71,7 @@ class DirectModeService: ObservableObject {
     private var lastPolledLength: Int?
     private var lastPolledCaret: Int?
     private var loggedPollReadFailure = false
+    private var isPollReadInFlight = false
 
     /// AXObserver-based caret watcher. NotificationCenter only delivers AX
     /// notifications for elements in our own process; cross-process watching
@@ -159,8 +160,10 @@ class DirectModeService: ObservableObject {
         // startup does not fire a spurious re-seed (the "target changed"
         // trigger already seeded once). Later diffs fire the normal pipeline.
         lastPolledText = nil
+        lastPolledLength = nil
         lastPolledCaret = nil
         loggedPollReadFailure = false
+        isPollReadInFlight = false
         contextPollTimer = Timer.scheduledTimer(withTimeInterval: 0.4, repeats: true) { [weak self] _ in
             // Timer fires on the main run loop; the hop makes MainActor
             // isolation explicit (matches startPolling's style).
@@ -174,29 +177,40 @@ class DirectModeService: ObservableObject {
         lastPolledText = nil
         lastPolledLength = nil
         lastPolledCaret = nil
+        isPollReadInFlight = false
     }
 
     /// Main-thread half of the poll: resolve the read context, then run the
     /// AX IPC on the utility queue so a hung target (up to 0.3 s per AX call,
     /// RFC 0015's background-read budget) cannot stall the canvas.
     private func pollTargetContext() {
-        guard isActive, let appTarget = lastTargetApp, !appTarget.isTerminated else { return }
+        guard isActive, !isPollReadInFlight,
+              let appTarget = lastTargetApp, !appTarget.isTerminated else { return }
         let pid = appTarget.processIdentifier
+        let prev = (text: lastPolledText, length: lastPolledLength, caret: lastPolledCaret)
         var frontPid: pid_t?
         if let front = NSWorkspace.shared.frontmostApplication,
            front.bundleIdentifier != Bundle.main.bundleIdentifier {
             frontPid = front.processIdentifier
         }
+        isPollReadInFlight = true
         contextPollQueue.async { [weak self] in
             guard let self else { return }
             let read = self.readFocusedField(pid: pid, frontPid: frontPid)
-            DispatchQueue.main.async { self.finishContextPoll(read: read, pid: pid) }
+            DispatchQueue.main.async { self.finishContextPoll(read: read, snapshot: prev, pid: pid) }
         }
     }
 
-    /// Main-thread completion: dedupe failure hints, absorb own-injection
-    /// echoes, fire the standard "caret moved" pipeline on real changes.
-    private func finishContextPoll(read: (text: String, caretUTF16: Int, failure: String?)?, pid: pid_t) {
+    /// Main-thread completion. During Dasher's own echo/settle windows the
+    /// tick is a pure no-op — the comparison baseline (the `snapshot`) is
+    /// deliberately left STALE, so the first tick after the window compares
+    /// against the pre-window state and fires exactly once:
+    ///   - our own injected text differs from the baseline -> re-anchor (the
+    ///     ContextSeedPolicy engine-ahead check skips when already in sync);
+    ///   - a USER caret move during the window is caught by that same post-
+    ///     window compare instead of being swallowed.
+    private func finishContextPoll(read: (text: String, caretUTF16: Int, failure: String?)?, snapshot: (text: String?, length: Int?, caret: Int?), pid: pid_t) {
+        isPollReadInFlight = false
         guard isActive, let appTarget = lastTargetApp, appTarget.processIdentifier == pid else { return }
         guard let read, read.failure == nil else {
             if !loggedPollReadFailure {
@@ -208,17 +222,12 @@ class DirectModeService: ObservableObject {
         loggedPollReadFailure = false
 
         if isEchoSuppressed || isWithinOwnInjectEcho || isWithinOwnParagraphOrSelectSettle {
-            // Our own injection/select: absorb permanently (baseline moves to
-            // the post-injection state; no fire, no retry — the engine already
-            // knows this text).
-            lastPolledText = read.text
-            lastPolledCaret = read.caretUTF16
-            return
+            return   // no-op tick: baseline deliberately stays stale (see above)
         }
 
-        let baselineKnown = (lastPolledText != nil)
-        var changed = baselineKnown && (read.caretUTF16 != lastPolledCaret || read.text.utf16.count != lastPolledLength)
-        if !changed, baselineKnown, let prev = lastPolledText {
+        let baselineKnown = (snapshot.text != nil)
+        var changed = baselineKnown && (read.caretUTF16 != snapshot.caret || read.text.utf16.count != snapshot.length)
+        if !changed, baselineKnown, let prev = snapshot.text {
             changed = (prev != read.text)   // same length + caret: content may still differ (1:1 replace)
         }
         lastPolledText = read.text
@@ -277,7 +286,7 @@ class DirectModeService: ObservableObject {
     /// mutable state — safe from `contextPollQueue`. `frontPid != nil` (and
     /// ≠ pid) means a non-Dasher app is frontmost: refuse, so a backgrounded
     /// target is never read mid-debounce.
-    private func readFocusedField(pid: pid_t, frontPid: pid_t?) -> (text: String, caretUTF16: Int, failure: String?) {
+    nonisolated private func readFocusedField(pid: pid_t, frontPid: pid_t?) -> (text: String, caretUTF16: Int, failure: String?) {
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.3)
 
