@@ -22,6 +22,19 @@ previous_source=$("$probe" current)
 
 Select **Dasher IME Probe** from the macOS Input menu. If the menu does not show the probe, add it in **System Settings → Keyboard → Text Input → Edit**. If it still does not appear, sign out and sign back in before testing again.
 
+## Update an installed probe
+
+macOS can keep the old probe process open after you rebuild and copy the app. Select your usual input source first. Then run these commands from the repository root in the setup shell.
+
+```sh
+Tools/InputMethodProbe/build.sh
+pkill -f '/Library/Input Methods/Dasher IME Probe[.]app/Contents/MacOS/DasherInputMethodProbe$' || true
+ditto "build/input-method-probe/Dasher IME Probe.app" "$probe_app"
+"$probe" register
+```
+
+Select **Dasher IME Probe** again in the Input menu. Click the scratch field to start the new process.
+
 ## Live test
 
 Use scratch text. The first three checks need mouse clicks only after you select the input source.
