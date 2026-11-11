@@ -41,11 +41,13 @@ Repeat the activation, replacement, deletion, and caret checks in Safari and Chr
 
 Check the resulting text in the editor after each edit. The panel checks the caret and text before it. The panel cannot check changes elsewhere in the document.
 
+If the panel reports `Delete unconfirmed`, record the rest of the message and check whether `DasherProbe` remains in the editor. The probe checks again if the editor returns its old caret and text. It sends the delete only once.
+
 ## Results so far
 
 The build, code signature, and mock-client tests passed on macOS 27.3. macOS registered, enabled, and selected the input source. The previous input source was restored.
 
-The live test still needs a Mac desktop session with access to the editor and the probe panel. The test must pass before Dasher uses this path in Direct Mode.
+The live test confirmed insertion in TextEdit and Safari. The original probe could not confirm deletion in TextEdit. The new status shows which part of the readback differs. Repeat the delete test before Dasher uses this path in Direct Mode.
 
 ## Restore your input source
 

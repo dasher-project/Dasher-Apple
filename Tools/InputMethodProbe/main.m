@@ -1,5 +1,6 @@
 #import <AppKit/AppKit.h>
 #import <InputMethodKit/InputMethodKit.h>
+#import <os/log.h>
 #import "ProbeText.h"
 
 @interface ProbePanel : NSPanel
@@ -27,7 +28,8 @@ static NSArray<NSButton *> *panelButtons;
 
 - (void)report:(NSString *)message {
     status.stringValue = message;
-    NSLog(@"[%@] %@", _bundleID ?: @"No client", message);
+    // Messages contain only status and range lengths, never document text.
+    os_log(OS_LOG_DEFAULT, "[%{public}@] %{public}@", _bundleID ?: @"No client", message);
 }
 
 - (void)showPanel {
@@ -166,17 +168,47 @@ static NSArray<NSButton *> *panelButtons;
     id<IMKTextInput> client = [self client];
     [client insertText:edit.replacement replacementRange:edit.range];
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 200 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        if (session != self->_session || activeController != self) return;
-        ProbeSnapshot *after = [self capture];
-        if (session != self->_session || activeController != self) return;
-        self->_verifying = NO;
-        BOOL matches = after.process == current.process && [edit matchesReadback:after];
-        if (matches) {
-            [self report:deleting ? @"Delete readback matched." : @"Insert readback matched."];
-        } else {
-            [self report:@"Edit unconfirmed. Check the editor, then read context again."];
-        }
+        [self checkEdit:edit previous:current session:session deleting:deleting readAgain:YES];
     });
+}
+
+- (void)checkEdit:(ProbeEdit *)edit previous:(ProbeSnapshot *)previous session:(NSUInteger)session
+        deleting:(BOOL)deleting readAgain:(BOOL)readAgain {
+    if (session != _session || activeController != self) return;
+    ProbeSnapshot *after = [self capture];
+    if (session != _session || activeController != self) return;
+
+    BOOL sameEditor = after.process == previous.process;
+    BOOL unchanged = [previous matchesSnapshot:after];
+    if (readAgain && (!after || unchanged)) {
+        // An editor can report its old selection while it applies the edit.
+        // Check once more without sending another edit.
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+            [self checkEdit:edit previous:previous session:session deleting:deleting readAgain:NO];
+        });
+        return;
+    }
+
+    _verifying = NO;
+    if (sameEditor && [edit matchesReadback:after]) {
+        [self report:deleting ? @"Delete readback matched." : @"Insert readback matched."];
+        return;
+    }
+
+    NSString *operation = deleting ? @"Delete" : @"Insert";
+    NSUInteger expectedCaret = edit.range.location + edit.replacement.length;
+    NSString *detail;
+    if (!sameEditor) {
+        detail = @"Editor context is unavailable.";
+    } else if (unchanged) {
+        detail = @"Editor still reports the original caret and context.";
+    } else if (!NSEqualRanges(after.selection, NSMakeRange(expectedCaret, 0))) {
+        detail = [NSString stringWithFormat:@"Caret %lu, selection %lu. Expected caret %lu with no selection.",
+            after.selection.location, after.selection.length, expectedCaret];
+    } else {
+        detail = @"Caret matches, but the text before it differs.";
+    }
+    [self report:[NSString stringWithFormat:@"%@ unconfirmed. %@", operation, detail]];
 }
 
 @end
