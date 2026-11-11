@@ -58,7 +58,9 @@ If the panel reports `Delete unconfirmed`, record the rest of the message and ch
 
 ## Test Backspace
 
-Add **Dasher IME Probe** in **System Settings → Privacy & Security → Accessibility**. Select the installed app in `~/Library/Input Methods`. This permission lets the probe send the Backspace key event.
+In **System Settings → Privacy & Security**, open **Device Control and Data Access** on macOS 27. On earlier versions, open **Accessibility**. Add the installed **Dasher IME Probe** app from `~/Library/Input Methods`. This permission lets the probe send the Backspace key event.
+
+If the switch is on but the probe still asks for access, restart the probe. Select your usual input source before you stop the probe process. Then select **Dasher IME Probe** again.
 
 1. Place the caret immediately after `DasherProbe` in the scratch field.
 2. Click **Read Context**. Then click **Backspace**. Check that the text changes to `DasherProb` and the panel shows `Backspace readback matched.`
