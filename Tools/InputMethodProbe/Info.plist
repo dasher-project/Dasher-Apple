@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>at.dasher.inputmethod.probe</string>
+    <key>CFBundleExecutable</key>
+    <string>DasherInputMethodProbe</string>
+    <key>CFBundleName</key>
+    <string>Dasher IME Probe</string>
+    <key>CFBundleDisplayName</key>
+    <string>Dasher IME Probe</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSBackgroundOnly</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>InputMethodConnectionName</key>
+    <string>at.dasher.inputmethod.probe_Connection</string>
+    <key>InputMethodServerControllerClass</key>
+    <string>DasherProbeController</string>
+    <key>TISInputSourceID</key>
+    <string>at.dasher.inputmethod.probe</string>
+    <key>TISIntendedLanguage</key>
+    <string>en</string>
+    <key>tsInputMethodCharacterRepertoireKey</key>
+    <array>
+        <string>Latn</string>
+    </array>
+</dict>
+</plist>
