@@ -15,7 +15,12 @@ struct DirectFieldContext: Equatable, Sendable {
 @MainActor
 class DirectModeService: ObservableObject {
     @Published var isActive = false
-    @Published var hasAccessibilityPermission = false
+    @Published var hasAccessibilityPermission = false {
+        didSet {
+            guard isActive, oldValue != hasAccessibilityPermission else { return }
+            updateInputSource()
+        }
+    }
     @Published var targetAppName: String = ""
 
     /// RFC 0019 clause 6 / RFC 0015: fires when the caret/selection, focused
@@ -63,6 +68,32 @@ class DirectModeService: ObservableObject {
     private var frontmostObserver: Any?
     private var pollTimer: Timer?
     private var lastTargetApp: NSRunningApplication?
+    private let inputSource = DirectInputSource()
+
+    var hasForegroundTarget: Bool {
+        guard let target = lastTargetApp, !target.isTerminated else { return false }
+        return target.processIdentifier == externalForegroundProcess()
+    }
+
+    init() {
+        if let front = NSWorkspace.shared.frontmostApplication, front.activationPolicy == .regular,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            lastTargetApp = front
+        }
+        frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
+        ) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.bundleIdentifier != Bundle.main.bundleIdentifier, app.activationPolicy == .regular else { return }
+            MainActor.assumeIsolated { self?.trackTarget(app) }
+        }
+    }
+
+    deinit {
+        if let frontmostObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(frontmostObserver)
+        }
+    }
 
     // MARK: - RFC 0019: caret watcher (AXSelectedTextChanged)
 
@@ -376,39 +407,15 @@ class DirectModeService: ObservableObject {
     }
 
     func startWatching() {
+        guard !isActive else { return }
         isActive = true
-        frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil, queue: .main
-        ) { [weak self] note in
-            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
-            if app.bundleIdentifier != Bundle.main.bundleIdentifier {
-                DispatchQueue.main.async {
-                    guard let self else { return }
-                    let changed = self.lastTargetApp?.processIdentifier != app.processIdentifier
-                    self.lastTargetApp = app
-                    self.targetAppName = app.localizedName ?? "Unknown"
-                    LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier) changed=\(changed)")
-                    // Re-attach the AX observer to the new target's pid —
-                    // the observer is per-process, so switching apps without
-                    // this leaves the watcher on the old pid (dead).
-                    self.startCaretWatcher()
-                    self.onTargetCaretChanged?(changed ? "target changed" : "refocus")
-                }
-            }
+        if let front = NSWorkspace.shared.frontmostApplication, front.activationPolicy == .regular,
+           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+            lastTargetApp = front
         }
-        if let front = NSWorkspace.shared.frontmostApplication {
-            if front.bundleIdentifier != Bundle.main.bundleIdentifier {
-                lastTargetApp = front
-                targetAppName = front.localizedName ?? "Unknown"
-            } else {
-                let apps = NSWorkspace.shared.runningApplications.filter {
-                    $0.bundleIdentifier != Bundle.main.bundleIdentifier && $0.isActive
-                }
-                lastTargetApp = apps.first
-                targetAppName = apps.first?.localizedName ?? ""
-            }
-        }
+        if lastTargetApp?.isTerminated == true { lastTargetApp = nil }
+        targetAppName = lastTargetApp?.localizedName ?? ""
+        updateInputSource()
         // Attach the caret watcher now that lastTargetApp is resolved.
         startCaretWatcher()
         // Polling safety net: catches caret moves in apps whose AX never
@@ -420,14 +427,37 @@ class DirectModeService: ObservableObject {
     }
 
     func stopWatching() {
+        guard isActive else { return }
         isActive = false
+        inputSource.stop()
         stopCaretWatcher()
         stopContextPolling()
-        if let observer = frontmostObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
-            frontmostObserver = nil
-        }
         targetAppName = ""
+    }
+
+    func restoreTargetFocus() {
+        guard isActive, externalForegroundProcess() == nil,
+              let target = lastTargetApp, !target.isTerminated else { return }
+        target.activate()
+    }
+
+    private func trackTarget(_ app: NSRunningApplication) {
+        let changed = lastTargetApp?.processIdentifier != app.processIdentifier
+        lastTargetApp = app
+        guard isActive else { return }
+        if changed && hasAccessibilityPermission { inputSource.editorChanged() }
+        targetAppName = app.localizedName ?? "Unknown"
+        LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier) changed=\(changed)")
+        startCaretWatcher()
+        onTargetCaretChanged?(changed ? "target changed" : "refocus")
+    }
+
+    private func updateInputSource() {
+        if hasAccessibilityPermission, lastTargetApp != nil {
+            inputSource.start()
+        } else {
+            inputSource.stop()
+        }
     }
 
     func injectText(_ text: String) {
@@ -477,12 +507,8 @@ class DirectModeService: ObservableObject {
     }
 
     private func postEvent(_ event: CGEvent?) {
-        guard let event else { return }
-        if let pid = lastTargetApp?.processIdentifier {
-            event.postToPid(pid)
-        } else {
-            event.post(tap: .cghidEventTap)
-        }
+        guard let event, hasForegroundTarget, let target = lastTargetApp else { return }
+        event.postToPid(target.processIdentifier)
     }
 
     /// Send a Cmd+<key> chord to the target app (Select All = "a", Copy = "c",

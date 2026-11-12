@@ -320,11 +320,14 @@ targets:
     settings:
       base:
         PRODUCT_NAME: "Dasher Direct Input"
-        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.inputmethod
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.inputmethod.direct
+        MARKETING_VERSION: "6.0.0"
+        CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_FILE: DasherInputMethod/Info.plist
         CODE_SIGN_ENTITLEMENTS: DasherInputMethod/DasherInputMethod.entitlements
         CLANG_ENABLE_OBJC_ARC: YES
         ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
     scheme: {}
 
   DasherMac:
@@ -348,6 +351,13 @@ targets:
         link: true
       - target: pugixml_macos
         link: true
+      - target: DasherInputMethod
+        embed: true
+        link: false
+        codeSign: false
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
       - sdk: Security.framework
       - package: DasherShared
         product: DasherShared

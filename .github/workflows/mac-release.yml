@@ -170,13 +170,24 @@ jobs:
           /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile DasherIcon.icns" "$APP/Contents/Info.plist" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string DasherIcon.icns" "$APP/Contents/Info.plist"
 
-          # Re-sign the entire app with Developer ID + Hardened Runtime (required for notarization)
-          codesign --force --deep --sign "Developer ID Application: Will Wade (TRKU383G7Z)" \
+          IDENTITY="Developer ID Application: Will Wade (TRKU383G7Z)"
+          INPUT_METHOD="$APP/Contents/Helpers/Dasher Direct Input.app"
+          if [ ! -d "$INPUT_METHOD" ]; then
+            mkdir -p "$APP/Contents/Helpers"
+            ditto "build/Dasher.xcarchive/Products/Applications/Dasher.app/Contents/Helpers/Dasher Direct Input.app" "$INPUT_METHOD"
+          fi
+
+          # Sign the input source first. It has its own App Group entitlements.
+          codesign --force --sign "$IDENTITY" \
+            --entitlements DasherInputMethod/DasherInputMethod.entitlements \
+            --options runtime \
+            "$INPUT_METHOD"
+          codesign --force --sign "$IDENTITY" \
             --entitlements DasherMac/DasherMac.entitlements \
             --options runtime \
             "$APP"
 
-          # Verify
+          codesign --verify --deep --strict "$APP"
           codesign -dv "$APP" 2>&1 | head -5
 
       - name: Notarize and staple app

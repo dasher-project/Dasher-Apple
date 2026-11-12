@@ -2,6 +2,7 @@
 #import <Carbon/Carbon.h>
 #import <InputMethodKit/InputMethodKit.h>
 #import "InputMethodContext.h"
+#import "InputMethodInstallation.h"
 
 @interface DasherInputController : IMKInputController
 - (nullable DasherInputMethodContext *)contextForEditor:(pid_t)editor;
@@ -67,13 +68,9 @@ static __weak DasherInputController *activeController;
 int main(void) {
     @autoreleasepool {
         NSBundle *bundle = NSBundle.mainBundle;
-        NSArray<NSString *> *arguments = NSProcessInfo.processInfo.arguments;
-        if (arguments.count == 2 && [arguments[1] isEqualToString:@"register"]) {
-            OSStatus result = TISRegisterInputSource((__bridge CFURLRef)bundle.bundleURL);
-            if (result != noErr) fprintf(stderr, "Input source registration failed (%d).\n", (int)result);
-            return result == noErr ? EXIT_SUCCESS : EXIT_FAILURE;
+        if (DasherIsBundledInputMethod(bundle)) {
+            return DasherInstallInputMethod(bundle) ? EXIT_SUCCESS : EXIT_FAILURE;
         }
-        if (arguments.count != 1) return EXIT_FAILURE;
 
         NSString *connection = [bundle objectForInfoDictionaryKey:@"InputMethodConnectionName"];
         IMKServer *server __attribute__((objc_precise_lifetime)) =

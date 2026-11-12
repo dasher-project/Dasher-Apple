@@ -11,7 +11,7 @@
 
 enum { MaxPrefixLength = 256, SocketTimeoutMillis = 120 };
 static NSString *const AppGroup = @"TRKU383G7Z.at.dasher.inputmethod";
-static NSString *const InputMethodID = @"at.dasher.Dasher.inputmethod";
+static NSString *const InputMethodID = @"at.dasher.inputmethod.direct";
 static NSString *const DasherID = @"at.dasher.Dasher.mac";
 
 typedef struct {

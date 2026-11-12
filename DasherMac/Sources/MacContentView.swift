@@ -6,46 +6,69 @@ import CoreVideo
 
 struct MacContentView: View {
     @ObservedObject var viewModel: MacDasherViewModel
+    @ObservedObject private var directService: DirectModeService
     @State private var showSettings = false
+    @State private var directModeSettingsWindow: NSWindow?
+    @State private var directWindow: DirectCanvasWindow?
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
     @Environment(\.colorScheme) private var colorScheme
+    private var directActions: DirectActions?
+
+    private struct DirectActions {
+        let exit: () -> Void
+        let settings: () -> Void
+        let updateOpacity: (CGFloat) -> Void
+    }
+
+    init(viewModel: MacDasherViewModel) {
+        self.viewModel = viewModel
+        self.directService = viewModel.directService
+    }
+
+    private init(viewModel: MacDasherViewModel, directActions: DirectActions) {
+        self.init(viewModel: viewModel)
+        self.directActions = directActions
+    }
 
     var body: some View {
+        Group {
+            if directActions != nil {
+                directModeLayout
+                    .overlay(alignment: .top) { messageBanner }
+            } else {
+                editorLayout
+            }
+        }
+        .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
+        .onChange(of: colorScheme) { _, newScheme in
+            viewModel.bridge.setSystemAppearance(dark: newScheme == .dark)
+        }
+    }
+
+    private var editorLayout: some View {
         VStack(spacing: 0) {
-            if currentLayoutPosition == "Left" {
+            if directWindow != nil {
+                Color.clear
+            } else if currentLayoutPosition == "Left" {
                 leftTextLayout
             } else if currentLayoutPosition == "Bottom" {
                 bottomTextLayout
             } else if currentLayoutPosition == "Top" {
                 topTextLayout
-            } else if currentLayoutPosition == "Direct" {
-                directModeLayout
             } else {
                 rightTextLayout
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
-                .sheet(isPresented: $showSettings) {
-                    MacDasherSettingsView(viewModel: viewModel)
-                }
-        .onChange(of: currentLayoutPosition) { _, newValue in
-            viewModel.directMode = (newValue == "Direct")
-            setFloatingWindow(newValue == "Direct")
-            if newValue == "Direct" && viewModel.isGameModeActive {
-                viewModel.toggleGameMode()
-            }
+        .sheet(isPresented: $showSettings, onDismiss: {
+            guard let editor = directModeSettingsWindow else { return }
+            directModeSettingsWindow = nil
+            DispatchQueue.main.async { enterDirectMode(in: editor) }
+        }) {
+            MacDasherSettingsView(viewModel: viewModel)
         }
-        .overlay(alignment: .top) {
-            if let msg = viewModel.pendingMessage {
-                MessageBanner(
-                    isWarning: msg.isWarning,
-                    text: msg.text,
-                    onDismiss: { viewModel.pendingMessage = nil }
-                )
-                .padding(.top, 8)
-            }
-        }
+        .overlay(alignment: .top) { messageBanner }
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
                 Button(action: {
@@ -57,16 +80,14 @@ struct MacContentView: View {
 
                 layoutPickerMenu
 
-                if currentLayoutPosition != "Direct" {
-                    Button(action: {
-                        UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
-                        viewModel.toggleGameMode()
-                    }) {
-                        if viewModel.isGameModeActive {
-                            LucideLabel("Game On", icon: DasherIcon.gameMode)
-                        } else {
-                            LucideLabel("Game Mode", icon: DasherIcon.gameMode)
-                        }
+                Button(action: {
+                    UITelemetry.action("main_toolbar", "game_mode", state: viewModel.isGameModeActive ? "off" : "on")
+                    viewModel.toggleGameMode()
+                }) {
+                    if viewModel.isGameModeActive {
+                        LucideLabel("Game On", icon: DasherIcon.gameMode)
+                    } else {
+                        LucideLabel("Game Mode", icon: DasherIcon.gameMode)
                     }
                 }
 
@@ -90,9 +111,16 @@ struct MacContentView: View {
                 }
             }
         }
-        .onAppear { viewModel.bridge.setSystemAppearance(dark: colorScheme == .dark) }
-        .onChange(of: colorScheme) { _, newScheme in
-            viewModel.bridge.setSystemAppearance(dark: newScheme == .dark)
+    }
+
+    @ViewBuilder private var messageBanner: some View {
+        if let message = viewModel.pendingMessage {
+            MessageBanner(
+                isWarning: message.isWarning,
+                text: message.text,
+                onDismiss: { viewModel.pendingMessage = nil }
+            )
+            .padding(.top, 8)
         }
     }
 
@@ -117,7 +145,7 @@ struct MacContentView: View {
             Divider()
             Button("Direct Mode") {
                 UITelemetry.action("main_toolbar", "layout", state: "direct")
-                currentLayoutPosition = "Direct"
+                enterDirectMode()
             }
         } label: {
             LucideLabel(currentLayoutPosition, icon: layoutIcon)
@@ -130,7 +158,6 @@ struct MacContentView: View {
         case "Left": return DasherIcon.paneLeft
         case "Bottom": return DasherIcon.paneBottom
         case "Top": return DasherIcon.paneTop
-        case "Direct": return DasherIcon.keyboard
         default: return DasherIcon.paneRight
         }
     }
@@ -263,17 +290,8 @@ struct MacContentView: View {
 
     private var directModeLayout: some View {
         VStack(spacing: 0) {
-            if !viewModel.directService.hasAccessibilityPermission {
+            if !directService.hasAccessibilityPermission {
                 accessibilityPrompt
-                    .onAppear {
-                        viewModel.directService.checkAccessibility()
-                        viewModel.directService.startPolling()
-                    }
-                    .onDisappear {
-                        if !viewModel.directMode {
-                            viewModel.directService.stopPolling()
-                        }
-                    }
             } else {
                 ZStack(alignment: .topTrailing) {
                     MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
@@ -312,16 +330,14 @@ struct MacContentView: View {
         // RFC: the slider drives the WHOLE floating window (canvas included),
         // not just the material layers — window alpha multiplies every view.
         .onChange(of: viewModel.directOpacity) { _, newValue in
-            NSApp.windows
-                .first(where: { $0.level == .floating && $0.isVisible })?
-                .alphaValue = newValue
+            directActions?.updateOpacity(newValue)
         }
     }
 
     private var targetAppIndicator: some View {
         HStack(spacing: 4) {
             Circle().fill(Color.green).frame(width: 6, height: 6)
-            Text("Sending to \(viewModel.directService.targetAppName)")
+            Text(directService.targetAppName.isEmpty ? "Focus an editor to start" : "Sending to \(directService.targetAppName)")
                 .font(.caption)
                 .foregroundColor(.white)
         }
@@ -450,7 +466,7 @@ struct MacContentView: View {
 
             Button {
                 UITelemetry.action("ime_toolbar", "settings")
-                showSettings = true
+                directActions?.settings()
             } label: {
                 LucideIcon(DasherIcon.settings, size: 18, color: Color("MutedText"))
                     .frame(width: 32, height: 32)
@@ -460,7 +476,7 @@ struct MacContentView: View {
 
             Button {
                 UITelemetry.action("ime_toolbar", "direct_mode", state: "off")
-                currentLayoutPosition = "Right"
+                directActions?.exit()
             } label: {
                 LucideIcon(DasherIcon.keyboard, size: 18, color: Color("MutedText"))
                     .frame(width: 32, height: 32)
@@ -716,24 +732,35 @@ struct MacContentView: View {
         .padding(40)
     }
 
-    private func setFloatingWindow(_ floating: Bool) {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            guard let window = NSApp.windows.first(where: { $0.isVisible }) else { return }
-            if floating {
-                window.level = .floating
-                window.isOpaque = false
-                window.hasShadow = false
-                window.backgroundColor = .clear
-                window.alphaValue = viewModel.directOpacity
-                window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-            } else {
-                window.level = .normal
-                window.isOpaque = true
-                window.hasShadow = true
-                window.backgroundColor = .windowBackgroundColor
-                window.collectionBehavior = []
-            }
+    private func enterDirectMode(in window: NSWindow? = nil) {
+        // Menu actions can run while Dasher is in the background, with neither a key nor a main window.
+        let visibleEditor = NSApp.orderedWindows.first { $0.isVisible && !($0 is NSPanel) && $0.sheetParent == nil }
+        guard !viewModel.directMode, let editor = window ?? NSApp.keyWindow ?? NSApp.mainWindow ?? visibleEditor else {
+            return
         }
+        if viewModel.isGameModeActive { viewModel.toggleGameMode() }
+        let panel = DirectCanvasWindow(replacing: editor, opacity: viewModel.directOpacity)
+        let actions = DirectActions(
+            exit: leaveDirectMode,
+            settings: { [weak editor] in
+                leaveDirectMode()
+                directModeSettingsWindow = editor
+                showSettings = true
+            },
+            updateOpacity: { [weak panel] opacity in panel?.alphaValue = opacity }
+        )
+        panel.onExit = actions.exit
+        viewModel.directMode = true
+        directWindow = panel
+        panel.present(MacContentView(viewModel: viewModel, directActions: actions))
+        directService.restoreTargetFocus()
+    }
+
+    private func leaveDirectMode() {
+        guard let directWindow else { return }
+        viewModel.directMode = false
+        directWindow.restoreEditorWindow()
+        self.directWindow = nil
     }
 }
 
@@ -1036,6 +1063,10 @@ final class MacDasherCanvas: NSView {
     }
     required init?(coder: NSCoder) { super.init(coder: coder) }
 
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        window is DirectCanvasWindow || super.acceptsFirstMouse(for: event)
+    }
+
     override func layout() {
         super.layout()
         viewModel?.setCanvasSize(bounds.size)
@@ -1047,7 +1078,8 @@ final class MacDasherCanvas: NSView {
         // .mouseMoved: continuous steering — a head mouse must be able to
         // drive Dasher by pointing alone (click only starts/stops per
         // BP_START_MOUSE; the engine reads the position every frame).
-        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, .activeInActiveApp], owner: self, userInfo: nil))
+        let activity: NSTrackingArea.Options = window is DirectCanvasWindow ? .activeAlways : .activeInActiveApp
+        addTrackingArea(NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .mouseMoved, activity], owner: self, userInfo: nil))
     }
 
     override func viewDidMoveToWindow() {
@@ -1133,6 +1165,7 @@ final class MacDasherCanvas: NSView {
         ctx.setFillColor(CGColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0))
         ctx.fill(dirtyRect)
 
+        guard !vm.directMode || vm.directService.hasForegroundTarget else { return }
         let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])
