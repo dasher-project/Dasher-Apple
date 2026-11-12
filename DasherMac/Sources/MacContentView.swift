@@ -12,7 +12,7 @@ struct MacContentView: View {
     @State private var directWindow: DirectCanvasWindow?
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
-    @State private var dismissedInputSourceSetup = false
+    @AppStorage("directInputSetupDeferred") private var directInputSetupDeferred = false
     @Environment(\.colorScheme) private var colorScheme
     private var directActions: DirectActions?
 
@@ -300,31 +300,21 @@ struct MacContentView: View {
                     VStack(spacing: 4) {
                         targetAppIndicator.padding(8)
                         directModeMiniBar.padding(.trailing, 8)
+                        if directService.needsInputSourceSetup && directInputSetupDeferred {
+                            Button("Set Up Text Context") { directInputSetupDeferred = false }
+                                .buttonStyle(.bordered)
+                                .background(.regularMaterial, in: Capsule())
+                                .padding(.trailing, 8)
+                        }
                     }
                 }
-                if directService.needsInputSourceSetup && !dismissedInputSourceSetup {
+                if directService.needsInputSourceSetup && !directInputSetupDeferred {
                     inputSourceSetup
                 }
-            }
 
-            Divider()
-
-            HStack(spacing: 12) {
-                LucideIcon(DasherIcon.textSize, size: 11, color: .secondary)
-                Slider(value: $viewModel.directOpacity, in: 0.2...1.0, step: 0.05)
-                    .frame(width: 120)
-                Text("\(Int(viewModel.directOpacity * 100))%")
-                    .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary)
-                    .frame(width: 32, alignment: .trailing)
-                Spacer()
-                speedStepper
-                Spacer()
-                speechPicker
+                Divider()
+                directModeBottomBar
             }
-            .padding(.horizontal, 12)
-            .frame(height: 44)
-            .background(.ultraThinMaterial)
         }
         .background(
             VisualEffectBlur(material: .hudWindow, blendingMode: .behindWindow)
@@ -336,6 +326,25 @@ struct MacContentView: View {
         .onChange(of: viewModel.directOpacity) { _, newValue in
             directActions?.updateOpacity(newValue)
         }
+    }
+
+    private var directModeBottomBar: some View {
+        HStack(spacing: 12) {
+            LucideIcon(DasherIcon.textSize, size: 11, color: .secondary)
+            Slider(value: $viewModel.directOpacity, in: 0.2...1.0, step: 0.05)
+                .frame(width: 120)
+            Text("\(Int(viewModel.directOpacity * 100))%")
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundColor(.secondary)
+                .frame(width: 32, alignment: .trailing)
+            Spacer()
+            speedStepper
+            Spacer()
+            speechPicker
+        }
+        .padding(.horizontal, 12)
+        .frame(height: 44)
+        .background(.ultraThinMaterial)
     }
 
     private var targetAppIndicator: some View {
@@ -712,23 +721,27 @@ struct MacContentView: View {
         }
     }
 
-    // MARK: - Accessibility
+    // MARK: - Direct Mode Setup
 
     private var inputSourceSetup: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Set Up Dasher Direct Input")
+            Text("Improve Predictions in Other Apps")
                 .font(.headline)
-            Text("Dasher can use text before your caret to update its predictions.")
+            Text("Direct Mode is ready. Add Dasher Direct Input to help predictions follow the caret in more apps.")
                 .font(.subheadline)
             Text("In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.")
                 .font(.subheadline)
-            Text("If Dasher Direct Input is missing, sign out of macOS and sign back in.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            DisclosureGroup {
+                Text("Restart your Mac, then check the list again.")
+                    .foregroundStyle(.secondary)
+            } label: {
+                Text("If Dasher Direct Input is missing")
+            }
+            .font(.caption)
             HStack {
                 Button("Open Keyboard Settings") { directService.openInputSourceSettings() }
                     .buttonStyle(.borderedProminent)
-                Button("Continue with Accessibility") { dismissedInputSourceSetup = true }
+                Button("Later") { directInputSetupDeferred = true }
                     .buttonStyle(.bordered)
             }
         }
@@ -742,11 +755,14 @@ struct MacContentView: View {
             LucideIcon("shield-check", size: 40, color: .secondary)
             Text("Accessibility Permission Required")
                 .font(.headline)
-            Text("Dasher needs accessibility access to send text to other applications.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 400)
+            VStack(spacing: 4) {
+                Text("Dasher needs accessibility access to send text to other applications.")
+                Text("Direct Mode starts as soon as access is available.")
+            }
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 400)
             HStack(spacing: 12) {
                 Button("Open System Settings") {
                     viewModel.directService.requestAccessibility()
@@ -755,8 +771,8 @@ struct MacContentView: View {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                Button("Check Again") {
-                    viewModel.directService.checkAccessibility()
+                Button("Back to Dasher") {
+                    directActions?.exit()
                 }
                 .buttonStyle(.bordered)
             }

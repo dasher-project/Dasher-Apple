@@ -8,13 +8,13 @@ The input source sends context over a local socket in the macOS app group. Both 
 
 1. Open Dasher. Choose **Direct Mode** from the layout menu.
 2. If macOS asks for access, enable Dasher in **System Settings → Privacy & Security**. Open **Device Control and Data Access** on macOS 27. Open **Accessibility** on earlier versions.
-3. If Dasher shows **Set Up Dasher Direct Input**, click **Open Keyboard Settings**. Under **Text Input**, click **Edit**, then click **+**. Search for **Dasher Direct Input** and click **Add**.
+3. If Dasher shows **Improve Predictions in Other Apps**, you can click **Open Keyboard Settings**. Under **Text Input**, click **Edit**, then click **+**. Search for **Dasher Direct Input** and click **Add**.
 4. Click the field where you want to type. Steer with the Dasher canvas.
 5. To return to the editor in Dasher, click **Toggle keyboard mode** or close the Direct Mode canvas.
 
 Dasher installs its bundled input source in the user's Input Methods folder. It selects the source during Direct Mode when macOS makes the source available. If the source is still active when Direct Mode ends, Dasher restores the previous keyboard source.
 
-If **Dasher Direct Input** is missing from Keyboard Settings, sign out of macOS and sign in again. Open Dasher and enter Direct Mode again. To use Direct Mode without setup, click **Continue with Accessibility**.
+If **Dasher Direct Input** is missing from Keyboard Settings, restart your Mac and check the list again. To skip this step, click **Later**. Click **Set Up Text Context** in the canvas to show the instructions again.
 
 ## Check context in Direct Mode
 
