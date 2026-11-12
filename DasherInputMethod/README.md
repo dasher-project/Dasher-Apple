@@ -21,7 +21,7 @@ If **Dasher Direct Input** is missing from Keyboard Settings, restart your Mac a
 1. Enable **Advanced logging** in Dasher settings. Enter Direct Mode.
 2. Focus a scratch document in BBEdit. Move the caret forward and backward in a sentence with the arrow keys. Then click in a different sentence. Pause for one second after each move.
 3. Check `keyboard_debug.log` for `[InputMethodKit] read` and a context seed for each new position. The log records the caret position in the editor and the length of the text that Dasher reads.
-4. Repeat with [the browser scratch fields](Tests/BrowserFields.html). Switch between fields, including fields with the same text. Check that Dasher reads from the current field.
+4. Repeat in a browser text field. Switch between two fields with different caret positions. Check that Dasher reads from the current field.
 5. Click or steer the Dasher canvas. Check that the editor retains keyboard focus and receives output.
 6. Leave Direct Mode. Check that the previous input source is active. Repeat the check when you quit Dasher in Direct Mode.
 7. Select your usual input source while Direct Mode is active. Check that Dasher reads through Accessibility in an editor that supports it.

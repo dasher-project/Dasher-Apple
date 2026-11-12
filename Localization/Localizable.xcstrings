@@ -2611,7 +2611,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Objetivo del centro automotriz"
+            "value": "Objetivo de centrado automático"
           }
         },
         "fa": {
@@ -3153,7 +3153,200 @@
       }
     },
     "Back to Dasher": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terug na Dasher"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "العودة إلى Dasher"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher এ ফিরে যান"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zpět na Dasher"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tilbage til Dasher"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurück zu Dasher"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Επιστροφή στο Dasher"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a Dasher"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بازگشت به Dasher"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Takaisin kohteeseen Dasher"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retour à Dasher"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher પર પાછા"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher पर वापस जाएँ"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vissza ide: Dasher"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Torna a Dasher"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher ಗೆ ಹಿಂತಿರುಗಿ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher എന്നതിലേക്ക് മടങ്ങുക"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher वर परत"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terug naar Dasher"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher 'ਤੇ ਵਾਪਸ ਜਾਓ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Powrót do Dasher"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voltar para Dasher"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voltar para Dasher"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вернуться к Dasher"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tillbaka till Dasher"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rudi kwa Dasher"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasherக்குத் திரும்பு"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "తిరిగి Dasherకి"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "กลับไปที่ Dasher"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "واپس Dasher پر"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "返回Dasher"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buyela ku-Dasher"
+          }
+        }
+      }
     },
     "Bottom": {
       "localizations": {
@@ -9431,10 +9624,396 @@
       }
     },
     "Direct Mode is ready. Add Dasher Direct Input to help predictions follow the caret in more apps.": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direkte modus is gereed. Voeg Dasher Direct Input by sodat voorspellings die teks net voor die wyser in meer programme kan gebruik."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "الوضع المباشر جاهز. أضف Dasher Direct Input لتستخدم التوقعات النص الذي يسبق مؤشر الكتابة مباشرةً في مزيد من التطبيقات."
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "সরাসরি মোড প্রস্তুত। আরও অ্যাপে কার্সরের ঠিক আগের লেখা থেকে পূর্বাভাস পেতে Dasher Direct Input যোগ করুন।"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přímý režim je připraven. Přidejte Dasher Direct Input, aby předpovědi mohly využívat text těsně před kurzorem ve více aplikacích."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direkte tilstand er klar. Tilføj Dasher Direct Input, så forudsigelser kan bruge teksten lige før markøren i flere apps."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Direktmodus ist bereit. Fügen Sie Dasher Direct Input hinzu, damit die Vorhersagen in mehr Apps den Text direkt vor dem Cursor berücksichtigen."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Η άμεση λειτουργία είναι έτοιμη. Προσθέστε το Dasher Direct Input ώστε οι προβλέψεις να χρησιμοποιούν το κείμενο ακριβώς πριν από τον δρομέα σε περισσότερες εφαρμογές."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El modo directo está listo. Añade Dasher Direct Input para que las predicciones usen el texto que precede al cursor en más aplicaciones."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حالت مستقیم آماده است. Dasher Direct Input را اضافه کنید تا پیش‌بینی‌ها در برنامه‌های بیشتری از متن درست پیش از نشانگر نوشتن استفاده کنند."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suora tila on valmis. Lisää Dasher Direct Input, jotta ennusteet voivat käyttää tekstiä juuri ennen kohdistinta useammissa sovelluksissa."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode direct est prêt. Ajoutez Dasher Direct Input pour que les prédictions utilisent le texte juste avant le curseur dans davantage d’applications."
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ડાયરેક્ટ મોડ તૈયાર છે. વધુ એપમાં અનુમાનો કર્સરની બરાબર પહેલાંનું લખાણ વાપરી શકે તે માટે Dasher Direct Input ઉમેરો."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "प्रत्यक्ष मोड तैयार है। ज़्यादा ऐप में पूर्वानुमान के लिए कर्सर के ठीक पहले का टेक्स्ट इस्तेमाल करने हेतु Dasher Direct Input जोड़ें।"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A közvetlen mód készen áll. Adja hozzá a következőt: Dasher Direct Input. Így az előrejelzések több alkalmazásban használhatják a kurzor előtti szöveget."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La modalità diretta è pronta. Aggiungi Dasher Direct Input per usare il testo subito prima del cursore nelle previsioni di più app."
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ನೇರ ಮೋಡ್ ಸಿದ್ಧವಾಗಿದೆ. ಹೆಚ್ಚಿನ ಆ್ಯಪ್‌ಗಳಲ್ಲಿ ಕರ್ಸರ್‌ಗೆ ಮುಂಚಿನ ಪಠ್ಯವನ್ನು ಮುನ್ನೋಟಗಳಿಗೆ ಬಳಸಲು Dasher Direct Input ಸೇರಿಸಿ."
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ഡയറക്ട് മോഡ് തയ്യാറാണ്. കൂടുതൽ ആപ്പുകളിൽ കർസറിനു തൊട്ടുമുമ്പുള്ള ടെക്സ്റ്റ് പ്രവചനങ്ങൾക്ക് ഉപയോഗിക്കാൻ Dasher Direct Input ചേർക്കുക."
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "थेट मोड तयार आहे. अधिक ॲप्समध्ये कर्सरच्या अगोदरचा मजकूर अंदाजांसाठी वापरण्यासाठी Dasher Direct Input जोडा."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De directe modus is klaar. Voeg Dasher Direct Input toe zodat voorspellingen in meer apps de tekst vlak voor de cursor gebruiken."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਸਿੱਧਾ ਮੋਡ ਤਿਆਰ ਹੈ। ਹੋਰ ਐਪਾਂ ਵਿੱਚ ਅਨੁਮਾਨਾਂ ਲਈ ਕਰਸਰ ਤੋਂ ਠੀਕ ਪਹਿਲਾਂ ਵਾਲਾ ਟੈਕਸਟ ਵਰਤਣ ਲਈ Dasher Direct Input ਸ਼ਾਮਲ ਕਰੋ।"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryb bezpośredni jest gotowy. Dodaj Dasher Direct Input, aby przewidywanie tekstu w większej liczbie aplikacji uwzględniało tekst tuż przed kursorem."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O modo direto está pronto. Adicione Dasher Direct Input para que as previsões usem o texto imediatamente antes do cursor em mais aplicativos."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O modo direto está pronto. Adicione Dasher Direct Input para que as previsões usem o texto imediatamente antes do cursor em mais aplicações."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прямой режим готов. Добавьте Dasher Direct Input, чтобы подсказки учитывали текст перед курсором в большем числе приложений."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direktläget är klart. Lägg till Dasher Direct Input så att förutsägelser kan använda texten precis före markören i fler appar."
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hali ya Moja kwa Moja iko tayari. Ongeza Dasher Direct Input ili ubashiri utumie maandishi yaliyo kabla ya kishale katika programu zaidi."
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "நேரடி பயன்முறை தயாராக உள்ளது. கூடுதல் செயலிகளில் கர்சருக்கு முன் உள்ள உரையைக் கணிப்புகளுக்குப் பயன்படுத்த Dasher Direct Input ஐச் சேர்க்கவும்."
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "డైరెక్ట్ మోడ్ సిద్ధంగా ఉంది. మరిన్ని యాప్‌లలో కర్సర్‌కు ముందు ఉన్న టెక్స్ట్‌ను అంచనాలకు ఉపయోగించడానికి Dasher Direct Inputని జోడించండి."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "โหมดโดยตรงพร้อมใช้งานแล้ว เพิ่ม Dasher Direct Input เพื่อใช้ข้อความก่อนเคอร์เซอร์ในการคาดเดาคำในแอปต่าง ๆ ได้มากขึ้น"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ڈائریکٹ موڈ تیار ہے۔ مزید ایپس میں پیش گوئی کے لیے کرسر سے ٹھیک پہلے کا متن استعمال کرنے کے لیے Dasher Direct Input شامل کریں۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接模式已就绪。添加 Dasher Direct Input 后，可在更多应用中根据光标前的文字进行预测。"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imodi Eqondile isilungile. Engeza i-Dasher Direct Input ukuze ukuqagela kusebenzise umbhalo ongaphambi kwekhesa ezinhlelweni zokusebenza eziningi."
+          }
+        }
+      }
     },
     "Direct Mode starts as soon as access is available.": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direkte modus begin sodra toegang beskikbaar is."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يبدأ الوضع المباشر بمجرد توفر الوصول."
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "অ্যাক্সেস উপলব্ধ হওয়ার সাথে সাথে সরাসরি মোড শুরু হয়।"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Přímý režim se spustí, jakmile je k dispozici přístup."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direkte tilstand starter, så snart der er adgang."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Direktmodus startet, sobald der Zugriff verfügbar ist."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Η άμεση λειτουργία ξεκινά μόλις είναι διαθέσιμη η πρόσβαση."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El modo directo comienza tan pronto como el acceso esté disponible."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "حالت مستقیم به محض اینکه دسترسی در دسترس باشد شروع می شود."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suora tila alkaa heti, kun pääsy on käytettävissä."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode direct démarre dès que l'accès est disponible."
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "એક્સેસ ઉપલબ્ધ થતાંની સાથે જ ડાયરેક્ટ મોડ શરૂ થાય છે."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "एक्सेस उपलब्ध होते ही डायरेक्ट मोड शुरू हो जाता है।"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Közvetlen mód azonnal elindul, amint elérhető a hozzáférés."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La modalità diretta si avvia non appena l'accesso è disponibile."
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಪ್ರವೇಶ ಲಭ್ಯವಾದ ತಕ್ಷಣ ನೇರ ಮೋಡ್ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ."
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ആക്സസ് ലഭ്യമാകുമ്പോൾ തന്നെ ഡയറക്ട് മോഡ് ആരംഭിക്കുന്നു."
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "प्रवेश उपलब्ध होताच डायरेक्ट मोड सुरू होतो."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Directe modus start zodra toegang beschikbaar is."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਪਹੁੰਚ ਉਪਲਬਧ ਹੁੰਦੇ ਹੀ ਡਾਇਰੈਕਟ ਮੋਡ ਸ਼ੁਰੂ ਹੋ ਜਾਂਦਾ ਹੈ।"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tryb bezpośredni uruchamia się natychmiast po uzyskaniu dostępu."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Modo Direto inicia assim que o acesso estiver disponível."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Modo Directo inicia-se assim que o acesso estiver disponível."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Прямой режим запускается, как только становится доступен доступ."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direktläget startar så snart åtkomst är tillgänglig."
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hali ya Moja kwa Moja huanza mara tu ufikiaji unapatikana."
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "அணுகல் கிடைத்தவுடன் நேரடி பயன்முறை தொடங்கும்."
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "యాక్సెస్ అందుబాటులోకి వచ్చిన వెంటనే డైరెక్ట్ మోడ్ ప్రారంభమవుతుంది."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "โหมดตรงจะเริ่มทันทีที่สามารถเข้าถึงได้"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "رسائی دستیاب ہوتے ہی ڈائریکٹ موڈ شروع ہو جاتا ہے۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一旦可以访问，直接模式就会启动。"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imodi Eqondile iqala ngokushesha ngemva kokuba usunikeze imvume Yokufinyeleleka."
+          }
+        }
+      }
     },
     "Done": {
       "localizations": {
@@ -10812,7 +11391,200 @@
       }
     },
     "Focus an editor to start": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plaas die tekswyser in ’n teksveld om te begin."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ضع مؤشر الكتابة في حقل نص للبدء."
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "শুরু করতে একটি টেক্সট ফিল্ডে কার্সর রাখুন।"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Začněte umístěním kurzoru do textového pole."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placér tekstmarkøren i et tekstfelt for at begynde."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setzen Sie zum Starten den Textcursor in ein Textfeld."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Τοποθετήστε τον δρομέα σε ένα πεδίο κειμένου για να ξεκινήσετε."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coloca el cursor en un campo de texto para empezar."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "برای شروع، نشانگر نوشتن را در یک کادر متنی قرار دهید."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aloita asettamalla tekstikohdistin tekstikenttään."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placez le curseur dans un champ de texte pour commencer."
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "શરૂ કરવા માટે લખાણના ક્ષેત્રમાં કર્સર મૂકો."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "शुरू करने के लिए टेक्स्ट कर्सर को किसी टेक्स्ट फ़ील्ड में रखें।"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A kezdéshez helyezze a szövegkurzort egy szövegmezőbe."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Posiziona il cursore in un campo di testo per iniziare."
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಪ್ರಾರಂಭಿಸಲು ಪಠ್ಯ ಕರ್ಸರ್ ಅನ್ನು ಪಠ್ಯ ಕ್ಷೇತ್ರದಲ್ಲಿ ಇರಿಸಿ."
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "തുടങ്ങാൻ ഒരു ടെക്സ്റ്റ് ഫീൽഡിൽ കർസർ വയ്ക്കുക."
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "सुरू करण्यासाठी मजकूर कर्सर एखाद्या मजकूर फील्डमध्ये ठेवा."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plaats de tekstcursor in een tekstveld om te beginnen."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਸ਼ੁਰੂ ਕਰਨ ਲਈ ਟੈਕਸਟ ਕਰਸਰ ਕਿਸੇ ਟੈਕਸਟ ਖੇਤਰ ਵਿੱਚ ਰੱਖੋ।"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aby rozpocząć, ustaw kursor w polu tekstowym."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coloque o cursor em um campo de texto para começar."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Coloque o cursor num campo de texto para começar."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чтобы начать, установите курсор в текстовое поле."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placera textmarkören i ett textfält för att börja."
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ili kuanza, weka kishale cha maandishi kwenye sehemu ya kuandika."
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "தொடங்க, உரைக் கர்சரை ஓர் உரைப் புலத்தில் வைக்கவும்."
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ప్రారంభించడానికి టెక్స్ట్ కర్సర్‌ను ఒక టెక్స్ట్ ఫీల్డ్‌లో ఉంచండి."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "วางเคอร์เซอร์ในช่องข้อความเพื่อเริ่มต้น"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "شروع کرنے کے لیے ٹیکسٹ کرسر کو کسی ٹیکسٹ فیلڈ میں رکھیں۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将光标放在文本输入框中即可开始。"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ukuze uqale, beka ikhesa endaweni yokufaka umbhalo."
+          }
+        }
+      }
     },
     "Full Access lets Dasher speak what you write and remember your training. The keyboard still works for basic entry without it.": {
       "localizations": {
@@ -12187,7 +12959,200 @@
       }
     },
     "If Dasher Direct Input is missing": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "As Dasher Direct Input ontbreek"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إذا كان Dasher Direct Input مفقودًا"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "যদি Dasher Direct Input অনুপস্থিত থাকে"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pokud chybí Dasher Direct Input"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hvis Dasher Direct Input mangler"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn Dasher Direct Input fehlt"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Εάν λείπει το Dasher Direct Input"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si falta Dasher Direct Input"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگر Dasher Direct Input وجود ندارد"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jos Dasher Direct Input puuttuu"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si Dasher Direct Input est manquant"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "જો Dasher Direct Input ખૂટે છે"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "यदि Dasher Direct Input गायब है"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ha a(z) Dasher Direct Input hiányzik"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se manca Dasher Direct Input"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಒಂದು ವೇಳೆ Dasher Direct Input ಕಾಣೆಯಾಗಿದೆ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher Direct Input ഇല്ലെങ്കിൽ"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "जर Dasher Direct Input गहाळ असेल"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Dasher Direct Input ontbreekt"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਜੇਕਰ Dasher Direct Input ਗੁੰਮ ਹੈ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeśli brakuje Dasher Direct Input"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se Dasher Direct Input estiver faltando"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se Dasher Direct Input estiver em falta"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Если Dasher Direct Input отсутствует"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om Dasher Direct Input saknas"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ikiwa Dasher Direct Input haipo"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher Direct Input இல்லை என்றால்"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasher Direct Input తప్పిపోయినట్లయితే"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "หาก Dasher Direct Input หายไป"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اگر Dasher Direct Input غائب ہے۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如果缺少 Dasher Direct Input"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma i-Dasher Direct Input ingekho"
+          }
+        }
+      }
     },
     "Import adds text to the language model (appends to existing learning). Export saves your accumulated training data for backup or transfer. Reset deletes custom training data — the model returns to its built-in defaults on next launch.": {
       "localizations": {
@@ -12980,10 +13945,396 @@
       "localizations": {}
     },
     "Improve Predictions in Other Apps": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbeter voorspellings in ander toepassings"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تحسين التوقعات في تطبيقات أخرى"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "অন্যান্য অ্যাপে পূর্বাভাস উন্নত করুন"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vylepšete předpovědi v jiných aplikacích"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forbedre forudsigelser i andre apps"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbessern Sie Vorhersagen in anderen Apps"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Βελτιώστε τις προβλέψεις σε άλλες εφαρμογές"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejorar las predicciones en otras aplicaciones"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بهبود پیش بینی ها در سایر برنامه ها"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paranna ennusteita muissa sovelluksissa"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Améliorer les prédictions dans d'autres applications"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "અન્ય ઍપમાં અનુમાનો બહેતર બનાવો"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अन्य ऐप्स में पूर्वानुमानों में सुधार करें"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Javítsa az előrejelzéseket más alkalmazásokban"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migliora le previsioni in altre app"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಇತರ ಅಪ್ಲಿಕೇಶನ್‌ಗಳಲ್ಲಿ ಮುನ್ಸೂಚನೆಗಳನ್ನು ಸುಧಾರಿಸಿ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "മറ്റ് ആപ്പുകളിലെ പ്രവചനങ്ങൾ മെച്ചപ്പെടുത്തുക"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "इतर ॲप्समधील अंदाज सुधारा"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbeter voorspellingen in andere apps"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਹੋਰ ਐਪਾਂ ਵਿੱਚ ਪੂਰਵ ਅਨੁਮਾਨਾਂ ਵਿੱਚ ਸੁਧਾਰ ਕਰੋ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Popraw przewidywania w innych aplikacjach"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melhore as previsões em outros aplicativos"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melhore as previsões noutras aplicações"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Улучшите прогнозы в других приложениях"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förbättra förutsägelser i andra appar"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boresha Utabiri katika Programu Zingine"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "பிற பயன்பாடுகளில் கணிப்புகளை மேம்படுத்தவும்"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ఇతర యాప్‌లలో అంచనాలను మెరుగుపరచండి"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ปรับปรุงการคาดการณ์ในแอปอื่นๆ"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "دیگر ایپس میں پیشین گوئیوں کو بہتر بنائیں"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "改进其他应用程序中的预测"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Thuthukisa ukubikezela kwezinye izinhlelo zokusebenza"
+          }
+        }
+      }
     },
     "In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Sleutelbordinstellings, gaan na Teksinvoer → Wysig → +. Soek vir Dasher Direct Input en klik Voeg by."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "في إعدادات لوحة المفاتيح، انتقل إلى إدخال النص → تحرير → +. ابحث عن Dasher Direct Input وانقر فوق \"إضافة\"."
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "কীবোর্ড সেটিংসে, টেক্সট ইনপুট → সম্পাদনা → + এ যান। Dasher Direct Input অনুসন্ধান করুন এবং যোগ করুন ক্লিক করুন।"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "V Nastavení klávesnice přejděte na Textový vstup → Upravit → +. Vyhledejte Dasher Direct Input a klikněte na Přidat."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I Tastaturindstillinger skal du gå til Tekstinput → Rediger → +. Søg efter Dasher Direct Input, og klik på Tilføj."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gehen Sie in den Tastatureinstellungen zu Texteingabe → Bearbeiten → +. Suchen Sie nach Dasher Direct Input und klicken Sie auf Hinzufügen."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Στις Ρυθμίσεις πληκτρολογίου, μεταβείτε στην Εισαγωγή κειμένου → Επεξεργασία → +. Αναζητήστε το Dasher Direct Input και κάντε κλικ στην Προσθήκη."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En los ajustes del teclado, ve a Entrada de texto → Editar → +. Busca Dasher Direct Input y haz clic en Añadir."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "در تنظیمات صفحه کلید، به ورودی متن → ویرایش → + بروید. Dasher Direct Input را جستجو کنید و روی افزودن کلیک کنید."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siirry Näppäimistöasetuksissa kohtaan Tekstinsyöttö → Muokkaa → +. Etsi Dasher Direct Input ja napsauta Lisää."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans les réglages Clavier, accédez à Saisie de texte → Modifier → +. Recherchez Dasher Direct Input, puis cliquez sur Ajouter."
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "કીબોર્ડ સેટિંગ્સમાં, ટેક્સ્ટ ઇનપુટ → એડિટ → + પર જાઓ. Dasher Direct Input માટે શોધો અને ઉમેરો પર ક્લિક કરો."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीबोर्ड सेटिंग्स में, टेक्स्ट इनपुट → एडिट → + पर जाएं। Dasher Direct Input खोजें और जोड़ें पर क्लिक करें।"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Billentyűzet beállításaiban válassza a Szövegbevitel → Szerkesztés → + lehetőséget. Keresse meg a következőt: Dasher Direct Input, és kattintson a Hozzáadás gombra."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Impostazioni tastiera, vai su Inserimento testo → Modifica → +. Cerca Dasher Direct Input e fai clic su Aggiungi."
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಕೀಬೋರ್ಡ್ ಸೆಟ್ಟಿಂಗ್‌ಗಳಲ್ಲಿ, ಪಠ್ಯ ಇನ್‌ಪುಟ್ → ಎಡಿಟ್ → + ಗೆ ಹೋಗಿ. Dasher Direct Input ಗಾಗಿ ಹುಡುಕಿ ಮತ್ತು ಸೇರಿಸು ಕ್ಲಿಕ್ ಮಾಡಿ."
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "കീബോർഡ് ക്രമീകരണങ്ങളിൽ, ടെക്സ്റ്റ് ഇൻപുട്ട് → എഡിറ്റ് → + എന്നതിലേക്ക് പോകുക. Dasher Direct Input എന്നതിനായി തിരയുക, ചേർക്കുക ക്ലിക്ക് ചെയ്യുക."
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "कीबोर्ड सेटिंग्जमध्ये, मजकूर इनपुट → संपादन → + वर जा. Dasher Direct Input शोधा आणि जोडा क्लिक करा."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ga in Toetsenbordinstellingen naar Tekstinvoer → Bewerken → +. Zoek naar Dasher Direct Input en klik op Toevoegen."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਕੀਬੋਰਡ ਸੈਟਿੰਗਾਂ ਵਿੱਚ, ਟੈਕਸਟ ਇਨਪੁਟ → ਐਡਿਟ → + 'ਤੇ ਜਾਓ। Dasher Direct Input ਦੀ ਖੋਜ ਕਰੋ ਅਤੇ ਜੋੜੋ 'ਤੇ ਕਲਿੱਕ ਕਰੋ।"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "W Ustawieniach klawiatury przejdź do Wprowadzanie tekstu → Edytuj → +. Wyszukaj Dasher Direct Input i kliknij Dodaj."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nas configurações do teclado, vá para Entrada de texto → Editar → +. Procure por Dasher Direct Input e clique em Adicionar."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nas definições do teclado, aceda a Introdução de texto → Editar → +. Procure por Dasher Direct Input e clique em Adicionar."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В настройках клавиатуры выберите «Ввод текста» → «Правка» → «+». Найдите Dasher Direct Input и нажмите «Добавить»."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I Tangentbordsinställningar, gå till Textinmatning → Redigera → +. Sök efter Dasher Direct Input och klicka på Lägg till."
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Katika Mipangilio ya Kibodi, nenda kwa Ingizo la Maandishi → Hariri → +. Tafuta Dasher Direct Input na ubofye Ongeza."
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "விசைப்பலகை அமைப்புகளில், உரை உள்ளீடு → திருத்து → + என்பதற்குச் செல்லவும். Dasher Direct Input ஐத் தேடி சேர் என்பதைக் கிளிக் செய்யவும்."
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "కీబోర్డ్ సెట్టింగ్‌లలో, టెక్స్ట్ ఇన్‌పుట్ → ఎడిట్ → +కి వెళ్లండి. Dasher Direct Input కోసం వెతికి, జోడించు క్లిక్ చేయండి."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ในการตั้งค่าคีย์บอร์ด ให้ไปที่การป้อนข้อความ → แก้ไข → + ค้นหา Dasher Direct Input และคลิกเพิ่ม"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "کی بورڈ سیٹنگز میں، ٹیکسٹ ان پٹ → ایڈیٹ → + پر جائیں۔ Dasher Direct Input تلاش کریں اور شامل کریں پر کلک کریں۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在键盘设置中，转到文本输入→编辑→+。搜索 Dasher Direct Input 并单击“添加”。"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuzilungiselelo zekhibhodi, hamba kokuthi Okokufaka Umbhalo → Hlela → +. Sesha okuthi Dasher Direct Input bese uchofoza Engeza."
+          }
+        }
+      }
     },
     "Increase Speed": {
       "localizations": {
@@ -13770,7 +15121,200 @@
       }
     },
     "Later": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "لاحقاً"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "পরে"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Později"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senere"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αργότερα"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más tarde"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعدا"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Myöhemmin"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "બાદમાં"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "बाद में"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Később"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dopo"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ನಂತರ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "പിന്നീട്"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "नंतर"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਬਾਅਦ ਵਿੱਚ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Później"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mais tarde"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mais tarde"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Позже"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senare"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baadaye"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "பின்னர்"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "తరువాత"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ภายหลัง"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "بعد میں"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kamuva"
+          }
+        }
+      }
     },
     "Learning": {
       "localizations": {
@@ -23184,7 +24728,200 @@
       }
     },
     "Restart your Mac, then check the list again.": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Herbegin jou Mac en gaan dan weer na die lys."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "أعد تشغيل جهاز Mac الخاص بك، ثم تحقق من القائمة مرة أخرى."
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "আপনার ম্যাক রিস্টার্ট করুন, তারপর আবার তালিকা চেক করুন।"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restartujte Mac a znovu zkontrolujte seznam."
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genstart din Mac, og tjek derefter listen igen."
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starten Sie Ihren Mac neu und überprüfen Sie die Liste erneut."
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Κάντε επανεκκίνηση του Mac σας και, στη συνέχεια, ελέγξτε ξανά τη λίστα."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reinicie su Mac y luego verifique la lista nuevamente."
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "مک خود را مجددا راه اندازی کنید، سپس دوباره لیست را بررسی کنید."
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käynnistä Mac uudelleen ja tarkista luettelo uudelleen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrez votre Mac, puis vérifiez à nouveau la liste."
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "તમારા Mac ને પુનઃપ્રારંભ કરો, પછી ફરીથી સૂચિ તપાસો."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "अपने Mac को पुनरारंभ करें, फिर सूची दोबारा जांचें।"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indítsa újra a Mac-et, majd ellenőrizze újra a listát."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riavvia il Mac, quindi controlla nuovamente l'elenco."
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ನಿಮ್ಮ ಮ್ಯಾಕ್ ಅನ್ನು ಮರುಪ್ರಾರಂಭಿಸಿ, ನಂತರ ಪಟ್ಟಿಯನ್ನು ಮತ್ತೊಮ್ಮೆ ಪರಿಶೀಲಿಸಿ."
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "നിങ്ങളുടെ Mac പുനരാരംഭിക്കുക, തുടർന്ന് ലിസ്റ്റ് വീണ്ടും പരിശോധിക്കുക."
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "तुमचा Mac रीस्टार्ट करा, नंतर सूची पुन्हा तपासा."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start uw Mac opnieuw op en controleer de lijst opnieuw."
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਆਪਣੇ ਮੈਕ ਨੂੰ ਰੀਸਟਾਰਟ ਕਰੋ, ਫਿਰ ਸੂਚੀ ਨੂੰ ਦੁਬਾਰਾ ਚੈੱਕ ਕਰੋ।"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uruchom ponownie komputer Mac, a następnie ponownie sprawdź listę."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reinicie o seu Mac e verifique a lista novamente."
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reinicie o seu Mac e verifique novamente a lista."
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Перезагрузите Mac, затем еще раз проверьте список."
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starta om din Mac och kontrollera sedan listan igen."
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anzisha tena Mac yako, kisha angalia orodha tena."
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "உங்கள் மேக்கை மறுதொடக்கம் செய்து, பட்டியலை மீண்டும் சரிபார்க்கவும்."
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "మీ Macని పునఃప్రారంభించి, ఆపై జాబితాను మళ్లీ తనిఖీ చేయండి."
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "รีสตาร์ท Mac ของคุณ จากนั้นตรวจสอบรายการอีกครั้ง"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "اپنے میک کو دوبارہ شروع کریں، پھر فہرست کو دوبارہ چیک کریں۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新启动 Mac，然后再次检查列表。"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Qala kabusha i-Mac yakho, bese uhlola uhlu futhi."
+          }
+        }
+      }
     },
     "Restore all Dasher settings to their default values. This cannot be undone.": {
       "localizations": {
@@ -24167,10 +25904,396 @@
       }
     },
     "Sending to %@": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stuur tans na %@"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إرسال إلى %@"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ এ পাঠানো হচ্ছে"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Odesílání do %@"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sender til %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senden an %@"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Αποστολή σε %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviando a %@"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ارسال به %@"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetetään osoitteeseen %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoi à %@"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ને મોકલી રહ્યું છે"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ पर भेजा जा रहा है"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Küldés ide: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Invio a %@"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ಗೆ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ എന്നതിലേക്ക് അയയ്ക്കുന്നു"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ला पाठवत आहे"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verzenden naar %@"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ ਨੂੰ ਭੇਜਿਆ ਜਾ ਰਿਹਾ ਹੈ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wysyłam do %@"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviando para %@"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviando para %@"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправка на %@"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skickar till %@"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inatuma kwa %@"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@க்கு அனுப்புகிறது"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@కి పంపుతోంది"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "กำลังส่งไปที่ %@"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ کو بھیج رہا ہے"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发送至%@"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ithumela ku-%@"
+          }
+        }
+      }
     },
     "Set Up Text Context": {
-      "localizations": {}
+      "localizations": {
+        "af": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stel tekskonteks op"
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "إعداد سياق النص"
+          }
+        },
+        "bn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "টেক্সট কনটেক্সট সেট আপ করুন"
+          }
+        },
+        "cs": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nastavit textový kontext"
+          }
+        },
+        "da": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indstil tekstkontekst"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Textkontext einrichten"
+          }
+        },
+        "el": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ρύθμιση περιβάλλοντος κειμένου"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar contexto de texto"
+          }
+        },
+        "fa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "تنظیم متن متن"
+          }
+        },
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Määritä tekstikonteksti"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurer le contexte du texte"
+          }
+        },
+        "gu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ટેક્સ્ટ સંદર્ભ સેટ કરો"
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "टेक्स्ट संदर्भ सेट करें"
+          }
+        },
+        "hu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Szövegkörnyezet beállítása"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Imposta il contesto del testo"
+          }
+        },
+        "kn": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ಪಠ್ಯ ಸಂದರ್ಭವನ್ನು ಹೊಂದಿಸಿ"
+          }
+        },
+        "ml": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ടെക്സ്റ്റ് സന്ദർഭം സജ്ജീകരിക്കുക"
+          }
+        },
+        "mr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "मजकूर संदर्भ सेट करा"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tekstcontext instellen"
+          }
+        },
+        "pa": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ਟੈਕਸਟ ਸੰਦਰਭ ਸੈੱਟ ਕਰੋ"
+          }
+        },
+        "pl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skonfiguruj kontekst tekstowy"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar contexto de texto"
+          }
+        },
+        "pt-PT": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Configurar contexto de texto"
+          }
+        },
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка текстового контекста"
+          }
+        },
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ställ in textkontext"
+          }
+        },
+        "sw": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weka Muktadha wa Maandishi"
+          }
+        },
+        "ta": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "உரை சூழலை அமைக்கவும்"
+          }
+        },
+        "te": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "వచన సందర్భాన్ని సెటప్ చేయండి"
+          }
+        },
+        "th": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ตั้งค่าบริบทข้อความ"
+          }
+        },
+        "ur": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "متن کا سیاق و سباق مرتب کریں۔"
+          }
+        },
+        "zh-CN": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置文本上下文"
+          }
+        },
+        "zu": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setha Umongo Wombhalo"
+          }
+        }
+      }
     },
     "Settings": {
       "localizations": {
