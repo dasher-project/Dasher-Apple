@@ -112,6 +112,16 @@ public struct ContextSeedDecision: Equatable, Sendable {
 /// Mirrors `Dasher.Windows.Services.ContextSeedPolicy`.
 public enum ContextSeedPolicy {
 
+    /// An input method reads directly up to the editor's current selection.
+    /// A shorter prefix can be a caret move or a deletion.
+    public static func decideFromEditorPrefix(engineFullText: String, editorPrefix: String) -> ContextSeedDecision {
+        let sentence = normalizeInvisible(SentenceWindow.trim(editorPrefix, caretUTF16: editorPrefix.utf16.count).text)
+        let engineSentence = normalizeInvisible(SentenceWindow.trim(engineFullText, caretUTF16: engineFullText.utf16.count).text)
+        return sentence == engineSentence
+            ? .skip("sentence unchanged")
+            : .seed(sentence, caretUTF16: sentence.utf16.count)
+    }
+
     /// Maximum full-text lag (UTF-16 code units, after normalisation) still
     /// attributed to a stale AX read.
     public static let maxLagChars = 32

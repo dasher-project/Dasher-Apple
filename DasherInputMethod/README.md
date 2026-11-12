@@ -8,18 +8,19 @@ The input source sends context over a local socket in the macOS app group. Both 
 
 1. Open Dasher. Choose **Direct Mode** from the layout menu.
 2. If macOS asks for access, enable Dasher in **System Settings → Privacy & Security**. Open **Device Control and Data Access** on macOS 27. Open **Accessibility** on earlier versions.
-3. Click the field where you want to type. Steer with the Dasher canvas.
-4. To return to the editor in Dasher, click **Toggle keyboard mode** or close the Direct Mode canvas.
+3. If Dasher shows **Set Up Dasher Direct Input**, click **Open Keyboard Settings**. Under **Text Input**, click **Edit**, then click **+**. Search for **Dasher Direct Input** and click **Add**.
+4. Click the field where you want to type. Steer with the Dasher canvas.
+5. To return to the editor in Dasher, click **Toggle keyboard mode** or close the Direct Mode canvas.
 
 Dasher installs its bundled input source in the user's Input Methods folder. It selects the source during Direct Mode when macOS makes the source available. If the source is still active when Direct Mode ends, Dasher restores the previous keyboard source.
 
-On macOS 27, add **Dasher Direct Input** in **System Settings → Keyboard → Text Input → Edit** when it appears in the list. You may need to sign out of macOS and sign in again before the new source appears. Dasher uses Accessibility for context while the source is unavailable.
+If **Dasher Direct Input** is missing from Keyboard Settings, sign out of macOS and sign in again. Open Dasher and enter Direct Mode again. To use Direct Mode without setup, click **Continue with Accessibility**.
 
 ## Check context in Direct Mode
 
 1. Enable **Advanced logging** in Dasher settings. Enter Direct Mode.
-2. Focus a scratch document in BBEdit. Move the caret between two different sentences. Pause after each move.
-3. Check `keyboard_debug.log` for `[InputMethodKit] read` and a context seed for the new caret position. The log records lengths and positions.
+2. Focus a scratch document in BBEdit. Move the caret forward and backward in a sentence with the arrow keys. Then click in a different sentence. Pause for one second after each move.
+3. Check `keyboard_debug.log` for `[InputMethodKit] read` and a context seed for each new position. The log records the caret position in the editor and the length of the text that Dasher reads.
 4. Repeat with [the browser scratch fields](Tests/BrowserFields.html). Switch between fields, including fields with the same text. Check that Dasher reads from the current field.
 5. Click or steer the Dasher canvas. Check that the editor retains keyboard focus and receives output.
 6. Leave Direct Mode. Check that the previous input source is active. Repeat the check when you quit Dasher in Direct Mode.

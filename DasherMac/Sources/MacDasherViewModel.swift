@@ -339,14 +339,7 @@ class MacDasherViewModel: ObservableObject {
         let engineFullText = bridge.getOutputText()
         let decision: ContextSeedDecision
         if context.inputMethodSelection != nil {
-            let sentence = ContextSeedPolicy.normalizeInvisible(SentenceWindow.trim(fullText, caretUTF16: caretUTF16).text)
-            let engineSentence = ContextSeedPolicy.normalizeInvisible(
-                SentenceWindow.trim(engineFullText, caretUTF16: engineFullText.utf16.count).text
-            )
-            // A shorter prefix can be a real caret move or editor-side deletion.
-            decision = sentence == engineSentence
-                ? .skip("sentence unchanged")
-                : .seed(sentence, caretUTF16: sentence.utf16.count)
+            decision = ContextSeedPolicy.decideFromEditorPrefix(engineFullText: engineFullText, editorPrefix: fullText)
         } else {
             decision = ContextSeedPolicy.decide(
                 engineFullText: engineFullText,

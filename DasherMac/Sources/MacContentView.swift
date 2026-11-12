@@ -12,6 +12,7 @@ struct MacContentView: View {
     @State private var directWindow: DirectCanvasWindow?
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
+    @State private var dismissedInputSourceSetup = false
     @Environment(\.colorScheme) private var colorScheme
     private var directActions: DirectActions?
 
@@ -300,6 +301,9 @@ struct MacContentView: View {
                         targetAppIndicator.padding(8)
                         directModeMiniBar.padding(.trailing, 8)
                     }
+                }
+                if directService.needsInputSourceSetup && !dismissedInputSourceSetup {
+                    inputSourceSetup
                 }
             }
 
@@ -709,6 +713,29 @@ struct MacContentView: View {
     }
 
     // MARK: - Accessibility
+
+    private var inputSourceSetup: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Set Up Dasher Direct Input")
+                .font(.headline)
+            Text("Dasher can use text before your caret to update its predictions.")
+                .font(.subheadline)
+            Text("In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.")
+                .font(.subheadline)
+            Text("If Dasher Direct Input is missing, sign out of macOS and sign back in.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("Open Keyboard Settings") { directService.openInputSourceSettings() }
+                    .buttonStyle(.borderedProminent)
+                Button("Continue with Accessibility") { dismissedInputSourceSetup = true }
+                    .buttonStyle(.bordered)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.ultraThinMaterial)
+    }
 
     private var accessibilityPrompt: some View {
         VStack(spacing: 16) {

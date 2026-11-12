@@ -4916,6 +4916,9 @@
         }
       }
     },
+    "Continue with Accessibility": {
+      "localizations": {}
+    },
     "Control": {
       "localizations": {
         "af": {
@@ -7074,6 +7077,9 @@
           }
         }
       }
+    },
+    "Dasher can use text before your caret to update its predictions.": {
+      "localizations": {}
     },
     "Dasher collects anonymous analytics to understand usage and fix crashes. No typed text, clipboard, or personal info is ever collected. See the open event schema at github.com/dasher-project/Dasher-Apple.": {
       "localizations": {
@@ -12373,6 +12379,9 @@
         }
       }
     },
+    "If Dasher Direct Input is missing, sign out of macOS and sign back in.": {
+      "localizations": {}
+    },
     "Import adds text to the language model (appends to existing learning). Export saves your accumulated training data for backup or transfer. Reset deletes custom training data — the model returns to its built-in defaults on next launch.": {
       "localizations": {
         "af": {
@@ -13161,6 +13170,9 @@
       "localizations": {}
     },
     "Imported settings (%lld)": {
+      "localizations": {}
+    },
+    "In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.": {
       "localizations": {}
     },
     "Increase Speed": {
@@ -24339,6 +24351,9 @@
       }
     },
     "Sending to %@": {
+      "localizations": {}
+    },
+    "Set Up Dasher Direct Input": {
       "localizations": {}
     },
     "Settings": {

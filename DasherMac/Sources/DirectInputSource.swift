@@ -12,6 +12,7 @@ final class DirectInputSource {
     private var activation: Task<Void, Never>?
     private var terminationObserver: NSObjectProtocol?
     private var didSelectSource = false
+    var onSetupNeeded: ((Bool) -> Void)?
 
     init() {
         // Restore the original source on launch if Dasher previously quit
@@ -52,10 +53,12 @@ final class DirectInputSource {
             var requestedEnable = false
             for _ in 0..<15 {
                 guard !Task.isCancelled else { return }
-                if let source = Self.source(withID: Self.identifier, includeDisabled: false),
-                   Self.selectSource(source) {
-                    self?.didSelectSource = true
-                    return
+                if let source = Self.source(withID: Self.identifier, includeDisabled: false) {
+                    self?.onSetupNeeded?(false)
+                    if Self.selectSource(source) {
+                        self?.didSelectSource = true
+                        return
+                    }
                 }
                 // macOS 27 opens Keyboard Settings for an enable request. Leave
                 // the editor focused and use Accessibility until the source is enabled.
@@ -66,7 +69,12 @@ final class DirectInputSource {
                 }
                 try? await Task.sleep(for: .milliseconds(200))
             }
-            if !Task.isCancelled { LogManager.kb("Dasher Direct Input could not be selected") }
+            guard !Task.isCancelled else { return }
+            self?.onSetupNeeded?(
+                FileManager.default.fileExists(atPath: Self.bundledHelper.path)
+                    && Self.source(withID: Self.identifier, includeDisabled: false) == nil
+            )
+            LogManager.kb("Dasher Direct Input could not be selected")
         }
     }
 
@@ -80,8 +88,12 @@ final class DirectInputSource {
         Self.restoreSource()
     }
 
+    private static var bundledHelper: URL {
+        Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/\(helperName)")
+    }
+
     private static func installBundledSource() async {
-        let helper = Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/\(helperName)")
+        let helper = bundledHelper
         guard FileManager.default.fileExists(atPath: helper.path) else { return }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = false

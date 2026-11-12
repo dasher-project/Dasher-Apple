@@ -22,6 +22,7 @@ class DirectModeService: ObservableObject {
         }
     }
     @Published var targetAppName: String = ""
+    @Published private(set) var needsInputSourceSetup = false
 
     /// RFC 0019 clause 6 / RFC 0015: fires when the caret/selection, focused
     /// element, or target application changes. Carries the trigger reason
@@ -69,6 +70,7 @@ class DirectModeService: ObservableObject {
     private var pollTimer: Timer?
     private var lastTargetApp: NSRunningApplication?
     private let inputSource = DirectInputSource()
+    private var openedInputSourceSettings = false
 
     var hasForegroundTarget: Bool {
         guard let target = lastTargetApp, !target.isTerminated else { return false }
@@ -76,6 +78,10 @@ class DirectModeService: ObservableObject {
     }
 
     init() {
+        inputSource.onSetupNeeded = { [weak self] needed in
+            guard let self, self.needsInputSourceSetup != needed else { return }
+            self.needsInputSourceSetup = needed
+        }
         if let front = NSWorkspace.shared.frontmostApplication, front.activationPolicy == .regular,
            front.bundleIdentifier != Bundle.main.bundleIdentifier {
             lastTargetApp = front
@@ -319,7 +325,8 @@ class DirectModeService: ObservableObject {
             return nil
         }
         guard isCurrentTarget(pid, context: context) else { return nil }
-        LogManager.kb("  [\(context.sourceName)] read \(context.text.utf16.count) utf16, caret16=\(context.caretUTF16)")
+        let editorCaret = context.inputMethodSelection?.location ?? context.caretUTF16
+        LogManager.kb("  [\(context.sourceName)] read \(context.text.utf16.count) utf16, caret16=\(editorCaret)")
         return context
     }
 
@@ -433,6 +440,8 @@ class DirectModeService: ObservableObject {
         stopCaretWatcher()
         stopContextPolling()
         targetAppName = ""
+        needsInputSourceSetup = false
+        openedInputSourceSettings = false
     }
 
     func restoreTargetFocus() {
@@ -441,11 +450,20 @@ class DirectModeService: ObservableObject {
         target.activate()
     }
 
+    func openInputSourceSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension") else { return }
+        openedInputSourceSettings = NSWorkspace.shared.open(url)
+    }
+
     private func trackTarget(_ app: NSRunningApplication) {
+        if openedInputSourceSettings && app.bundleIdentifier == "com.apple.systempreferences" { return }
         let changed = lastTargetApp?.processIdentifier != app.processIdentifier
         lastTargetApp = app
         guard isActive else { return }
-        if changed && hasAccessibilityPermission { inputSource.editorChanged() }
+        if (changed || openedInputSourceSettings) && hasAccessibilityPermission {
+            inputSource.editorChanged()
+        }
+        openedInputSourceSettings = false
         targetAppName = app.localizedName ?? "Unknown"
         LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier) changed=\(changed)")
         startCaretWatcher()
