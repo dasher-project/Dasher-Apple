@@ -66,6 +66,18 @@ Select a scheme (`DasherApp`, `DasherKeyboard`, `DasherMac`, or
 > runs as a build phase (config in `.swiftlint.yml`). Xcode Cloud runs the
 > above automatically via `ci_scripts/ci_post_clone.sh`.
 
+### Rust TTS for local builds
+
+The macOS and iOS apps use the Rust TTS Swift package for cloud speech and Sherpa-ONNX 2.
+This branch expects a local package until the wrapper publishes the Apple XCFramework.
+
+1. In the Rust TTS integration checkout, run `scripts/apple/build-xcframework.sh`.
+2. In the Dasher checkout, create `Vendor/RustTtsWrapper` as a symlink to the Rust TTS checkout.
+3. Run `xcodegen generate`.
+4. Build the `DasherMac` or `DasherApp` scheme.
+
+In Dasher, open **Settings → Speech**. Select **Sherpa-ONNX**. Select **Set Up English Voice (27 MB)** to install Inflect Nano v2. Then select **Preview**. After installation, the voice works offline.
+
 ## Architecture
 
 Each frontend talks to DasherCore **only** through its flat C API

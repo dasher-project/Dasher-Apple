@@ -9,11 +9,14 @@ let package = Package(
         .library(name: "DasherSpeech", targets: ["DasherSpeech"]),
     ],
     dependencies: [
+        .package(path: "Vendor/RustTtsWrapper"),
+        .package(url: "https://github.com/tsolomko/SWCompression.git", from: "4.9.1"),
         .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.8"),
         .package(url: "https://github.com/JakubMazur/lucide-icons-swift", from: "1.20.0"),
         .package(url: "https://github.com/PostHog/posthog-ios", from: "3.0.0"),
     ],
     targets: [
+        .systemLibrary(name: "CBZip2", path: "DasherSpeechSupport/CBZip2"),
         .target(
             name: "DasherShared",
             dependencies: [
@@ -26,10 +29,14 @@ let package = Package(
             name: "DasherSpeech",
             dependencies: [
                 .target(name: "DasherShared"),
+                .target(name: "CBZip2", condition: .when(platforms: [.macOS, .iOS])),
                 .product(name: "SwiftTTSWrapper", package: "swift-tts-wrapper"),
+                .product(name: "SWCompression", package: "SWCompression", condition: .when(platforms: [.macOS, .iOS])),
+                .product(name: "RustTtsWrapper", package: "RustTtsWrapper", condition: .when(platforms: [.macOS, .iOS])),
             ],
             path: "DasherSpeech"
         ),
+        .testTarget(name: "DasherSpeechTests", dependencies: ["DasherSpeech"]),
         .testTarget(
             name: "DasherSharedTests",
             dependencies: [

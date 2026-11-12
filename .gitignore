@@ -22,3 +22,6 @@ __pycache__/
 DasherEngine/Resources/Data/Strings/
 /DasherKeyboardData/*
 !/DasherKeyboardData/.gitignore
+
+# Locally built Rust TTS binary package
+/Vendor/RustTtsWrapper

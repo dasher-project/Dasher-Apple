@@ -837,14 +837,14 @@ struct ContentView: View {
     }
 
     private var speechPicker: some View {
-        let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+        let isOn = viewModel.speaksWords
         return Menu {
             Button("Speech on") {
-                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                viewModel.setSpeaksWords(true)
                 UITelemetry.setting("Speak Words", true, surface: "main_ui")
             }
             Button("Speech off") {
-                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                viewModel.setSpeaksWords(false)
                 UITelemetry.setting("Speak Words", false, surface: "main_ui")
             }
         } label: {
