@@ -6,6 +6,9 @@ public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService
     @State private var isChoosingFile = false
     @State private var importFieldID: String?
+    #if os(macOS) || os(iOS)
+    @State private var showsSherpaCatalog = false
+    #endif
 
     public init(service: SpeechService) {
         self.service = service
@@ -44,23 +47,27 @@ public struct SpeechSettingsView: View {
             case .failure(let error): service.showError(error)
             }
         }
+        #if os(macOS) || os(iOS)
+        .sheet(isPresented: $showsSherpaCatalog) {
+            SherpaModelBrowser(service: service)
+        }
+        #endif
     }
 
     private var modelSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             #if os(macOS) || os(iOS)
-            if !service.hasSherpaModel {
-                Button("Set Up English Voice (27 MB)") { service.useEnglishModel() }
-                    .disabled(service.isImporting)
+            if let model = service.selectedSherpaModel, service.hasSherpaModel {
+                Label(model.displayName, systemImage: "checkmark.circle")
+            }
+            Button("Browse Models") {
+                service.loadSherpaCatalog()
+                showsSherpaCatalog = true
+            }
+            if service.downloadingSherpaModelID != nil {
+                ProgressView().controlSize(.small)
             }
             #endif
-            if service.isImporting {
-                ProgressView().controlSize(.small)
-            } else if service.hasSherpaModel {
-                Label("Model installed", systemImage: "checkmark.circle")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
         }
     }
 

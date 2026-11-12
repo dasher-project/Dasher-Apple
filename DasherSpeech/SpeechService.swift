@@ -13,6 +13,9 @@ public final class SpeechService {
             guard oldValue != selectedEngineID else { return }
             defaults.set(selectedEngineID, forKey: "tts_engine")
             resetEngine()
+            #if os(macOS) || os(iOS)
+            if isSherpa { loadSherpaCatalog() }
+            #endif
         }
     }
     private(set) var availableEngines: [SpeechEngine] = [.system]
@@ -23,13 +26,34 @@ public final class SpeechService {
     private(set) var hasSherpaModel = false
     private(set) var errorMessage: String?
     private(set) var engineListError: String?
+    #if os(macOS) || os(iOS)
+    private(set) var sherpaCatalog: [SherpaModel] = []
+    private(set) var installedSherpaModels: Set<String> = []
+    private(set) var selectedSherpaModelID = SpeechModelStorage.englishModelID
+    private(set) var downloadingSherpaModelID: String?
+    private(set) var catalogError: String?
+    private var modelDownloadTask: Task<Void, Never>?
+
+    var selectedSherpaModel: SherpaModel? {
+        sherpaCatalog.first { $0.id == selectedSherpaModelID }
+    }
+    #endif
 
     var selectedVoice: String? {
-        get { voicesByEngine[selectedEngineID] }
+        get { voicesByEngine[voiceStorageKey] }
         set {
-            voicesByEngine[selectedEngineID] = newValue
+            voicesByEngine[voiceStorageKey] = newValue
             defaults.set(voicesByEngine, forKey: "tts_voices_by_engine")
         }
+    }
+
+    private var voiceStorageKey: String {
+        #if os(macOS) || os(iOS)
+        if isSherpa, selectedSherpaModelID != SpeechModelStorage.englishModelID {
+            return "\(selectedEngineID):\(selectedSherpaModelID)"
+        }
+        #endif
+        return selectedEngineID
     }
 
     var speechRate: SpeechRate = .medium {
@@ -227,25 +251,53 @@ public final class SpeechService {
     }
 
     private func refreshModelStatus() {
-        hasSherpaModel = isSherpa && SpeechModelStorage.hasEnglishModel()
+        #if os(macOS) || os(iOS)
+        hasSherpaModel = isSherpa && SpeechModelStorage.isInstalled(selectedSherpaModelID)
+        #endif
     }
 
     #if os(macOS) || os(iOS)
-    func useEnglishModel() {
+    func loadSherpaCatalog() {
+        guard sherpaCatalog.isEmpty else { return }
+        do {
+            sherpaCatalog = try SherpaModel.bundledCatalog()
+            installedSherpaModels = SpeechModelStorage.installedModelIDs()
+            catalogError = nil
+        } catch {
+            catalogError = String(localized: "Could not load the Sherpa-ONNX model catalog.")
+        }
+    }
+
+    func selectSherpaModel(_ model: SherpaModel) {
+        guard installedSherpaModels.contains(model.id) else { return }
+        selectedSherpaModelID = model.id
+        defaults.set(model.id, forKey: "tts_sherpa_model")
+        resetEngine()
+    }
+
+    func downloadSherpaModel(_ model: SherpaModel) {
+        guard !isImporting else { return }
         isImporting = true
+        downloadingSherpaModelID = model.id
         errorMessage = nil
-        Task {
-            defer { isImporting = false }
+        modelDownloadTask = Task {
+            defer {
+                modelDownloadTask = nil
+                downloadingSherpaModelID = nil
+                isImporting = false
+            }
             do {
-                if !SpeechModelStorage.hasEnglishModel() {
-                    try await SpeechModelStorage.downloadEnglishModel()
-                    await rustBackend.reset()
-                }
-                refreshModelStatus()
+                try await SpeechModelStorage.download(model)
+                installedSherpaModels.insert(model.id)
+                if isSherpa { selectSherpaModel(model) }
             } catch {
-                showError(error)
+                if !Task.isCancelled { showError(error) }
             }
         }
+    }
+
+    func cancelSherpaModelDownload() {
+        modelDownloadTask?.cancel()
     }
     #endif
 
@@ -270,7 +322,9 @@ public final class SpeechService {
         var configuration = values
         if engineID == SpeechEngine.sherpaID {
             guard hasSherpaModel else { throw SpeechSetupError.modelNotInstalled }
-            return ["modelId": SpeechModelStorage.englishModelID, "modelPath": SpeechModelStorage.models.path]
+            #if os(macOS) || os(iOS)
+            return ["modelId": selectedSherpaModelID, "modelPath": SpeechModelStorage.models.path]
+            #endif
         } else {
             for field in engine.fields where field.kind == .file {
                 if let relative = values[field.id] {
@@ -282,6 +336,12 @@ public final class SpeechService {
     }
 
     private func loadSavedSettings() {
+        #if os(macOS) || os(iOS)
+        if let storedModel = defaults.string(forKey: "tts_sherpa_model"),
+           SpeechModelStorage.isModelID(storedModel) {
+            selectedSherpaModelID = storedModel
+        }
+        #endif
         credentialsByEngine = defaults.dictionary(forKey: "tts_credentials_by_engine") as? [String: [String: String]] ?? [:]
         voicesByEngine = defaults.dictionary(forKey: "tts_voices_by_engine") as? [String: String] ?? [:]
         let storedEngineID = defaults.string(forKey: "tts_engine") ?? SpeechEngine.system.id

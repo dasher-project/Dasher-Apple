@@ -76,7 +76,7 @@ This branch expects a local package until the wrapper publishes the Apple XCFram
 3. Run `xcodegen generate`.
 4. Build the `DasherMac` or `DasherApp` scheme.
 
-In Dasher, open **Settings → Speech**. Select **Sherpa-ONNX**. Select **Set Up English Voice (27 MB)** to install Inflect Nano v2. Then select **Preview**. After installation, the voice works offline.
+In Dasher, open **Settings → Speech** and select **Sherpa-ONNX**. Select **Browse Models** to search by name or language. Open a model and select **Download Model**. When the download completes, select **Done**, then **Preview**. Installed models work offline.
 
 ## Architecture
 

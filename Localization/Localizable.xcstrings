@@ -3544,6 +3544,9 @@
         }
       }
     },
+    "Browse Models": {
+      "localizations": {}
+    },
     "Calibrate Tilt": {
       "localizations": {
         "af": {
@@ -3935,6 +3938,9 @@
           }
         }
       }
+    },
+    "Cancel Download": {
+      "localizations": {}
     },
     "Choose File...": {
       "localizations": {
@@ -10210,6 +10216,9 @@
           }
         }
       }
+    },
+    "Download Model": {
+      "localizations": {}
     },
     "Dwell Duration": {
       "localizations": {
@@ -17079,9 +17088,6 @@
           }
         }
       }
-    },
-    "Model installed": {
-      "localizations": {}
     },
     "Move caret left (hold to repeat)": {
       "localizations": {
@@ -26301,6 +26307,9 @@
     "Select": {
       "localizations": {}
     },
+    "Selected model": {
+      "localizations": {}
+    },
     "Selection Method": {
       "localizations": {
         "af": {
@@ -26692,9 +26701,6 @@
           }
         }
       }
-    },
-    "Set Up English Voice (27 MB)": {
-      "localizations": {}
     },
     "Set Up Text Context": {
       "localizations": {
@@ -27479,6 +27485,9 @@
           }
         }
       }
+    },
+    "Sherpa-ONNX Models": {
+      "localizations": {}
     },
     "Show Input Debug Overlay": {
       "localizations": {
@@ -31008,6 +31017,9 @@
         }
       }
     },
+    "This model is deprecated.": {
+      "localizations": {}
+    },
     "Tilt Calibration": {
       "localizations": {
         "af": {
@@ -33359,6 +33371,9 @@
           }
         }
       }
+    },
+    "Use Model": {
+      "localizations": {}
     },
     "Very Fast": {
       "localizations": {

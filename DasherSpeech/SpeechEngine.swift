@@ -100,10 +100,6 @@ actor RustSpeechBackend {
     private var previousVoice: String?
     private var credentials: [String: String] = [:]
 
-    func reset() {
-        client = nil
-    }
-
     func voices(engineID: String, credentials: [String: String]) throws -> [SpeechVoice] {
         try Task.checkCancellation()
         return try configuredClient(engineID: engineID, credentials: credentials).getVoices().map {
