@@ -28,7 +28,7 @@ This is the **Apple** frontend — iOS, macOS, and visionOS — built on the sha
 | :----------------- | :------------- | :------------------------------------------- |
 | **DasherApp**      | iOS 17+        | Flagship iPhone/iPad app                     |
 | **DasherKeyboard** | iOS 17+        | System-wide custom keyboard extension        |
-| **DasherMac**      | macOS 14+      | Mac app with direct-mode (accessibility API) |
+| **DasherMac**      | macOS 14+      | Mac app with [Direct Mode](DasherInputMethod/README.md) |
 | **DasherVision**   | visionOS 1.0+  | Apple Vision Pro app with hand-tracking      |
 
 Shared Swift lives in `DasherShared/` (access/input configuration, shared UI)

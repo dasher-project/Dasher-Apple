@@ -58,8 +58,7 @@ def build_shared_lookup(shared: dict) -> dict:
         if en not in by_source or len(translations) > len(by_source[en]):
             by_source[en] = translations
 
-    # Synthesize Xcode format-key translations from shared catalogue format entries:
-    # 1) "%@ cps · %lld wpm" from "typing_rate_format" ("{cps} cps · {wpm} wpm")
+    # Convert named placeholders in shared formats to Xcode's format syntax.
     if "typing_rate_format" in shared and isinstance(shared["typing_rate_format"], dict):
         fmt_trans = {}
         for loc, val in shared["typing_rate_format"].items():
@@ -67,6 +66,14 @@ def build_shared_lookup(shared: dict) -> dict:
                 fmt_trans[loc] = val.replace("{cps}", "%1$@").replace("{wpm}", "%2$lld")
         if fmt_trans:
             by_source["%@ cps · %lld wpm"] = fmt_trans
+
+    sending_to_app = by_source.get("Sending to {app}", {})
+    if sending_to_app:
+        by_source["Sending to %@"] = {
+            locale: value.replace("{app}", "%@")
+            for locale, value in sending_to_app.items()
+            if value.count("{app}") == 1
+        }
 
     return by_source
 

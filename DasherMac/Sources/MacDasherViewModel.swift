@@ -294,11 +294,11 @@ class MacDasherViewModel: ObservableObject {
             guard !Task.isCancelled, let self, self.directMode, self.contextSeedGeneration == generation else {
                 return
             }
-            self.seedContextFromTarget(reason: reason, generation: generation)
+            await self.seedContextFromTarget(reason: reason, generation: generation)
         }
     }
 
-    private func seedContextFromTarget(reason: String, generation: Int) {
+    private func seedContextFromTarget(reason: String, generation: Int) async {
         guard directMode, contextSeedGeneration == generation else { return }
 
         // 600 ms own-injection echo guard & 1500 ms paragraph/select settle guard (Windows #58/#79 / RFC 0021)
@@ -317,13 +317,13 @@ class MacDasherViewModel: ObservableObject {
             }
         }
 
-        guard let context = directService.readTargetFieldContext() else {
+        guard let context = await directService.readTargetFieldContext() else {
             // Read failed (timeout, unsupported control, no focus): preserve
             // existing engine session context (RFC 0015 Tier 1).
             LogManager.kb("Context seed (\(reason)): read failed -> keeping existing context")
             return
         }
-        guard contextSeedGeneration == generation else { return }
+        guard !Task.isCancelled, contextSeedGeneration == generation else { return }
 
         let fullText = context.text
         let caretUTF16 = context.caretUTF16
@@ -331,17 +331,22 @@ class MacDasherViewModel: ObservableObject {
 
         // Caret-glitch guard: target apps can momentarily report caret 0..2
         // during rapid text transitions in a longer field.
-        if reason == "caret moved" && caretUTF16 < 3 && totalUTF16 > 10 {
+        if context.inputMethodSelection == nil && reason == "caret moved" && caretUTF16 < 3 && totalUTF16 > 10 {
             LogManager.kb("Context seed (\(reason)): caret glitch (pos \(caretUTF16) in \(totalUTF16)-char text) — skipping")
             return
         }
 
         let engineFullText = bridge.getOutputText()
-        let decision = ContextSeedPolicy.decide(
-            engineFullText: engineFullText,
-            targetFullText: fullText,
-            targetCaretUTF16: caretUTF16
-        )
+        let decision: ContextSeedDecision
+        if context.inputMethodSelection != nil {
+            decision = ContextSeedPolicy.decideFromEditorPrefix(engineFullText: engineFullText, editorPrefix: fullText)
+        } else {
+            decision = ContextSeedPolicy.decide(
+                engineFullText: engineFullText,
+                targetFullText: fullText,
+                targetCaretUTF16: caretUTF16
+            )
+        }
 
         if decision.action == .skip {
             LogManager.kb("Context seed (\(reason)): \(decision.reason)")

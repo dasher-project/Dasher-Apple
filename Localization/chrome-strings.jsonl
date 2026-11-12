@@ -1,7 +1,7 @@
 {"key": "A crash report was saved to ~/Library/Logs/DiagnosticReports/Dasher-*.ips. If you can share it in a GitHub issue, it helps us fix the bug.", "source": "A crash report was saved to ~/Library/Logs/DiagnosticReports/Dasher-*.ips. If you can share it in a GitHub issue, it helps us fix the bug.", "context": "DasherMac/Sources/DasherMacApp.swift:107"}
 {"key": "Accept hover/pointer events as Dasher input. Enable for eye tracking or external pointers.", "source": "Accept hover/pointer events as Dasher input. Enable for eye tracking or external pointers.", "context": "DasherApp/Sources/DasherSettingsView.swift:284"}
 {"key": "Access", "source": "Access", "context": "DasherApp/Sources/DasherSettingsView.swift:266"}
-{"key": "Accessibility Permission Required", "source": "Accessibility Permission Required", "context": "DasherMac/Sources/MacContentView.swift:694"}
+{"key": "Accessibility Permission Required", "source": "Accessibility Permission Required", "context": "DasherMac/Sources/MacContentView.swift:776"}
 {"key": "Adapt Speed Automatically", "source": "Adapt Speed Automatically", "context": "DasherVision/Sources/VisionSettingsView.swift:83"}
 {"key": "Advanced logging", "source": "Advanced logging", "context": "DasherShared/LogManager.swift:352"}
 {"key": "All Dasher settings will be restored to their default values. This cannot be undone.", "source": "All Dasher settings will be restored to their default values. This cannot be undone.", "context": "DasherShared/AnalyticsViews.swift:137"}
@@ -13,22 +13,22 @@
 {"key": "Auto-Centre Target", "source": "Auto-Centre Target", "context": "DasherVision/Sources/VisionSettingsView.swift:72"}
 {"key": "Auto-select after fixating your gaze while pinching. Only enable if OS dwell is off.", "source": "Auto-select after fixating your gaze while pinching. Only enable if OS dwell is off.", "context": "DasherVision/Sources/VisionSettingsView.swift:108"}
 {"key": "Auto-select after fixating. Only enable if OS dwell is off.", "source": "Auto-select after fixating. Only enable if OS dwell is off.", "context": "DasherApp/Sources/DasherSettingsView.swift:300"}
+{"key": "Back to Dasher", "source": "Back to Dasher", "context": "DasherMac/Sources/MacContentView.swift:792"}
 {"key": "Bottom", "source": "Bottom", "context": "DasherApp/Sources/ContentView.swift:523"}
 {"key": "Calibrate Tilt", "source": "Calibrate Tilt", "context": "DasherShared/AccessSettingsView.swift:143"}
 {"key": "Cancel", "source": "Cancel", "context": "DasherShared/AnalyticsViews.swift:135"}
-{"key": "Check Again", "source": "Check Again", "context": "DasherMac/Sources/MacContentView.swift:709"}
-{"key": "Choose File...", "source": "Choose File...", "context": "DasherMac/Sources/DasherMacApp.swift:547"}
+{"key": "Choose File...", "source": "Choose File...", "context": "DasherMac/Sources/DasherMacApp.swift:560"}
 {"key": "Choose...", "source": "Choose...", "context": "DasherApp/Sources/DasherSettingsView.swift:481"}
 {"key": "Clear", "source": "Clear", "context": "DasherApp/Sources/OutputTextView.swift:321"}
 {"key": "Clear logs", "source": "Clear logs", "context": "DasherShared/LogManager.swift:364"}
-{"key": "Colour Theme", "source": "Colour Theme", "context": "DasherMac/Sources/DasherMacApp.swift:350"}
-{"key": "Control", "source": "Control", "context": "DasherMac/Sources/MacContentView.swift:80"}
-{"key": "Control nodes: move, delete, clear, speak, pause", "source": "Control nodes: move, delete, clear, speak, pause", "context": "DasherMac/Sources/MacContentView.swift:83"}
+{"key": "Colour Theme", "source": "Colour Theme", "context": "DasherMac/Sources/DasherMacApp.swift:363"}
+{"key": "Control", "source": "Control", "context": "DasherMac/Sources/MacContentView.swift:124"}
+{"key": "Control nodes: move, delete, clear, speak, pause", "source": "Control nodes: move, delete, clear, speak, pause", "context": "DasherMac/Sources/MacContentView.swift:127"}
 {"key": "Copy All", "source": "Copy All", "context": "DasherApp/Sources/OutputTextView.swift:318"}
-{"key": "Copy all text", "source": "Copy all text", "context": "DasherMac/Sources/MacContentView.swift:427"}
+{"key": "Copy all text", "source": "Copy all text", "context": "DasherMac/Sources/MacContentView.swift:478"}
 {"key": "Current Calibration", "source": "Current Calibration", "context": "DasherShared/TiltCalibrationView.swift:70"}
 {"key": "Customization", "source": "Customization", "context": "DasherApp/Sources/DasherSettingsView.swift:205"}
-{"key": "Cut selection in target app", "source": "Cut selection in target app", "context": "DasherMac/Sources/MacContentView.swift:438"}
+{"key": "Cut selection in target app", "source": "Cut selection in target app", "context": "DasherMac/Sources/MacContentView.swift:489"}
 {"key": "Dark", "source": "Dark", "context": "DasherApp/Sources/DasherSettingsView.swift:178"}
 {"key": "Dasher 5 data detected on this Mac.", "source": "Dasher 5 data detected on this Mac.", "context": "DasherShared/V5MigrationViews.swift:167"}
 {"key": "Dasher 5 settings imported successfully.", "source": "Dasher 5 settings imported successfully.", "context": "DasherShared/V5MigrationViews.swift:124"}
@@ -38,14 +38,16 @@
 {"key": "Dasher could not start", "source": "Dasher could not start", "context": "DasherShared/EngineLoadingOverlay.swift:56"}
 {"key": "Dasher Keyboard", "source": "Dasher Keyboard", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:53"}
 {"key": "Dasher keyboard", "source": "Dasher keyboard", "context": "DasherApp/Sources/KeyboardSetupSection.swift:15"}
-{"key": "Dasher needs accessibility access to send text to other applications.", "source": "Dasher needs accessibility access to send text to other applications.", "context": "DasherMac/Sources/MacContentView.swift:696"}
+{"key": "Dasher needs accessibility access to send text to other applications.", "source": "Dasher needs accessibility access to send text to other applications.", "context": "DasherMac/Sources/MacContentView.swift:779"}
 {"key": "Dasher quit unexpectedly", "source": "Dasher quit unexpectedly", "context": "DasherMac/Sources/DasherMacApp.swift:104"}
-{"key": "Decrease Speed", "source": "Decrease Speed", "context": "DasherMac/Sources/DasherMacApp.swift:156"}
+{"key": "Decrease Speed", "source": "Decrease Speed", "context": "DasherMac/Sources/DasherMacApp.swift:165"}
 {"key": "Default", "source": "Default", "context": "DasherApp/Sources/DasherSettingsView.swift:473"}
-{"key": "Delete (hold to repeat)", "source": "Delete (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:357"}
+{"key": "Delete (hold to repeat)", "source": "Delete (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:408"}
 {"key": "Detailed diagnostic logging for bug reports (per-sample eye-tracker lines, keystroke traces, UIA reads). Basic connection events are always logged. May generate large log files.", "source": "Detailed diagnostic logging for bug reports (per-sample eye-tracker lines, keystroke traces, UIA reads). Basic connection events are always logged. May generate large log files.", "context": "DasherShared/LogManager.swift:353"}
 {"key": "Diagnostics", "source": "Diagnostics", "context": "DasherVision/Sources/VisionSettingsView.swift:135"}
-{"key": "Direct Mode", "source": "Direct Mode", "context": "DasherMac/Sources/MacContentView.swift:118"}
+{"key": "Direct Mode", "source": "Direct Mode", "context": "DasherMac/Sources/MacContentView.swift:169"}
+{"key": "Direct Mode is ready. Add Dasher Direct Input to help predictions follow the caret in more apps.", "source": "Direct Mode is ready. Add Dasher Direct Input to help predictions follow the caret in more apps.", "context": "DasherMac/Sources/MacContentView.swift:746"}
+{"key": "Direct Mode starts as soon as access is available.", "source": "Direct Mode starts as soon as access is available.", "context": "DasherMac/Sources/MacContentView.swift:780"}
 {"key": "Done", "source": "Done", "context": "DasherApp/Sources/ContentView.swift:698"}
 {"key": "Dwell Duration", "source": "Dwell Duration", "context": "DasherApp/Sources/DasherSettingsView.swift:307"}
 {"key": "Enable Dasher under Settings → General → Keyboard → Keyboards, then turn on Allow Full Access so Dasher can speak and learn.", "source": "Enable Dasher under Settings → General → Keyboard → Keyboards, then turn on Allow Full Access so Dasher can speak and learn.", "context": "DasherApp/Sources/KeyboardSetupSection.swift:28"}
@@ -54,34 +56,39 @@
 {"key": "Export Training Text", "source": "Export Training Text", "context": "DasherShared/TrainingTextManagement.swift:94"}
 {"key": "Eye Gaze", "source": "Eye Gaze", "context": "DasherVision/Sources/VisionSettingsView.swift:91"}
 {"key": "Fast", "source": "Fast", "context": "DasherShared/AccessSettingsView.swift:111"}
+{"key": "Focus an editor to start", "source": "Focus an editor to start", "context": "DasherMac/Sources/MacContentView.swift:371"}
 {"key": "Full Access lets Dasher speak what you write and remember your training. The keyboard still works for basic entry without it.", "source": "Full Access lets Dasher speak what you write and remember your training. The keyboard still works for basic entry without it.", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:30"}
 {"key": "Game Mode", "source": "Game Mode", "context": "DasherApp/Sources/DasherSettingsView.swift:500"}
-{"key": "Game On", "source": "Game On", "context": "DasherMac/Sources/MacContentView.swift:66"}
+{"key": "Game On", "source": "Game On", "context": "DasherMac/Sources/MacContentView.swift:111"}
 {"key": "Game Text File", "source": "Game Text File", "context": "DasherApp/Sources/DasherSettingsView.swift:470"}
 {"key": "Got it", "source": "Got it", "context": "DasherVision/Sources/VisionContentView.swift:133"}
 {"key": "Help improve Dasher", "source": "Help improve Dasher", "context": "DasherShared/AnalyticsViews.swift:15"}
 {"key": "Hold the device upright, then tilt forward and back", "source": "Hold the device upright, then tilt forward and back", "context": "DasherShared/TiltCalibrationView.swift:57"}
+{"key": "If Dasher Direct Input is missing", "source": "If Dasher Direct Input is missing", "context": "DasherMac/Sources/MacContentView.swift:754"}
 {"key": "Import adds text to the language model (appends to existing learning). Export saves your accumulated training data for backup or transfer. Reset deletes custom training data — the model returns to its built-in defaults on next launch.", "source": "Import adds text to the language model (appends to existing learning). Export saves your accumulated training data for backup or transfer. Reset deletes custom training data — the model returns to its built-in defaults on next launch.", "context": "DasherShared/TrainingTextManagement.swift:107"}
 {"key": "Import from Dasher 5", "source": "Import from Dasher 5", "context": "DasherShared/V5MigrationViews.swift:22"}
 {"key": "Import settings", "source": "Import settings", "context": "DasherShared/V5MigrationViews.swift:78"}
 {"key": "Import Training Text", "source": "Import Training Text", "context": "DasherShared/TrainingTextManagement.swift:83"}
-{"key": "Increase Speed", "source": "Increase Speed", "context": "DasherMac/Sources/DasherMacApp.swift:150"}
+{"key": "Improve Predictions in Other Apps", "source": "Improve Predictions in Other Apps", "context": "DasherMac/Sources/MacContentView.swift:744"}
+{"key": "In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.", "source": "In Keyboard Settings, go to Text Input → Edit → +. Search for Dasher Direct Input and click Add.", "context": "DasherMac/Sources/MacContentView.swift:748"}
+{"key": "Increase Speed", "source": "Increase Speed", "context": "DasherMac/Sources/DasherMacApp.swift:159"}
 {"key": "Input", "source": "Input", "context": "DasherApp/Sources/DasherSettingsView.swift:327"}
 {"key": "Keyboard", "source": "Keyboard", "context": "DasherApp/Sources/KeyboardSetupSection.swift:26"}
 {"key": "Language", "source": "Language", "context": "DasherApp/Sources/DasherSettingsView.swift:374"}
+{"key": "Later", "source": "Later", "context": "DasherMac/Sources/MacContentView.swift:764"}
 {"key": "Learning", "source": "Learning", "context": "DasherApp/Sources/ContentView.swift:736"}
-{"key": "Leave", "source": "Leave", "context": "DasherMac/Sources/MacContentView.swift:78"}
+{"key": "Leave", "source": "Leave", "context": "DasherMac/Sources/MacContentView.swift:122"}
 {"key": "Left side", "source": "Left side", "context": "DasherApp/Sources/ContentView.swift:519"}
 {"key": "Light", "source": "Light", "context": "DasherApp/Sources/DasherSettingsView.swift:177"}
 {"key": "Load Voices", "source": "Load Voices", "context": "DasherSpeech/SpeechSettingsView.swift:65"}
 {"key": "Migration", "source": "Migration", "context": "DasherShared/V5MigrationViews.swift:199"}
-{"key": "Move caret left (hold to repeat)", "source": "Move caret left (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:367"}
-{"key": "Move caret right (hold to repeat)", "source": "Move caret right (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:377"}
+{"key": "Move caret left (hold to repeat)", "source": "Move caret left (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:418"}
+{"key": "Move caret right (hold to repeat)", "source": "Move caret right (hold to repeat)", "context": "DasherMac/Sources/MacContentView.swift:428"}
 {"key": "Move slowly and smoothly through all positions", "source": "Move slowly and smoothly through all positions", "context": "DasherShared/TiltCalibrationView.swift:59"}
 {"key": "Move your eyes while pinching to steer", "source": "Move your eyes while pinching to steer", "context": "DasherVision/Sources/VisionContentView.swift:119"}
-{"key": "New", "source": "New", "context": "DasherMac/Sources/MacContentView.swift:55"}
+{"key": "New", "source": "New", "context": "DasherMac/Sources/MacContentView.swift:101"}
 {"key": "New Message", "source": "New Message", "context": "DasherMac/Sources/DasherMacApp.swift:114"}
-{"key": "New session (clear text and context)", "source": "New session (clear text and context)", "context": "DasherMac/Sources/MacContentView.swift:411"}
+{"key": "New session (clear text and context)", "source": "New session (clear text and context)", "context": "DasherMac/Sources/MacContentView.swift:462"}
 {"key": "No credentials required", "source": "No credentials required", "context": "DasherSpeech/SpeechSettingsView.swift:34"}
 {"key": "No Dasher 5 data found on this Mac.", "source": "No Dasher 5 data found on this Mac.", "context": "DasherShared/V5MigrationViews.swift:120"}
 {"key": "Not now", "source": "Not now", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:45"}
@@ -89,13 +96,13 @@
 {"key": "On visionOS, pinch and hold on the canvas to start writing, look around while pinching to steer, and release to pause. The input model is pinch-and-look.", "source": "On visionOS, pinch and hold on the canvas to start writing, look around while pinching to steer, and release to pause. The input model is pinch-and-look.", "context": "DasherVision/Sources/VisionSettingsView.swift:125"}
 {"key": "Open Keyboard Settings", "source": "Open Keyboard Settings", "context": "DasherApp/Sources/KeyboardSetupSection.swift:20"}
 {"key": "Open Settings", "source": "Open Settings", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:41"}
-{"key": "Open System Settings", "source": "Open System Settings", "context": "DasherMac/Sources/MacContentView.swift:702"}
+{"key": "Open System Settings", "source": "Open System Settings", "context": "DasherMac/Sources/MacContentView.swift:787"}
 {"key": "Open...", "source": "Open...", "context": "DasherMac/Sources/DasherMacApp.swift:120"}
 {"key": "Output", "source": "Output", "context": "DasherApp/Sources/DasherSettingsView.swift:439"}
 {"key": "Output Font", "source": "Output Font", "context": "DasherApp/Sources/DasherSettingsView.swift:412"}
 {"key": "Output Font Size", "source": "Output Font Size", "context": "DasherApp/Sources/DasherSettingsView.swift:424"}
 {"key": "Paste", "source": "Paste", "context": "DasherApp/Sources/OutputTextView.swift:319"}
-{"key": "Paste into target app", "source": "Paste into target app", "context": "DasherMac/Sources/MacContentView.swift:449"}
+{"key": "Paste into target app", "source": "Paste into target app", "context": "DasherMac/Sources/MacContentView.swift:500"}
 {"key": "Pause When Looking Away", "source": "Pause When Looking Away", "context": "DasherVision/Sources/VisionSettingsView.swift:65"}
 {"key": "Pinch and hold anywhere on the canvas to start", "source": "Pinch and hold anywhere on the canvas to start", "context": "DasherVision/Sources/VisionContentView.swift:118"}
 {"key": "Pinch and Look to Write", "source": "Pinch and Look to Write", "context": "DasherVision/Sources/VisionContentView.swift:114"}
@@ -106,7 +113,7 @@
 {"key": "Preview", "source": "Preview", "context": "DasherSpeech/SpeechSettingsView.swift:95"}
 {"key": "Privacy", "source": "Privacy", "context": "DasherShared/AnalyticsViews.swift:80"}
 {"key": "Rate", "source": "Rate", "context": "DasherSpeech/SpeechSettingsView.swift:114"}
-{"key": "Re-anchor predictions to the caret (read the sentence around your cursor)", "source": "Re-anchor predictions to the caret (read the sentence around your cursor)", "context": "DasherMac/Sources/MacContentView.swift:398"}
+{"key": "Re-anchor predictions to the caret (read the sentence around your cursor)", "source": "Re-anchor predictions to the caret (read the sentence around your cursor)", "context": "DasherMac/Sources/MacContentView.swift:449"}
 {"key": "Re-import from Dasher 5", "source": "Re-import from Dasher 5", "context": "DasherShared/V5MigrationViews.swift:161"}
 {"key": "Release the pinch to pause", "source": "Release the pinch to pause", "context": "DasherVision/Sources/VisionContentView.swift:120"}
 {"key": "Reset", "source": "Reset", "context": "DasherShared/TrainingTextManagement.swift:176"}
@@ -117,17 +124,19 @@
 {"key": "Reset to defaults", "source": "Reset to defaults", "context": "DasherShared/AnalyticsViews.swift:118"}
 {"key": "Reset Training Data", "source": "Reset Training Data", "context": "DasherShared/TrainingTextManagement.swift:101"}
 {"key": "Reset Training Data?", "source": "Reset Training Data?", "context": "DasherShared/TrainingTextManagement.swift:174"}
+{"key": "Restart your Mac, then check the list again.", "source": "Restart your Mac, then check the list again.", "context": "DasherMac/Sources/MacContentView.swift:751"}
 {"key": "Restore all Dasher settings to their default values. This cannot be undone.", "source": "Restore all Dasher settings to their default values. This cannot be undone.", "context": "DasherShared/AnalyticsViews.swift:125"}
 {"key": "Right side", "source": "Right side", "context": "DasherApp/Sources/ContentView.swift:515"}
 {"key": "Save...", "source": "Save...", "context": "DasherMac/Sources/DasherMacApp.swift:128"}
 {"key": "Scan Speed", "source": "Scan Speed", "context": "DasherShared/AccessSettingsView.swift:102"}
 {"key": "Selection Method", "source": "Selection Method", "context": "DasherShared/AccessSettingsView.swift:78"}
+{"key": "Set Up Text Context", "source": "Set Up Text Context", "context": "DasherMac/Sources/DasherMacApp.swift:148"}
 {"key": "Settings", "source": "Settings", "context": "DasherApp/Sources/DasherSettingsView.swift:98"}
 {"key": "Settings (speed, colours, control mode, language model)", "source": "Settings (speed, colours, control mode, language model)", "context": "DasherShared/V5MigrationViews.swift:45"}
 {"key": "Settings...", "source": "Settings...", "context": "DasherMac/Sources/DasherMacApp.swift:136"}
 {"key": "Show Input Debug Overlay", "source": "Show Input Debug Overlay", "context": "DasherVision/Sources/VisionSettingsView.swift:130"}
 {"key": "Show typing rate (WPM)", "source": "Show typing rate (WPM)", "context": "DasherShared/AnalyticsViews.swift:100"}
-{"key": "Size", "source": "Size", "context": "DasherMac/Sources/MacContentView.swift:646"}
+{"key": "Size", "source": "Size", "context": "DasherMac/Sources/MacContentView.swift:697"}
 {"key": "Skipped files", "source": "Skipped files", "context": "DasherShared/V5MigrationViews.swift:151"}
 {"key": "Slow", "source": "Slow", "context": "DasherShared/AccessSettingsView.swift:104"}
 {"key": "Speech", "source": "Speech", "context": "DasherApp/Sources/DasherSettingsView.swift:449"}
@@ -148,7 +157,7 @@
 {"key": "Tilt Settings", "source": "Tilt Settings", "context": "DasherShared/AccessSettingsView.swift:151"}
 {"key": "Tilt your device now...", "source": "Tilt your device now...", "context": "DasherShared/TiltCalibrationView.swift:81"}
 {"key": "Tilt your device through its full range of motion during calibration.", "source": "Tilt your device through its full range of motion during calibration.", "context": "DasherShared/TiltCalibrationView.swift:51"}
-{"key": "Toggle keyboard mode", "source": "Toggle keyboard mode", "context": "DasherMac/Sources/MacContentView.swift:469"}
+{"key": "Toggle keyboard mode", "source": "Toggle keyboard mode", "context": "DasherMac/Sources/DasherMacApp.swift:145"}
 {"key": "Top", "source": "Top", "context": "DasherApp/Sources/ContentView.swift:527"}
 {"key": "Training", "source": "Training", "context": "DasherShared/TrainingTextManagement.swift:186"}
 {"key": "Training Data", "source": "Training Data", "context": "DasherShared/TrainingTextManagement.swift:73"}

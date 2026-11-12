@@ -93,6 +93,20 @@ final class ContextSeedPolicyTests: XCTestCase {
 
     // MARK: - ContextSeedPolicy Tests (ported from ContextSeedPolicyTests.cs)
 
+    func testEditorPrefixFollowsBackwardAndForwardCaretMoves() {
+        let earlier = "Earlier sentence. We can"
+        let later = earlier + " meet tomorrow"
+        let backward = ContextSeedPolicy.decideFromEditorPrefix(engineFullText: later, editorPrefix: earlier)
+        XCTAssertEqual(backward, .seed("We can", caretUTF16: 6))
+
+        let forward = ContextSeedPolicy.decideFromEditorPrefix(engineFullText: backward.text, editorPrefix: later)
+        XCTAssertEqual(forward, .seed("We can meet tomorrow", caretUTF16: 20))
+        XCTAssertEqual(
+            ContextSeedPolicy.decideFromEditorPrefix(engineFullText: forward.text, editorPrefix: ""),
+            .seed("", caretUTF16: 0)
+        )
+    }
+
     func testSentenceMatchWithBoundarySpanningBufferSkips() {
         let d = ContextSeedPolicy.decide(
             engineFullText: "Hello world. The",

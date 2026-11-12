@@ -307,6 +307,29 @@ targets:
         keychain-access-groups:
           - "$(AppIdentifierPrefix)at.dasher.Dasher.ios"
 
+  DasherInputMethod:
+    type: application
+    platform: macOS
+    sources:
+      - DasherInputMethod/Sources
+    dependencies:
+      - sdk: AppKit.framework
+      - sdk: Carbon.framework
+      - sdk: InputMethodKit.framework
+      - sdk: Security.framework
+    settings:
+      base:
+        PRODUCT_NAME: "Dasher Direct Input"
+        PRODUCT_BUNDLE_IDENTIFIER: at.dasher.inputmethod.direct
+        MARKETING_VERSION: "6.0.0"
+        CURRENT_PROJECT_VERSION: "1"
+        INFOPLIST_FILE: DasherInputMethod/Info.plist
+        CODE_SIGN_ENTITLEMENTS: DasherInputMethod/DasherInputMethod.entitlements
+        CLANG_ENABLE_OBJC_ARC: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        SKIP_INSTALL: YES
+    scheme: {}
+
   DasherMac:
     type: application
     platform: macOS
@@ -314,6 +337,7 @@ targets:
       - path: DasherMac
         excludes:
           - "**/.gitkeep"
+      - path: DasherInputMethod/Sources/InputMethodContext.m
       - path: Localization/Localizable.xcstrings
         buildPhase: resources
       - path: DasherApp/Resources/Colors.xcassets
@@ -327,6 +351,14 @@ targets:
         link: true
       - target: pugixml_macos
         link: true
+      - target: DasherInputMethod
+        embed: true
+        link: false
+        codeSign: false
+        copy:
+          destination: wrapper
+          subpath: Contents/Helpers
+      - sdk: Security.framework
       - package: DasherShared
         product: DasherShared
       - package: DasherSpeech
@@ -361,6 +393,7 @@ targets:
       base:
         PRODUCT_NAME: "Dasher"
         PRODUCT_BUNDLE_IDENTIFIER: at.dasher.Dasher.mac
+        CLANG_ENABLE_OBJC_ARC: YES
         INFOPLIST_FILE: DasherMac/Info.plist
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: DasherIcon
@@ -389,6 +422,7 @@ targets:
         com.apple.security.network.client: true
         com.apple.security.application-groups:
           - group.at.dasher.Dasher
+          - TRKU383G7Z.at.dasher.inputmethod
         com.apple.security.files.user-selected.read-only: true
         com.apple.security.temporary-exception.files.home-relative-path.read-only:
           - /Library/Preferences/uk.ac.cam.phy.inference.dasher.plist
