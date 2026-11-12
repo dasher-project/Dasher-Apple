@@ -10998,6 +10998,9 @@
         }
       }
     },
+    "Focus an editor to start": {
+      "localizations": {}
+    },
     "Full Access lets Dasher speak what you write and remember your training. The keyboard still works for basic entry without it.": {
       "localizations": {
         "af": {

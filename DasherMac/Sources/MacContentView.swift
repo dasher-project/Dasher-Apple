@@ -337,9 +337,15 @@ struct MacContentView: View {
     private var targetAppIndicator: some View {
         HStack(spacing: 4) {
             Circle().fill(Color.green).frame(width: 6, height: 6)
-            Text(directService.targetAppName.isEmpty ? "Focus an editor to start" : "Sending to \(directService.targetAppName)")
-                .font(.caption)
-                .foregroundColor(.white)
+            Group {
+                if directService.targetAppName.isEmpty {
+                    Text("Focus an editor to start")
+                } else {
+                    Text("Sending to \(directService.targetAppName)")
+                }
+            }
+            .font(.caption)
+            .foregroundColor(.white)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
