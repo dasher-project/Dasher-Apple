@@ -47,6 +47,7 @@ extension SpeechSettingsTests {
         let models = URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         defer { try? FileManager.default.removeItem(at: models) }
         try await SpeechModelStorage.downloadEnglishModel(to: models)
+        XCTAssertTrue(SpeechModelStorage.hasEnglishModel(in: models))
 
         let backend = RustSpeechBackend()
         let audio = try await backend.synthesize(

@@ -20,7 +20,7 @@ public final class SpeechService {
     public private(set) var isSpeaking = false
     private(set) var isLoadingVoices = false
     private(set) var isImporting = false
-    private var installedModelID: String?
+    private(set) var hasSherpaModel = false
     private(set) var errorMessage: String?
     private(set) var engineListError: String?
 
@@ -74,7 +74,6 @@ public final class SpeechService {
     }
 
     var isSherpa: Bool { usesRust && selectedEngineID == SpeechEngine.sherpaID }
-    var modelID: String { credential("modelId") }
 
     func credential(_ key: String) -> String {
         credentialsByEngine[selectedEngineID]?[key] ?? ""
@@ -227,10 +226,8 @@ public final class SpeechService {
         errorMessage = nil
     }
 
-    var hasSherpaModel: Bool { installedModelID == modelID }
-
     private func refreshModelStatus() {
-        installedModelID = isSherpa && SpeechModelStorage.hasModel(modelID) ? modelID : nil
+        hasSherpaModel = isSherpa && SpeechModelStorage.hasEnglishModel()
     }
 
     #if os(macOS) || os(iOS)
@@ -240,10 +237,10 @@ public final class SpeechService {
         Task {
             defer { isImporting = false }
             do {
-                if !SpeechModelStorage.hasModel(SpeechModelStorage.englishModelID) {
+                if !SpeechModelStorage.hasEnglishModel() {
                     try await SpeechModelStorage.downloadEnglishModel()
+                    await rustBackend.reset()
                 }
-                setCredential("modelId", value: SpeechModelStorage.englishModelID)
                 refreshModelStatus()
             } catch {
                 showError(error)
@@ -252,29 +249,17 @@ public final class SpeechService {
     }
     #endif
 
-    func importSelection(_ source: URL, fieldID: String?) {
+    func importCredentialFile(_ source: URL, fieldID: String) {
         let engineID = selectedEngineID
-        let modelID = modelID
-        stop()
         isImporting = true
         errorMessage = nil
         Task {
             defer { isImporting = false }
             do {
-                if let fieldID {
-                    let relativePath = try await Task.detached(priority: .utility) {
-                        try SpeechModelStorage.importFile(from: source)
-                    }.value
-                    if selectedEngineID == engineID { setCredential(fieldID, value: relativePath) }
-                } else {
-                    try await Task.detached(priority: .utility) {
-                        try SpeechModelStorage.installModel(from: source, as: modelID)
-                    }.value
-                    #if os(macOS) || os(iOS)
-                    await rustBackend.reset()
-                    #endif
-                    if selectedEngineID == engineID { resetEngine() }
-                }
+                let relativePath = try await Task.detached(priority: .utility) {
+                    try SpeechModelStorage.importFile(from: source)
+                }.value
+                if selectedEngineID == engineID { setCredential(fieldID, value: relativePath) }
             } catch {
                 showError(error)
             }
@@ -284,9 +269,8 @@ public final class SpeechService {
     private func rustCredentials(_ values: [String: String], engineID: String) throws -> [String: String] {
         var configuration = values
         if engineID == SpeechEngine.sherpaID {
-            guard SpeechModelStorage.isValidModelID(modelID) else { throw SpeechSetupError.invalidModelID }
             guard hasSherpaModel else { throw SpeechSetupError.modelNotInstalled }
-            configuration["modelPath"] = SpeechModelStorage.models.path
+            return ["modelId": SpeechModelStorage.englishModelID, "modelPath": SpeechModelStorage.models.path]
         } else {
             for field in engine.fields where field.kind == .file {
                 if let relative = values[field.id] {

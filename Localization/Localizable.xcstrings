@@ -10799,9 +10799,6 @@
         }
       }
     },
-    "Enter the model ID from the registry, then import the extracted folder.": {
-      "localizations": {}
-    },
     "Export logs": {
       "localizations": {}
     },
@@ -13744,9 +13741,6 @@
           }
         }
       }
-    },
-    "Import Model Folder": {
-      "localizations": {}
     },
     "Import settings": {
       "localizations": {
@@ -27485,9 +27479,6 @@
           }
         }
       }
-    },
-    "Sherpa-ONNX model registry": {
-      "localizations": {}
     },
     "Show Input Debug Overlay": {
       "localizations": {
