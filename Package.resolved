@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "rust-tts-wrapper",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/AACTools/rust-tts-wrapper.git",
+      "state" : {
+        "revision" : "8fafc77155e205706c2ed91810dbcde019ba5fe8",
+        "version" : "1.8.0"
+      }
+    },
+    {
       "identity" : "sherpa-onnx-spm",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/willwade/sherpa-onnx-spm.git",

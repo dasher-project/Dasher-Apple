@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "DasherSpeech", targets: ["DasherSpeech"]),
     ],
     dependencies: [
-        .package(path: "Vendor/RustTtsWrapper"),
+        .package(url: "https://github.com/AACTools/rust-tts-wrapper.git", exact: "1.8.0"),
         .package(url: "https://github.com/tsolomko/SWCompression.git", from: "4.9.1"),
         .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.8"),
         .package(url: "https://github.com/JakubMazur/lucide-icons-swift", from: "1.20.0"),
@@ -32,7 +32,7 @@ let package = Package(
                 .target(name: "CBZip2", condition: .when(platforms: [.macOS, .iOS])),
                 .product(name: "SwiftTTSWrapper", package: "swift-tts-wrapper"),
                 .product(name: "SWCompression", package: "SWCompression", condition: .when(platforms: [.macOS, .iOS])),
-                .product(name: "RustTtsWrapper", package: "RustTtsWrapper", condition: .when(platforms: [.macOS, .iOS])),
+                .product(name: "RustTtsWrapper", package: "rust-tts-wrapper", condition: .when(platforms: [.macOS, .iOS])),
             ],
             path: "DasherSpeech"
         ),

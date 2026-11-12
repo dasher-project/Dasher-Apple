@@ -66,15 +66,9 @@ Select a scheme (`DasherApp`, `DasherKeyboard`, `DasherMac`, or
 > runs as a build phase (config in `.swiftlint.yml`). Xcode Cloud runs the
 > above automatically via `ci_scripts/ci_post_clone.sh`.
 
-### Rust TTS for local builds
+### Rust TTS
 
-The macOS and iOS apps use the Rust TTS Swift package for cloud speech and Sherpa-ONNX 2.
-This branch expects a local package until the wrapper publishes the Apple XCFramework.
-
-1. In the Rust TTS integration checkout, run `scripts/apple/build-xcframework.sh`.
-2. In the Dasher checkout, create `Vendor/RustTtsWrapper` as a symlink to the Rust TTS checkout.
-3. Run `xcodegen generate`.
-4. Build the `DasherMac` or `DasherApp` scheme.
+The macOS and iOS apps use Rust TTS Wrapper 1.8.0 for cloud speech and Sherpa-ONNX 2. SwiftPM downloads the XCFramework and checks its checksum when you build either app.
 
 In Dasher, open **Settings → Speech** and select **Sherpa-ONNX**. Select **Browse Models** to search by name or language. Open a model and select **Download Model**. When the download completes, select **Done**, then **Preview**. Installed models work offline.
 
