@@ -11,7 +11,9 @@ final class DirectInputSource {
     private var installation: Task<Void, Never>?
     private var activation: Task<Void, Never>?
     private var terminationObserver: NSObjectProtocol?
-    private var didSelectSource = false
+    private var didFindSource = false
+    private var didSelectForSession = false
+    var canSelectForEditor: (() -> Bool)?
     var onSetupNeeded: ((Bool) -> Void)?
 
     init() {
@@ -22,7 +24,7 @@ final class DirectInputSource {
 
     func start() {
         guard activation == nil else { return }
-        if !didSelectSource && installation == nil {
+        if !didFindSource && installation == nil {
             installation = Task { await Self.installBundledSource() }
         }
         selectForEditor()
@@ -54,16 +56,27 @@ final class DirectInputSource {
             for _ in 0..<15 {
                 guard !Task.isCancelled else { return }
                 if let source = Self.source(withID: Self.identifier, includeDisabled: false) {
-                    self?.onSetupNeeded?(false)
+                    guard let self else { return }
+                    self.didFindSource = true
+                    self.onSetupNeeded?(false)
+                    // Do not override a choice made by the user or macOS after
+                    // we selected Dasher. TIS cannot restore inactive documents.
+                    guard !self.didSelectForSession else { return }
+                    if Self.currentSourceID() == Self.identifier {
+                        self.didSelectForSession = true
+                        return
+                    }
+                    guard Self.hasOnlyOneOtherKeyboardSource(), self.canSelectForEditor?() == true else { return }
                     if Self.selectSource(source) {
-                        self?.didSelectSource = true
+                        self.didSelectForSession = true
                         return
                     }
                 }
                 // macOS 27 opens Keyboard Settings for an enable request. Leave
                 // the editor focused and use Accessibility until the source is enabled.
                 if #unavailable(macOS 27),
-                   !requestedEnable, let source = Self.source(withID: Self.identifier, includeDisabled: true) {
+                   !requestedEnable, self?.canSelectForEditor?() == true,
+                   let source = Self.source(withID: Self.identifier, includeDisabled: true) {
                     let status = TISEnableInputSource(source)
                     requestedEnable = status == noErr
                 }
@@ -81,6 +94,7 @@ final class DirectInputSource {
     func stop() {
         activation?.cancel()
         activation = nil
+        didSelectForSession = false
         if let terminationObserver {
             NotificationCenter.default.removeObserver(terminationObserver)
             self.terminationObserver = nil
@@ -126,13 +140,15 @@ final class DirectInputSource {
         guard let previous = currentSourceID() else { return false }
         if previous == identifier { return true }
 
-        UserDefaults.standard.set(previous, forKey: previousSourceKey)
+        let defaults = UserDefaults.standard
+        let savesOriginal = defaults.string(forKey: previousSourceKey) == nil
+        if savesOriginal { defaults.set(previous, forKey: previousSourceKey) }
         let result = TISSelectInputSource(source)
         if result == noErr {
             LogManager.kb("Direct input source selected")
             return true
         }
-        UserDefaults.standard.removeObject(forKey: previousSourceKey)
+        if savesOriginal { defaults.removeObject(forKey: previousSourceKey) }
         LogManager.kb("Direct input source selection failed (\(result))")
         return false
     }
@@ -154,9 +170,25 @@ final class DirectInputSource {
     }
 
     private static func currentSourceID() -> String? {
-        guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue(),
-              let property = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
+        guard let source = TISCopyCurrentKeyboardInputSource()?.takeRetainedValue() else { return nil }
+        return sourceID(source)
+    }
+
+    private static func sourceID(_ source: TISInputSource) -> String? {
+        guard let property = TISGetInputSourceProperty(source, kTISPropertyInputSourceID) else { return nil }
         return Unmanaged<CFString>.fromOpaque(property).takeUnretainedValue() as String
+    }
+
+    private static func hasOnlyOneOtherKeyboardSource() -> Bool {
+        let filter: [String: Any] = [
+            kTISPropertyInputSourceCategory as String: kTISCategoryKeyboardInputSource as String,
+            kTISPropertyInputSourceIsSelectCapable as String: true
+        ]
+        guard let sources = TISCreateInputSourceList(filter as CFDictionary, false)?.takeRetainedValue() as? [TISInputSource] else {
+            return false
+        }
+        let others = Set(sources.compactMap(sourceID).filter { $0 != identifier })
+        return others.count == 1 && currentSourceID().map { others.contains($0) } == true
     }
 
     private static func source(withID id: String, includeDisabled: Bool) -> TISInputSource? {

@@ -2,6 +2,7 @@
 #import <Security/Security.h>
 #import <fcntl.h>
 #import <mach/message.h>
+#import <os/log.h>
 #import <poll.h>
 #import <sys/file.h>
 #import <sys/socket.h>
@@ -37,12 +38,33 @@ static NSString *SocketPath(void) {
     return [group URLByAppendingPathComponent:@"context.sock"].path;
 }
 
-static BOOL SetAddress(struct sockaddr_un *address, NSString *path) {
+// Darwin accepts the full SOCK_MAXADDRLEN in bind/connect, although the
+// SDK's sockaddr_un only has room for the first 104 bytes of the path.
+typedef struct {
+    uint8_t length;
+    sa_family_t family;
+    char path[SOCK_MAXADDRLEN - offsetof(struct sockaddr_un, sun_path)];
+} ContextSocketAddress;
+
+_Static_assert(offsetof(ContextSocketAddress, path) == offsetof(struct sockaddr_un, sun_path),
+    "Context socket address must match the Darwin UNIX socket layout");
+_Static_assert(sizeof(ContextSocketAddress) == SOCK_MAXADDRLEN,
+    "Context socket address must fit the Darwin socket address limit");
+
+static BOOL SetAddress(ContextSocketAddress *address, NSString *path) {
     const char *bytes = path.fileSystemRepresentation;
-    if (!bytes || strlen(bytes) >= sizeof(address->sun_path)) return NO;
-    address->sun_family = AF_UNIX;
-    strlcpy(address->sun_path, bytes, sizeof(address->sun_path));
-    address->sun_len = SUN_LEN(address);
+    if (!bytes) return NO;
+    size_t length = strlen(bytes);
+    if (length >= sizeof(address->path)) {
+        static dispatch_once_t once;
+        dispatch_once(&once, ^{
+            os_log_error(OS_LOG_DEFAULT, "Dasher input context socket path exceeds the Unix socket limit");
+        });
+        return NO;
+    }
+    address->family = AF_UNIX;
+    memcpy(address->path, bytes, length + 1);
+    address->length = (uint8_t)(offsetof(ContextSocketAddress, path) + length);
     return YES;
 }
 
@@ -102,9 +124,9 @@ static BOOL IsTrustedPeer(int fd, NSString *identifier) {
     return trusted;
 }
 
-static BOOL ConnectSocket(int fd, struct sockaddr_un *address) {
+static BOOL ConnectSocket(int fd, ContextSocketAddress *address) {
     if (fcntl(fd, F_SETFL, O_NONBLOCK) != 0) return NO;
-    if (connect(fd, (struct sockaddr *)address, address->sun_len) != 0) {
+    if (connect(fd, (struct sockaddr *)address, address->length) != 0) {
         if (errno != EINPROGRESS) return NO;
         struct pollfd item = { .fd = fd, .events = POLLOUT };
         int error;
@@ -116,7 +138,7 @@ static BOOL ConnectSocket(int fd, struct sockaddr_un *address) {
 }
 
 DasherInputMethodContext *DasherReadInputMethodContext(pid_t editor) {
-    struct sockaddr_un address = {0};
+    ContextSocketAddress address = {0};
     if (editor <= 0 || !SetAddress(&address, SocketPath())) return nil;
     int fd = socket(AF_UNIX, SOCK_STREAM, 0);
     if (fd < 0) return nil;
@@ -152,7 +174,7 @@ void DasherStartInputMethodContextServer(DasherInputMethodReader reader) {
     static dispatch_source_t listener;
     if (listener || !SigningTeam()) return;
     NSString *path = SocketPath();
-    struct sockaddr_un address = {0};
+    ContextSocketAddress address = {0};
     if (!SetAddress(&address, path)) return;
 
     // Only one process may bind this path. The lock survives a stale socket
@@ -171,9 +193,9 @@ void DasherStartInputMethodContextServer(DasherInputMethodReader reader) {
         close(lock);
         return;
     }
-    unlink(address.sun_path);
-    if (bind(fd, (struct sockaddr *)&address, address.sun_len) != 0 ||
-        chmod(address.sun_path, 0600) != 0 || listen(fd, 4) != 0) {
+    unlink(address.path);
+    if (bind(fd, (struct sockaddr *)&address, address.length) != 0 ||
+        chmod(address.path, 0600) != 0 || listen(fd, 4) != 0) {
         close(fd);
         close(lock);
         return;

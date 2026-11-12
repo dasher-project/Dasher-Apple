@@ -4,6 +4,7 @@ import SwiftUI
 final class DirectCanvasWindow: NSPanel, NSWindowDelegate {
     private weak var editorWindow: NSWindow?
     var onExit: (() -> Void)?
+    var onInputSourceSetup: (() -> Void)?
 
     init(replacing editorWindow: NSWindow, opacity: CGFloat) {
         self.editorWindow = editorWindow
@@ -40,6 +41,7 @@ final class DirectCanvasWindow: NSPanel, NSWindowDelegate {
         orderOut(nil)
         contentView = nil
         onExit = nil
+        onInputSourceSetup = nil
         NSApp.activate()
         editorWindow?.makeKeyAndOrderFront(nil)
     }

@@ -141,6 +141,15 @@ struct DasherMacApp: App {
             }
 
             CommandMenu("Input") {
+                if viewModel.directMode {
+                    Button("Toggle keyboard mode") {
+                        directCanvas?.onExit?()
+                    }
+                    Button("Set Up Text Context") {
+                        directCanvas?.onInputSourceSetup?()
+                    }
+                    Divider()
+                }
                 Button(viewModel.isPlaying ? "Pause" : "Play") {
                     UITelemetry.action("main_toolbar", "pause_play", state: viewModel.isPlaying ? "paused" : "playing")
                     viewModel.togglePlay()
@@ -160,6 +169,10 @@ struct DasherMacApp: App {
                 .keyboardShortcut("-", modifiers: [.command])
             }
         }
+    }
+
+    private var directCanvas: DirectCanvasWindow? {
+        NSApp.windows.compactMap { $0 as? DirectCanvasWindow }.first { $0.isVisible }
     }
 
     private func startEngineIfNeeded() {

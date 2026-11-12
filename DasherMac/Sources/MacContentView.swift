@@ -9,16 +9,20 @@ struct MacContentView: View {
     @ObservedObject private var directService: DirectModeService
     @State private var showSettings = false
     @State private var directModeSettingsWindow: NSWindow?
+    @State private var directModePermissionWindow: NSWindow?
+    @State private var directModeInputSetupWindow: NSWindow?
+    @State private var showInputSourceSetup = false
     @State private var directWindow: DirectCanvasWindow?
     @State private var currentLayoutPosition = "Right"
     @State private var outputPaneFraction: CGFloat = 2.0 / 9.0
-    @AppStorage("directInputSetupDeferred") private var directInputSetupDeferred = false
     @Environment(\.colorScheme) private var colorScheme
     private var directActions: DirectActions?
 
     private struct DirectActions {
         let exit: () -> Void
         let settings: () -> Void
+        let inputSourceSetup: () -> Void
+        let permissionRevoked: () -> Void
         let updateOpacity: (CGFloat) -> Void
     }
 
@@ -37,6 +41,9 @@ struct MacContentView: View {
             if directActions != nil {
                 directModeLayout
                     .overlay(alignment: .top) { messageBanner }
+                    .onChange(of: directService.hasAccessibilityPermission) { _, allowed in
+                        if !allowed { directActions?.permissionRevoked() }
+                    }
             } else {
                 editorLayout
             }
@@ -51,6 +58,8 @@ struct MacContentView: View {
         VStack(spacing: 0) {
             if directWindow != nil {
                 Color.clear
+            } else if directModePermissionWindow != nil {
+                accessibilityPrompt
             } else if currentLayoutPosition == "Left" {
                 leftTextLayout
             } else if currentLayoutPosition == "Bottom" {
@@ -62,12 +71,25 @@ struct MacContentView: View {
             }
         }
         .background(Color(nsColor: .windowBackgroundColor))
+        .onChange(of: directService.hasAccessibilityPermission) { _, allowed in
+            guard allowed, let editor = directModePermissionWindow else { return }
+            directModePermissionWindow = nil
+            enterDirectMode(in: editor)
+        }
+        .onDisappear { cancelDirectModePermission() }
         .sheet(isPresented: $showSettings, onDismiss: {
             guard let editor = directModeSettingsWindow else { return }
             directModeSettingsWindow = nil
             DispatchQueue.main.async { enterDirectMode(in: editor) }
         }) {
             MacDasherSettingsView(viewModel: viewModel)
+        }
+        .sheet(isPresented: $showInputSourceSetup, onDismiss: {
+            guard let editor = directModeInputSetupWindow else { return }
+            directModeInputSetupWindow = nil
+            DispatchQueue.main.async { enterDirectMode(in: editor) }
+        }) {
+            inputSourceSetup
         }
         .overlay(alignment: .top) { messageBanner }
         .toolbar {
@@ -291,27 +313,21 @@ struct MacContentView: View {
 
     private var directModeLayout: some View {
         VStack(spacing: 0) {
-            if !directService.hasAccessibilityPermission {
-                accessibilityPrompt
-            } else {
+            if directService.hasAccessibilityPermission {
                 ZStack(alignment: .topTrailing) {
                     MacCanvasView(viewModel: viewModel).overlay(EngineLoadingOverlay(isReady: viewModel.isEngineReady, errorMessage: viewModel.engineErrorMessage))
                         .background(Color.clear)
                     VStack(spacing: 4) {
                         targetAppIndicator.padding(8)
                         directModeMiniBar.padding(.trailing, 8)
-                        if directService.needsInputSourceSetup && directInputSetupDeferred {
-                            Button("Set Up Text Context") { directInputSetupDeferred = false }
+                        if directService.needsInputSourceSetup {
+                            Button("Set Up Text Context") { directActions?.inputSourceSetup() }
                                 .buttonStyle(.bordered)
                                 .background(.regularMaterial, in: Capsule())
                                 .padding(.trailing, 8)
                         }
                     }
                 }
-                if directService.needsInputSourceSetup && !directInputSetupDeferred {
-                    inputSourceSetup
-                }
-
                 Divider()
                 directModeBottomBar
             }
@@ -349,9 +365,9 @@ struct MacContentView: View {
 
     private var targetAppIndicator: some View {
         HStack(spacing: 4) {
-            Circle().fill(Color.green).frame(width: 6, height: 6)
+            Circle().fill(directService.isTargetForeground ? Color.green : Color.gray).frame(width: 6, height: 6)
             Group {
-                if directService.targetAppName.isEmpty {
+                if !directService.isTargetForeground || directService.targetAppName.isEmpty {
                     Text("Focus an editor to start")
                 } else {
                     Text("Sending to \(directService.targetAppName)")
@@ -739,15 +755,19 @@ struct MacContentView: View {
             }
             .font(.caption)
             HStack {
-                Button("Open Keyboard Settings") { directService.openInputSourceSettings() }
-                    .buttonStyle(.borderedProminent)
-                Button("Later") { directInputSetupDeferred = true }
+                Button("Open Keyboard Settings") {
+                    directService.openInputSourceSettings()
+                    showInputSourceSetup = false
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                Button("Later") { showInputSourceSetup = false }
                     .buttonStyle(.bordered)
+                    .keyboardShortcut(.cancelAction)
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.ultraThinMaterial)
+        .padding(24)
+        .frame(width: 460, alignment: .leading)
     }
 
     private var accessibilityPrompt: some View {
@@ -765,16 +785,15 @@ struct MacContentView: View {
             .frame(maxWidth: 400)
             HStack(spacing: 12) {
                 Button("Open System Settings") {
-                    viewModel.directService.requestAccessibility()
-                    if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-                        NSWorkspace.shared.open(url)
-                    }
+                    directService.openAccessibilitySettings()
                 }
                 .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
                 Button("Back to Dasher") {
-                    directActions?.exit()
+                    cancelDirectModePermission()
                 }
                 .buttonStyle(.bordered)
+                .keyboardShortcut(.cancelAction)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -787,6 +806,15 @@ struct MacContentView: View {
         guard !viewModel.directMode, let editor = window ?? NSApp.keyWindow ?? NSApp.mainWindow ?? visibleEditor else {
             return
         }
+        directService.checkAccessibility()
+        guard directService.hasAccessibilityPermission else {
+            directModePermissionWindow = editor
+            NSApp.activate()
+            editor.makeKeyAndOrderFront(nil)
+            directService.startPolling()
+            return
+        }
+        directModePermissionWindow = nil
         if viewModel.isGameModeActive { viewModel.toggleGameMode() }
         let panel = DirectCanvasWindow(replacing: editor, opacity: viewModel.directOpacity)
         let actions = DirectActions(
@@ -796,13 +824,30 @@ struct MacContentView: View {
                 directModeSettingsWindow = editor
                 showSettings = true
             },
+            inputSourceSetup: { [weak editor] in
+                guard let editor else { return }
+                leaveDirectMode()
+                directModeInputSetupWindow = editor
+                showInputSourceSetup = true
+            },
+            permissionRevoked: { [weak editor] in
+                leaveDirectMode()
+                if let editor { enterDirectMode(in: editor) }
+            },
             updateOpacity: { [weak panel] opacity in panel?.alphaValue = opacity }
         )
         panel.onExit = actions.exit
+        panel.onInputSourceSetup = actions.inputSourceSetup
         viewModel.directMode = true
         directWindow = panel
         panel.present(MacContentView(viewModel: viewModel, directActions: actions))
         directService.restoreTargetFocus()
+    }
+
+    private func cancelDirectModePermission() {
+        guard directModePermissionWindow != nil else { return }
+        directModePermissionWindow = nil
+        directService.cancelAccessibilitySetup()
     }
 
     private func leaveDirectMode() {
@@ -1103,6 +1148,8 @@ final class MacDasherCanvas: NSView {
     var viewModel: MacDasherViewModel?
     private var displayLink: CVDisplayLink?
     private var mouseIsDown = false
+    private var shiftIsDown = false
+    private var rightMouseIsDown = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -1154,6 +1201,7 @@ final class MacDasherCanvas: NSView {
             CVDisplayLinkStart(link)
             displayLink = link
         } else if window == nil, let link = displayLink {
+            updateTurbo(shift: false, rightMouse: false)
             CVDisplayLinkStop(link)
             displayLink = nil
             // Release the retain paired with passRetained in the callback.
@@ -1194,18 +1242,26 @@ final class MacDasherCanvas: NSView {
     }
 
     override func rightMouseDown(with event: NSEvent) {
-        viewModel?.bridge.keyEvent(key: 101, pressed: true)
+        updateTurbo(shift: shiftIsDown, rightMouse: true)
     }
 
     override func rightMouseUp(with event: NSEvent) {
-        viewModel?.bridge.keyEvent(key: 101, pressed: false)
+        updateTurbo(shift: shiftIsDown, rightMouse: false)
     }
 
     override func flagsChanged(with event: NSEvent) {
         super.flagsChanged(with: event)
-        // Shift key = momentary turbo
-        let shiftDown = event.modifierFlags.contains(.shift)
-        viewModel?.bridge.keyEvent(key: 101, pressed: shiftDown)
+        updateTurbo(shift: event.modifierFlags.contains(.shift), rightMouse: rightMouseIsDown)
+    }
+
+    private func updateTurbo(shift: Bool, rightMouse: Bool) {
+        let wasPressed = shiftIsDown || rightMouseIsDown
+        shiftIsDown = shift
+        rightMouseIsDown = rightMouse
+        let isPressed = shift || rightMouse
+        if isPressed != wasPressed {
+            viewModel?.bridge.keyEvent(key: 101, pressed: isPressed)
+        }
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -1214,7 +1270,12 @@ final class MacDasherCanvas: NSView {
         ctx.setFillColor(CGColor(red: 0.05, green: 0.07, blue: 0.09, alpha: 1.0))
         ctx.fill(dirtyRect)
 
-        guard !vm.directMode || vm.directService.hasForegroundTarget else { return }
+        let hasTarget = !vm.directMode || vm.directService.hasForegroundTarget
+        if window is DirectCanvasWindow {
+            // The editor receives modifier events while the canvas steers.
+            updateTurbo(shift: hasTarget && NSEvent.modifierFlags.contains(.shift), rightMouse: rightMouseIsDown && hasTarget)
+        }
+        guard hasTarget else { return }
         let timeMs = Int64(Date().timeIntervalSince1970 * 1000.0)
         if let cmds = vm.bridge.frame(timeMs: timeMs) {
             cmds.render(in: ctx, bounds: bounds, viewHeight: bounds.height, imageMap: vm.bridge.imageLabels as? [String: NSImage] ?? [:])

@@ -22,6 +22,7 @@ class DirectModeService: ObservableObject {
         }
     }
     @Published var targetAppName: String = ""
+    @Published private(set) var isTargetForeground = false
     @Published private(set) var needsInputSourceSetup = false
 
     /// RFC 0019 clause 6 / RFC 0015: fires when the caret/selection, focused
@@ -70,7 +71,7 @@ class DirectModeService: ObservableObject {
     private var pollTimer: Timer?
     private var lastTargetApp: NSRunningApplication?
     private let inputSource = DirectInputSource()
-    private var openedInputSourceSettings = false
+    private var openedSetupSettings = false
 
     var hasForegroundTarget: Bool {
         guard let target = lastTargetApp, !target.isTerminated else { return false }
@@ -78,6 +79,7 @@ class DirectModeService: ObservableObject {
     }
 
     init() {
+        inputSource.canSelectForEditor = { [weak self] in self?.hasForegroundTarget == true }
         inputSource.onSetupNeeded = { [weak self] needed in
             guard let self, self.needsInputSourceSetup != needed else { return }
             self.needsInputSourceSetup = needed
@@ -89,9 +91,18 @@ class DirectModeService: ObservableObject {
         frontmostObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main
         ) { [weak self] note in
-            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  app.bundleIdentifier != Bundle.main.bundleIdentifier, app.activationPolicy == .regular else { return }
-            MainActor.assumeIsolated { self?.trackTarget(app) }
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else { return }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if app.bundleIdentifier != Bundle.main.bundleIdentifier, app.activationPolicy == .regular {
+                    self.trackTarget(app)
+                }
+                // The activation notification can precede NSWorkspace's
+                // frontmostApplication update. Use the app from the event for
+                // display, and query actual focus before sending any keys.
+                self.isTargetForeground = self.isActive
+                    && self.lastTargetApp?.processIdentifier == app.processIdentifier
+            }
         }
     }
 
@@ -224,7 +235,7 @@ class DirectModeService: ObservableObject {
     /// AX IPC on the utility queue so a hung target (up to 0.3 s per AX call,
     /// RFC 0015's background-read budget) cannot stall the canvas.
     private func pollTargetContext() {
-        guard isActive, !isPollReadInFlight,
+        guard isActive, hasAccessibilityPermission, !isPollReadInFlight,
               let appTarget = lastTargetApp, !appTarget.isTerminated else { return }
         // No-op during our own echo/settle windows: the AX read would be
         // discarded by finishContextPoll anyway — skip the IPC entirely. The
@@ -236,11 +247,10 @@ class DirectModeService: ObservableObject {
         let pid = appTarget.processIdentifier
         let epoch = pollEpoch
         let frontPid = externalForegroundProcess()
-        let canUseAccessibility = hasAccessibilityPermission
         isPollReadInFlight = true
         contextPollQueue.async { [weak self] in
             guard let self else { return }
-            let read = self.readFocusedField(pid: pid, frontPid: frontPid, canUseAccessibility: canUseAccessibility)
+            let read = self.readFocusedField(pid: pid, frontPid: frontPid)
             DispatchQueue.main.async { self.finishContextPoll(read: read, pid: pid, epoch: epoch) }
         }
     }
@@ -302,22 +312,20 @@ class DirectModeService: ObservableObject {
     }
 
     private func isCurrentTarget(_ pid: pid_t, context: DirectFieldContext) -> Bool {
-        guard isActive, let target = lastTargetApp,
+        guard isActive, hasAccessibilityPermission, AXIsProcessTrusted(), let target = lastTargetApp,
               target.processIdentifier == pid, !target.isTerminated else { return false }
         let frontPid = externalForegroundProcess()
         return frontPid == pid || (frontPid == nil && context.inputMethodSelection == nil)
     }
 
     func readTargetFieldContext() async -> DirectFieldContext? {
-        guard let appTarget = lastTargetApp, !appTarget.isTerminated else { return nil }
+        guard isActive, hasAccessibilityPermission,
+              let appTarget = lastTargetApp, !appTarget.isTerminated else { return nil }
         let pid = appTarget.processIdentifier
         let frontPid = externalForegroundProcess()
-        let canUseAccessibility = hasAccessibilityPermission
         let read: ContextRead = await withCheckedContinuation { continuation in
             contextPollQueue.async {
-                continuation.resume(returning: self.readFocusedField(
-                    pid: pid, frontPid: frontPid, canUseAccessibility: canUseAccessibility
-                ))
+                continuation.resume(returning: self.readFocusedField(pid: pid, frontPid: frontPid))
             }
         }
         guard let context = read.context else {
@@ -332,15 +340,17 @@ class DirectModeService: ObservableObject {
 
     private typealias ContextRead = (context: DirectFieldContext?, failure: String?)
 
-    nonisolated private func readFocusedField(pid: pid_t, frontPid: pid_t?, canUseAccessibility: Bool) -> ContextRead {
+    nonisolated private func readFocusedField(pid: pid_t, frontPid: pid_t?) -> ContextRead {
         if let frontPid, frontPid != pid {
             return (nil, "target pid=\(pid) is not frontmost (front=\(frontPid))")
         }
+        // InputMethodKit IPC does not have AX's own authorization check. Verify
+        // on the worker before the request, and again before applying a reply.
+        guard AXIsProcessTrusted() else { return (nil, "Accessibility access unavailable") }
         if frontPid == pid, let snapshot = DasherReadInputMethodContext(pid) {
             let prefix = snapshot.prefix
             return (DirectFieldContext(text: prefix, caretUTF16: prefix.utf16.count, inputMethodSelection: snapshot.selection), nil)
         }
-        guard canUseAccessibility else { return (nil, "Accessibility access unavailable") }
 
         let app = AXUIElementCreateApplication(pid)
         AXUIElementSetMessagingTimeout(app, 0.3)
@@ -417,11 +427,12 @@ class DirectModeService: ObservableObject {
         guard !isActive else { return }
         isActive = true
         if let front = NSWorkspace.shared.frontmostApplication, front.activationPolicy == .regular,
-           front.bundleIdentifier != Bundle.main.bundleIdentifier {
+           front.bundleIdentifier != Bundle.main.bundleIdentifier, !isSetupSettings(front) {
             lastTargetApp = front
         }
         if lastTargetApp?.isTerminated == true { lastTargetApp = nil }
         targetAppName = lastTargetApp?.localizedName ?? ""
+        isTargetForeground = hasForegroundTarget
         updateInputSource()
         // Attach the caret watcher now that lastTargetApp is resolved.
         startCaretWatcher()
@@ -440,8 +451,9 @@ class DirectModeService: ObservableObject {
         stopCaretWatcher()
         stopContextPolling()
         targetAppName = ""
+        isTargetForeground = false
         needsInputSourceSetup = false
-        openedInputSourceSettings = false
+        openedSetupSettings = false
     }
 
     func restoreTargetFocus() {
@@ -450,20 +462,40 @@ class DirectModeService: ObservableObject {
         target.activate()
     }
 
+    func openAccessibilitySettings() {
+        openedSetupSettings = true
+        requestAccessibility()
+        openSetupSettings("com.apple.preference.security?Privacy_Accessibility")
+    }
+
+    func cancelAccessibilitySetup() {
+        openedSetupSettings = false
+        stopPolling()
+    }
+
     func openInputSourceSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.Keyboard-Settings.extension") else { return }
-        openedInputSourceSettings = NSWorkspace.shared.open(url)
+        openedSetupSettings = true
+        openSetupSettings("com.apple.Keyboard-Settings.extension")
+    }
+
+    private func openSetupSettings(_ pane: String) {
+        guard let url = URL(string: "x-apple.systempreferences:\(pane)") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func isSetupSettings(_ app: NSRunningApplication) -> Bool {
+        openedSetupSettings && app.bundleIdentifier == "com.apple.systempreferences"
     }
 
     private func trackTarget(_ app: NSRunningApplication) {
-        if openedInputSourceSettings && app.bundleIdentifier == "com.apple.systempreferences" { return }
+        guard !isSetupSettings(app) else { return }
         let changed = lastTargetApp?.processIdentifier != app.processIdentifier
         lastTargetApp = app
         guard isActive else { return }
-        if (changed || openedInputSourceSettings) && hasAccessibilityPermission {
+        if hasAccessibilityPermission {
             inputSource.editorChanged()
         }
-        openedInputSourceSettings = false
+        openedSetupSettings = false
         targetAppName = app.localizedName ?? "Unknown"
         LogManager.kb("target switched: bundle=\(app.bundleIdentifier ?? "unknown") pid=\(app.processIdentifier) changed=\(changed)")
         startCaretWatcher()
