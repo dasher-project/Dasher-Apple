@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "DasherSpeech", targets: ["DasherSpeech"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/AACTools/rust-tts-wrapper.git", exact: "1.8.0"),
+        .package(url: "https://github.com/AACTools/rust-tts-wrapper.git", exact: "1.9.0"),
         .package(url: "https://github.com/tsolomko/SWCompression.git", from: "4.9.1"),
         .package(url: "https://github.com/aactools/swift-tts-wrapper", from: "1.2.8"),
         .package(url: "https://github.com/JakubMazur/lucide-icons-swift", from: "1.20.0"),

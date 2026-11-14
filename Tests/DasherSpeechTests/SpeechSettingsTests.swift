@@ -46,12 +46,16 @@ extension SpeechSettingsTests {
         let english = try XCTUnwrap(models.first(where: { $0.id == "inflect-en-nano-v2" }))
         let french = try XCTUnwrap(models.first(where: { $0.id == "mms_fra" }))
         let germanPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-de_DE-thorsten-medium" }))
+        let polishPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-pl_PL-gosia-medium" }))
         XCTAssertTrue(english.matches("inflect english"))
         XCTAssertTrue(french.matches("French MMS"))
         XCTAssertFalse(french.matches("French Kokoro"))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: english))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: french))
-        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: germanPiper))
+        XCTAssertTrue(germanPiper.usesG2PBundle)
+        XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: germanPiper))
+        XCTAssertFalse(polishPiper.usesG2PBundle)
+        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: polishPiper))
         XCTAssertFalse(SpeechModelStorage.isModelID("../invalid"))
     }
 
@@ -69,6 +73,39 @@ extension SpeechSettingsTests {
         let audio = try await backend.synthesize(
             "Hello from Dasher.", engineID: SpeechEngine.sherpaID,
             credentials: ["modelId": SpeechModelStorage.englishModelID, "modelPath": models.path],
+            voice: nil, rate: 1, pitch: 1, volume: 1
+        )
+        let player = try AVAudioPlayer(data: audio)
+        XCTAssertEqual(player.numberOfChannels, 1)
+        XCTAssertGreaterThan(player.duration, 0.25)
+    }
+
+    @MainActor
+    func testDownloadedGermanPiperProducesPlayableAudio() async throws {
+        let environment = ProcessInfo.processInfo.environment
+        let download = environment["DASHER_TEST_DOWNLOAD_GERMAN_VOICE"] == "1"
+        guard download || environment["DASHER_TEST_GERMAN_MODELS_DIR"] != nil else {
+            throw XCTSkip("Set DASHER_TEST_DOWNLOAD_GERMAN_VOICE=1 to download and test Thorsten.")
+        }
+        let models = if let directory = environment["DASHER_TEST_GERMAN_MODELS_DIR"] {
+            URL(filePath: directory, directoryHint: .isDirectory)
+        } else {
+            URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
+        }
+        defer {
+            if environment["DASHER_TEST_GERMAN_MODELS_DIR"] == nil {
+                try? FileManager.default.removeItem(at: models)
+            }
+        }
+        let thorsten = try XCTUnwrap(SherpaModel.bundledCatalog().first(where: {
+            $0.id == "piper-de_DE-thorsten-medium"
+        }))
+        if download { try await SpeechModelStorage.download(thorsten, to: models) }
+        XCTAssertTrue(SpeechModelStorage.isInstalled(thorsten.id, in: models))
+
+        let audio = try await RustSpeechBackend().synthesize(
+            "Blorpinxel!", engineID: SpeechEngine.sherpaID,
+            credentials: ["modelId": thorsten.id, "modelPath": models.path],
             voice: nil, rate: 1, pitch: 1, volume: 1
         )
         let player = try AVAudioPlayer(data: audio)

@@ -1,6 +1,7 @@
 import Foundation
 #if os(macOS) || os(iOS)
 import CBZip2
+import CRustTtsWrapper
 import CryptoKit
 import SWCompression
 #endif
@@ -37,7 +38,7 @@ struct SpeechModelStorage {
             return String(localized: "This model has no verified download that Dasher can install.")
         }
         switch model.modelType {
-        case "vits" where model.developer == "piper" && !model.isEnglishOnly:
+        case "vits" where model.developer == "piper" && !model.isEnglishOnly && !model.usesG2PBundle:
             return SpeechSetupError.modelNeedsLexicon.errorDescription
         case "vits", "kokoro", "kitten", "supertonic", "pocket", "matcha", "zipvoice":
             return nil
@@ -86,7 +87,8 @@ struct SpeechModelStorage {
             try decompress(archive, to: tar)
             try extract(tar, to: unpacked)
             modelFolder = try findModelFolder(in: unpacked)
-            if ["vits", "kokoro", "kitten", "matcha", "zipvoice"].contains(model.modelType), !hasLexicon(in: modelFolder) {
+            if !model.usesG2PBundle, ["vits", "kokoro", "kitten", "matcha", "zipvoice"].contains(model.modelType),
+               !hasLexicon(in: modelFolder) {
                 guard model.isEnglishOnly else {
                     throw SpeechSetupError.modelNeedsLexicon
                 }
@@ -104,6 +106,15 @@ struct SpeechModelStorage {
         }
 
         try validate(model, in: modelFolder)
+        try Task.checkCancellation()
+        if model.usesG2PBundle {
+            let id = model.id
+            let provisioned = await Task.detached(priority: .utility) {
+                id.withCString { tts_provision_sherpa_g2p_bundle($0) }
+            }.value
+            try Task.checkCancellation()
+            guard provisioned else { throw SpeechSetupError.modelBundleDownloadFailed }
+        }
         try model.id.write(to: modelFolder.appending(path: verificationFile), atomically: true, encoding: .utf8)
         try Task.checkCancellation()
         var destination = directory.appending(path: model.id, directoryHint: .isDirectory)
@@ -312,7 +323,7 @@ struct SpeechModelStorage {
         let required: [[String]]
         switch model.modelType {
         case "vits":
-            guard hasLexicon(in: folder),
+            guard model.usesG2PBundle || hasLexicon(in: folder),
                   contents(of: folder).contains(where: { $0.pathExtension == "onnx" && contains($0.lastPathComponent, in: folder) }) else {
                 throw SpeechSetupError.invalidModelFiles
             }
@@ -370,6 +381,7 @@ enum SpeechSetupError: LocalizedError {
     case credentialFileRequired
     case modelNotInstalled
     case modelDownloadFailed
+    case modelBundleDownloadFailed
     case modelNeedsLexicon
     case invalidModelFiles
     case playbackFailed
@@ -379,6 +391,7 @@ enum SpeechSetupError: LocalizedError {
         case .credentialFileRequired: String(localized: "Choose a credentials file.")
         case .modelNotInstalled: String(localized: "Download a speech model before speaking.")
         case .modelDownloadFailed: String(localized: "Could not download or verify the speech model.")
+        case .modelBundleDownloadFailed: String(localized: "Could not download or verify the pronunciation dictionary.")
         case .modelNeedsLexicon: String(localized: "This model needs a pronunciation dictionary that Dasher cannot install yet.")
         case .invalidModelFiles: String(localized: "The downloaded model is missing files required by Sherpa-ONNX.")
         case .playbackFailed: String(localized: "Could not play the synthesized audio.")
