@@ -43,6 +43,7 @@ class MacDasherViewModel: ObservableObject {
     @Published var isPlaying: Bool = true
     @Published var isGameModeActive: Bool = false
     @Published var isControlModeActive: Bool = false
+    @Published private(set) var speaksWords = false
     @Published var gameTargetText: String = ""
     @Published var gameCorrectCount: Int = 0
     @Published var gameTargetLength: Int = 0
@@ -159,6 +160,7 @@ class MacDasherViewModel: ObservableObject {
 
         let bitrateKey = bridge.findParameterKey("LP_MAX_BITRATE")
         let controlModeKey = bridge.findParameterKey("BP_CONTROL_MODE")
+        let speakWordsKey = bridge.findParameterKey("BP_SPEAK_WORDS")
         bridge.onParameterChange = { [weak self] key in
             if key == bitrateKey {
                 Task { @MainActor in
@@ -168,6 +170,11 @@ class MacDasherViewModel: ObservableObject {
                 Task { @MainActor in
                     guard let self else { return }
                     self.isControlModeActive = self.bridge.getBoolParameter(key: controlModeKey)
+                }
+            } else if key == speakWordsKey {
+                Task { @MainActor in
+                    guard let self else { return }
+                    self.speaksWords = self.bridge.getBoolParameter(key: speakWordsKey)
                 }
             }
         }
@@ -181,7 +188,14 @@ class MacDasherViewModel: ObservableObject {
             savedConfig.apply(to: self.bridge)
             self.speed = Double(self.bridge.speedPercent) / 100.0
             self.isControlModeActive = self.bridge.getBoolParameter(key: controlModeKey)
+            self.speaksWords = self.bridge.getBoolParameter(key: speakWordsKey)
         }
+    }
+
+    func setSpeaksWords(_ enabled: Bool) {
+        let key = bridge.findParameterKey("BP_SPEAK_WORDS")
+        bridge.setBoolParameter(key: key, value: enabled)
+        speaksWords = bridge.getBoolParameter(key: key)
     }
 
     /// RFC 0003 locale-follow (Dasher-Android #31 parity): until the user

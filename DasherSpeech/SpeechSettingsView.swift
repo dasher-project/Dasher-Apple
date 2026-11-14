@@ -1,78 +1,146 @@
-import SwiftUI
 import SwiftTTSWrapper
-import DasherShared
+import SwiftUI
+import UniformTypeIdentifiers
 
 public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService
+    @State private var isChoosingFile = false
+    @State private var importFieldID: String?
+    #if os(macOS) || os(iOS)
+    @State private var showsSherpaCatalog = false
+    #endif
 
     public init(service: SpeechService) {
         self.service = service
     }
 
     public var body: some View {
-        @Bindable var service = service
         VStack(alignment: .leading, spacing: 12) {
-            enginePicker
-            credentialsSection
-            voiceSection
-        }
-        .buttonStyle(.borderless)
-    }
+            Picker("TTS Engine", selection: $service.selectedEngineID) {
+                ForEach(service.availableEngines) { engine in
+                    Text(engine.name).tag(engine.id)
+                }
+            }
+            .pickerStyle(.menu)
+            .disabled(service.isImporting)
 
-    private var enginePicker: some View {
-        Picker("TTS Engine", selection: $service.selectedEngine) {
-            ForEach(allEngines, id: \.self) { engine in
-                Text(engineName(engine)).tag(engine)
+            if let error = service.engineListError {
+                Text(error).foregroundStyle(.red)
+            }
+            if service.isSherpa {
+                modelSection
+            } else {
+                credentialsSection
+            }
+            voiceSection
+            if let error = service.errorMessage {
+                Text(error)
+                    .foregroundStyle(.red)
+                    .textSelection(.enabled)
             }
         }
-        .pickerStyle(.menu)
+        .buttonStyle(.borderless)
+        .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.item]) {
+            guard let importFieldID else { return }
+            switch $0 {
+            case .success(let url): service.importCredentialFile(url, fieldID: importFieldID)
+            case .failure(let error): service.showError(error)
+            }
+        }
+        #if os(macOS) || os(iOS)
+        .sheet(isPresented: $showsSherpaCatalog) {
+            SherpaModelBrowser(service: service)
+        }
+        #endif
+    }
+
+    private var modelSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            #if os(macOS) || os(iOS)
+            if let model = service.selectedSherpaModel, service.hasSherpaModel {
+                Label(model.displayName, systemImage: "checkmark.circle")
+            }
+            Button("Browse Models") {
+                service.loadSherpaCatalog()
+                showsSherpaCatalog = true
+            }
+            if service.downloadingSherpaModelID != nil {
+                ProgressView().controlSize(.small)
+            }
+            #endif
+        }
     }
 
     private var credentialsSection: some View {
-        Group {
-            if requiredKeys.isEmpty {
+        let alternativeKeys = Set(service.engine.requiredAny.flatMap { $0 })
+        let essential = service.engine.fields.filter { $0.required || alternativeKeys.contains($0.id) }
+        let optional = service.engine.fields.filter { !$0.required && !alternativeKeys.contains($0.id) }
+        return VStack(alignment: .leading, spacing: 8) {
+            if service.engine.fields.isEmpty {
                 Text("No credentials required")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-            } else {
-                ForEach(requiredKeys, id: \.self) { key in
-                    HStack {
-                        Text(keyLabel(key))
-                            .frame(width: 120, alignment: .trailing)
-                        if key.isSecret {
-                            let placeholder = "Enter \(key)..."
-                            SecureField(placeholder, text: bindingForKey(key))
-                                .textFieldStyle(.roundedBorder)
-                        } else {
-                            let placeholder = "Enter \(key)..."
-                            TextField(placeholder, text: bindingForKey(key))
-                                .textFieldStyle(.roundedBorder)
-                        }
-                    }
+            }
+            ForEach(essential) { credentialRow($0) }
+            if !optional.isEmpty {
+                DisclosureGroup("Advanced Settings") {
+                    ForEach(optional) { credentialRow($0) }
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func credentialRow(_ field: SpeechEngine.Field) -> some View {
+        let value = binding(for: field.id)
+        switch field.kind {
+        case .secret:
+            SecureField(field.label, text: value)
+                .textFieldStyle(.roundedBorder)
+        case .text:
+            TextField(field.label, text: value, prompt: field.defaultValue.map { Text($0) })
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+        case .choice:
+            Picker(field.label, selection: value) {
+                if !field.required { Text("Default").tag("") }
+                else { Text("Select").tag("") }
+                if !value.wrappedValue.isEmpty, !field.choices.contains(value.wrappedValue) {
+                    Text(value.wrappedValue).tag(value.wrappedValue)
+                }
+                ForEach(field.choices, id: \.self) { Text($0).tag($0) }
+            }
+        case .file:
+            HStack {
+                Button { chooseFile(for: field.id) } label: {
+                    Label(field.label, systemImage: "folder")
+                }
+                .disabled(service.isImporting)
+                if !value.wrappedValue.isEmpty {
+                    Text(URL(fileURLWithPath: value.wrappedValue).lastPathComponent)
+                        .lineLimit(1)
+                    Button("Clear") { value.wrappedValue = "" }
+                }
+            }
+        }
+        if let help = field.help {
+            Text(help).font(.caption).foregroundStyle(.secondary)
         }
     }
 
     private var voiceSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Button {
                     service.loadVoices()
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "speaker.wave.2")
-                        Text("Load Voices")
-                    }
+                    Label("Load Voices", systemImage: "speaker.wave.2")
                 }
-                .buttonStyle(.borderless)
-                .disabled(service.isLoadingVoices)
+                .disabled(service.isLoadingVoices || service.isImporting || (service.isSherpa && !service.hasSherpaModel))
 
                 if service.isLoadingVoices {
-                    ProgressView().scaleEffect(0.6)
-                }
-
-                if !service.availableVoices.isEmpty {
+                    ProgressView().controlSize(.small)
+                } else if !service.availableVoices.isEmpty {
                     Text("\(service.availableVoices.count) voices")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -81,22 +149,12 @@ public struct SpeechSettingsView: View {
                 Spacer()
 
                 Button {
-                    if service.isSpeaking {
-                        service.stop()
-                    } else {
-                        service.speak("Hello, this is a preview of the selected voice.")
-                    }
+                    if service.isSpeaking { service.stop() } else { service.preview() }
                 } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: service.isSpeaking ? "stop.fill" : "play.fill")
-                        if service.isSpeaking {
-                            Text("Stop")
-                        } else {
-                            Text("Preview")
-                        }
-                    }
+                    if service.isSpeaking { Label("Stop", systemImage: "stop.fill") }
+                    else { Label("Preview", systemImage: "play.fill") }
                 }
-                .buttonStyle(.borderless)
+                .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
             }
 
             if !service.availableVoices.isEmpty {
@@ -106,115 +164,43 @@ public struct SpeechSettingsView: View {
                         Text(voice.name).tag(voice.id as String?)
                     }
                 }
-                .onChange(of: service.selectedVoice) {
-                    service.saveVoiceSelection()
+            }
+            if service.engine.supportsRate {
+                Picker("Rate", selection: $service.speechRate) {
+                    Text("Very Slow").tag(SpeechRate.xSlow)
+                    Text("Slow").tag(SpeechRate.slow)
+                    Text("Medium").tag(SpeechRate.medium)
+                    Text("Fast").tag(SpeechRate.fast)
+                    Text("Very Fast").tag(SpeechRate.xFast)
                 }
             }
-
-            Picker("Rate", selection: $service.speechRate) {
-                ForEach(SpeechRate.allCases, id: \.self) { rate in
-                    Text(LocalizedStringKey(rateDisplayName(rate))).tag(rate)
+            if service.engine.supportsPitch {
+                Picker("Pitch", selection: $service.speechPitch) {
+                    Text("Very Low").tag(SpeechPitch.xLow)
+                    Text("Low").tag(SpeechPitch.low)
+                    Text("Medium").tag(SpeechPitch.medium)
+                    Text("High").tag(SpeechPitch.high)
+                    Text("Very High").tag(SpeechPitch.xHigh)
                 }
             }
-
-            Picker("Pitch", selection: $service.speechPitch) {
-                ForEach(SpeechPitch.allCases, id: \.self) { pitch in
-                    Text(LocalizedStringKey(pitchDisplayName(pitch))).tag(pitch)
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
+            if service.engine.supportsVolume {
+                Slider(value: $service.speechVolume, in: 0...1, step: 0.05) {
                     Text("Volume")
-                    Spacer()
-                    Text("\(Int(service.speechVolume * 100))%")
-                        .foregroundStyle(.secondary)
+                } minimumValueLabel: {
+                    Text("0%")
+                } maximumValueLabel: {
+                    Text("100%")
                 }
-                Slider(value: $service.speechVolume, in: 0...1, step: 0.05)
             }
         }
     }
 
-    private func rateDisplayName(_ rate: SpeechRate) -> String {
-        switch rate {
-        case .xSlow: return "Very Slow"
-        case .slow: return "Slow"
-        case .medium: return "Medium"
-        case .fast: return "Fast"
-        case .xFast: return "Very Fast"
-        }
+    private func binding(for key: String) -> Binding<String> {
+        Binding(get: { service.credential(key) }, set: { service.setCredential(key, value: $0) })
     }
 
-    private func pitchDisplayName(_ pitch: SpeechPitch) -> String {
-        switch pitch {
-        case .xLow: return "Very Low"
-        case .low: return "Low"
-        case .medium: return "Medium"
-        case .high: return "High"
-        case .xHigh: return "Very High"
-        }
+    private func chooseFile(for fieldID: String) {
+        importFieldID = fieldID
+        isChoosingFile = true
     }
-
-    private var allEngines: [TTSEngine] {
-        [.system, .sherpaonnx, .openai, .elevenlabs, .azure, .google, .cartesia, .playht, .deepgram, .fishaudio, .hume, .mistral, .murf, .polly, .resemble, .unrealspeech, .upliftai, .watson, .witai, .xai, .modelslab]
-    }
-
-    private func engineName(_ engine: TTSEngine) -> String {
-        switch engine {
-        case .system: return "System"
-        case .openai: return "OpenAI"
-        case .elevenlabs: return "ElevenLabs"
-        case .azure: return "Azure"
-        case .google: return "Google"
-        case .cartesia: return "Cartesia"
-        case .playht: return "PlayHT"
-        case .deepgram: return "Deepgram"
-        case .fishaudio: return "Fish Audio"
-        case .hume: return "Hume AI"
-        case .mistral: return "Mistral"
-        case .murf: return "Murf"
-        case .polly: return "Amazon Polly"
-        case .resemble: return "Resemble AI"
-        case .sherpaonnx: return "Sherpa-ONNX"
-        case .unrealspeech: return "Unreal Speech"
-        case .upliftai: return "UpliftAI"
-        case .watson: return "IBM Watson"
-        case .witai: return "Wit.ai"
-        case .xai: return "xAI"
-        case .modelslab: return "ModelsLab"
-        }
-    }
-
-    private var requiredKeys: [CredentialKey] {
-        switch service.selectedEngine {
-        case .system, .sherpaonnx: return []
-        case .openai, .google, .cartesia, .deepgram, .fishaudio, .hume, .mistral, .murf, .resemble, .unrealspeech, .upliftai, .xai, .modelslab, .elevenlabs:
-            return [.init(key: "apiKey", label: "API Key", isSecret: true)]
-        case .azure:
-            return [.init(key: "subscriptionKey", label: "Subscription Key", isSecret: true), .init(key: "region", label: "Region", isSecret: false)]
-        case .playht:
-            return [.init(key: "apiKey", label: "API Key", isSecret: true), .init(key: "userId", label: "User ID", isSecret: false)]
-        case .polly:
-            return [.init(key: "accessKeyId", label: "Access Key ID", isSecret: false), .init(key: "secretAccessKey", label: "Secret Key", isSecret: true)]
-        case .watson:
-            return [.init(key: "apiKey", label: "API Key", isSecret: true), .init(key: "region", label: "Region", isSecret: false), .init(key: "instanceId", label: "Instance ID", isSecret: false)]
-        case .witai:
-            return [.init(key: "token", label: "Token", isSecret: true)]
-        }
-    }
-
-    private func keyLabel(_ key: CredentialKey) -> String { key.label }
-
-    private func bindingForKey(_ key: CredentialKey) -> Binding<String> {
-        Binding(
-            get: { service.credentials[key.key] ?? "" },
-            set: { service.setCredential(key.key, value: $0) }
-        )
-    }
-}
-
-private struct CredentialKey: Hashable {
-    let key: String
-    let label: String
-    let isSecret: Bool
 }
