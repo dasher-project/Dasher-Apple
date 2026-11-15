@@ -45,16 +45,22 @@ extension SpeechSettingsTests {
         XCTAssertEqual(models.first?.id, SpeechModelStorage.englishModelID)
         let english = try XCTUnwrap(models.first(where: { $0.id == "inflect-en-nano-v2" }))
         let french = try XCTUnwrap(models.first(where: { $0.id == "mms_fra" }))
-        let germanPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-de_DE-thorsten-medium" }))
         let polishPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-pl_PL-gosia-medium" }))
         XCTAssertTrue(english.matches("inflect english"))
         XCTAssertTrue(french.matches("French MMS"))
         XCTAssertFalse(french.matches("French Kokoro"))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: english))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: french))
-        XCTAssertTrue(germanPiper.usesG2PBundle)
-        XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: germanPiper))
-        XCTAssertFalse(polishPiper.usesG2PBundle)
+        for id in [
+            "piper-de_DE-thorsten-medium", "piper-en_US-amy-low", "piper-fr_FR-siwis-medium",
+            "piper-es_ES-sharvard-medium", "piper-pt_BR-faber-medium", "piper-it_IT-paola-medium",
+            "piper-ru_RU-dmitri-medium",
+        ] {
+            let model = try XCTUnwrap(models.first(where: { $0.id == id }), id)
+            XCTAssertTrue(model.usesG2PBundle, id)
+            XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: model), id)
+        }
+        XCTAssertEqual(polishPiper.readiness, "blocked:bundle-not-validated")
         XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: polishPiper))
         XCTAssertFalse(SpeechModelStorage.isModelID("../invalid"))
     }
@@ -81,31 +87,31 @@ extension SpeechSettingsTests {
     }
 
     @MainActor
-    func testDownloadedGermanPiperProducesPlayableAudio() async throws {
+    func testDownloadedPiperProducesPlayableAudio() async throws {
         let environment = ProcessInfo.processInfo.environment
-        let download = environment["DASHER_TEST_DOWNLOAD_GERMAN_VOICE"] == "1"
-        guard download || environment["DASHER_TEST_GERMAN_MODELS_DIR"] != nil else {
-            throw XCTSkip("Set DASHER_TEST_DOWNLOAD_GERMAN_VOICE=1 to download and test Thorsten.")
+        guard let modelID = environment["DASHER_TEST_PIPER_MODEL_ID"] else {
+            throw XCTSkip("Set DASHER_TEST_PIPER_MODEL_ID to download and test a Piper voice.")
         }
-        let models = if let directory = environment["DASHER_TEST_GERMAN_MODELS_DIR"] {
+        let modelsDirectory = environment["DASHER_TEST_PIPER_MODELS_DIR"]
+        let models = if let directory = modelsDirectory {
             URL(filePath: directory, directoryHint: .isDirectory)
         } else {
             URL.temporaryDirectory.appending(path: UUID().uuidString, directoryHint: .isDirectory)
         }
         defer {
-            if environment["DASHER_TEST_GERMAN_MODELS_DIR"] == nil {
+            if modelsDirectory == nil {
                 try? FileManager.default.removeItem(at: models)
             }
         }
-        let thorsten = try XCTUnwrap(SherpaModel.bundledCatalog().first(where: {
-            $0.id == "piper-de_DE-thorsten-medium"
-        }))
-        if download { try await SpeechModelStorage.download(thorsten, to: models) }
-        XCTAssertTrue(SpeechModelStorage.isInstalled(thorsten.id, in: models))
+        let model = try XCTUnwrap(SherpaModel.bundledCatalog().first(where: { $0.id == modelID }))
+        if environment["DASHER_TEST_PIPER_USE_INSTALLED"] != "1" {
+            try await SpeechModelStorage.download(model, to: models)
+        }
+        XCTAssertTrue(SpeechModelStorage.isInstalled(model.id, in: models))
 
         let audio = try await RustSpeechBackend().synthesize(
-            "Blorpinxel!", engineID: SpeechEngine.sherpaID,
-            credentials: ["modelId": thorsten.id, "modelPath": models.path],
+            environment["DASHER_TEST_PIPER_TEXT"] ?? "Blorpinxel!", engineID: SpeechEngine.sherpaID,
+            credentials: ["modelId": model.id, "modelPath": models.path],
             voice: nil, rate: 1, pitch: 1, volume: 1
         )
         let player = try AVAudioPlayer(data: audio)

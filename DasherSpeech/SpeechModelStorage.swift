@@ -31,6 +31,20 @@ struct SpeechModelStorage {
         }) != false else {
             return String(localized: "Requires a different speech engine.")
         }
+        switch model.readiness {
+        case "blocked:no-bundle", "blocked:no-language":
+            return SpeechSetupError.modelNeedsLexicon.errorDescription
+        case "blocked:bundle-not-validated":
+            return String(localized: "This model’s pronunciation dictionary has not been validated yet.")
+        case "blocked:g2p-unavailable":
+            return String(localized: "This build cannot use the pronunciation dictionary this model needs.")
+        case "blocked:deprecated":
+            return String(localized: "This model is deprecated.")
+        case let readiness? where readiness.hasPrefix("blocked:"):
+            return String(localized: "This model has no verified download that Dasher can install.")
+        default:
+            break
+        }
         if model.modelType == "mms", mmsDirectory(for: model) != nil { return nil }
         guard isModelID(model.id), model.url.absoluteString.hasPrefix(githubAssets.absoluteString),
               model.url.lastPathComponent.hasSuffix(".tar.bz2"),

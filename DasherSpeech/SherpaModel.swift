@@ -24,7 +24,7 @@ struct SherpaModel: Decodable, Identifiable, Sendable {
     let license: String
     let licenseUrl: URL?
     let deprecated: Bool?
-    let g2pEnabled: Bool?
+    let readiness: String?
 
     static func catalog(from json: String) throws -> [Self] {
         let decoder = JSONDecoder()
@@ -54,7 +54,7 @@ struct SherpaModel: Decodable, Identifiable, Sendable {
     }
 
     var usesG2PBundle: Bool {
-        modelType == "vits" && g2pEnabled == true
+        readiness == "needs_bundle"
     }
 
     var languages: String {
