@@ -1,159 +1,371 @@
+import DasherShared
 import Foundation
 import SwiftTTSWrapper
-import DasherShared
+#if os(macOS) || os(iOS)
+import RustTtsWrapper
+#endif
 
 @MainActor
 @Observable
 public final class SpeechService {
-    public var selectedEngine: TTSEngine = .system {
-        didSet { saveEngineSelection(); client = nil }
+    var selectedEngineID = SpeechEngine.system.id {
+        didSet {
+            guard oldValue != selectedEngineID else { return }
+            defaults.set(selectedEngineID, forKey: "tts_engine")
+            resetEngine()
+            #if os(macOS) || os(iOS)
+            if isSherpa { loadSherpaCatalog() }
+            #endif
+        }
     }
-    public var credentials: [String: String] = [:]
-    public var selectedVoice: String?
-    public var availableVoices: [UnifiedVoice] = []
-    public var isSpeaking = false
-    public var isLoadingVoices = false
-    public var errorMessage: String?
+    private(set) var availableEngines: [SpeechEngine] = [.system]
+    private(set) var availableVoices: [SpeechVoice] = []
+    public private(set) var isSpeaking = false
+    private(set) var isLoadingVoices = false
+    private(set) var isImporting = false
+    private(set) var hasSherpaModel = false
+    private(set) var errorMessage: String?
+    private(set) var engineListError: String?
+    #if os(macOS) || os(iOS)
+    private(set) var sherpaCatalog: [SherpaModel] = []
+    private(set) var installedSherpaModels: Set<String> = []
+    private(set) var selectedSherpaModelID = SpeechModelStorage.englishModelID
+    private(set) var downloadingSherpaModelID: String?
+    private(set) var catalogError: String?
+    private var modelDownloadTask: Task<Void, Never>?
 
-    public var speechRate: SpeechRate = .medium {
-        didSet { saveRateSelection() }
+    var selectedSherpaModel: SherpaModel? {
+        sherpaCatalog.first { $0.id == selectedSherpaModelID }
     }
-    public var speechPitch: SpeechPitch = .medium {
-        didSet { savePitchSelection() }
-    }
-    public var speechVolume: Float = 1.0 {
-        didSet { saveVolumeSelection() }
+    #endif
+
+    var selectedVoice: String? {
+        get { voicesByEngine[voiceStorageKey] }
+        set {
+            voicesByEngine[voiceStorageKey] = newValue
+            defaults.set(voicesByEngine, forKey: "tts_voices_by_engine")
+        }
     }
 
-    /// When true, spoken text is wrapped in SpeechMarkdown X-SAMPA annotations
-    /// so the TTS engine pronounces phonemes correctly. Set by the view model
-    /// when the active alphabet is the X-SAMPA phonetic alphabet.
-    public var phonemeMode: Bool = false
+    private var voiceStorageKey: String {
+        #if os(macOS) || os(iOS)
+        if isSherpa, selectedSherpaModelID != SpeechModelStorage.englishModelID {
+            return "\(selectedEngineID):\(selectedSherpaModelID)"
+        }
+        #endif
+        return selectedEngineID
+    }
 
-    private var client: TTSClient?
+    var speechRate: SpeechRate = .medium {
+        didSet { defaults.set(speechRate.rawValue, forKey: "tts_rate") }
+    }
+    var speechPitch: SpeechPitch = .medium {
+        didSet { defaults.set(speechPitch.rawValue, forKey: "tts_pitch") }
+    }
+    var speechVolume: Float = 1 {
+        didSet { defaults.set(speechVolume, forKey: "tts_volume") }
+    }
+
+    /// Set by the view model when the active alphabet uses X-SAMPA.
+    public var phonemeMode = false
+
+    private var credentialsByEngine: [String: [String: String]] = [:]
+    private var voicesByEngine: [String: String] = [:]
+    private var nativeClient: TTSClient?
+    private var speechTask: Task<Void, Never>?
+    private var voiceTask: Task<Void, Never>?
+    private var speechID = UUID()
+    #if os(macOS) || os(iOS)
+    private let rustBackend = RustSpeechBackend()
+    private let audioPlayer = SpeechAudioPlayer()
+    #endif
 
     public static let shared = SpeechService()
+    private let defaults: UserDefaults
 
-    private init() {
+    init(defaults: UserDefaults = SharedDefaults.fallback) {
+        self.defaults = defaults
+        do {
+            availableEngines = try SpeechEngine.available()
+        } catch {
+            engineListError = String(localized: "Could not load the speech engines.")
+        }
         loadSavedSettings()
     }
 
+    var engine: SpeechEngine {
+        availableEngines.first { $0.id == selectedEngineID } ?? .system
+    }
+
+    var isSherpa: Bool { usesRust && selectedEngineID == SpeechEngine.sherpaID }
+
+    func credential(_ key: String) -> String {
+        credentialsByEngine[selectedEngineID]?[key] ?? ""
+    }
+
+    func setCredential(_ key: String, value: String) {
+        var values = credentialsByEngine[selectedEngineID, default: [:]]
+        guard values[key, default: ""] != value else { return }
+        values[key] = value.isEmpty ? nil : value
+        credentialsByEngine[selectedEngineID] = values
+        defaults.set(credentialsByEngine, forKey: "tts_credentials_by_engine")
+        resetEngine()
+    }
+
     public func speak(_ text: String) {
-        guard !text.isEmpty else { return }
-        ensureClient()
-        client?.onStart = { [weak self] in
-            Task { @MainActor in self?.isSpeaking = true; self?.errorMessage = nil }
-        }
-        client?.onEnd = { [weak self] in
-            Task { @MainActor in self?.isSpeaking = false }
-        }
-        client?.onError = { [weak self] error in
-            Task { @MainActor in self?.isSpeaking = false; self?.errorMessage = error.localizedDescription }
-        }
-        var options = SpeakOptions(useWordBoundary: true)
-        if let selectedVoice {
-            options.voice = selectedVoice
-        }
-        options.rate = speechRate
-        options.pitch = speechPitch
-        options.volume = speechVolume
+        speak(text, phonemes: phonemeMode)
+    }
 
-        // When the X-SAMPA phoneme alphabet is active, wrap each space-separated
-        // token in SpeechMarkdown (token)[xsampa:"token"] syntax. swift-tts-wrapper
-        // 1.2.8+ auto-detects SpeechMarkdown and converts X-SAMPA → IPA → SSML
-        // <phoneme> tags for engines that support them.
-        let payload: String
-        if phonemeMode {
-            payload = text.split(separator: " ")
-                .map { "(\($0))[xsampa:\"\($0)\"]" }
-                .joined(separator: " ")
-        } else {
-            payload = text
-        }
-
-        Task {
-            do {
-                try await client?.speak(payload, options: options)
-            } catch {
-                errorMessage = error.localizedDescription
-                isSpeaking = false
-            }
-        }
+    func preview() {
+        speak(String(localized: "Hello, this is a preview of the selected voice."), phonemes: false)
     }
 
     public func stop() {
-        client?.stop()
+        speechID = UUID()
+        speechTask?.cancel()
+        speechTask = nil
+        nativeClient?.stop()
+        nativeClient = nil
+        #if os(macOS) || os(iOS)
+        audioPlayer.stop()
+        #endif
         isSpeaking = false
     }
 
-    public func loadVoices() {
-        ensureClient()
+    func loadVoices() {
+        voiceTask?.cancel()
+        errorMessage = nil
         isLoadingVoices = true
-        Task {
-            do {
-                availableVoices = try await client?.getVoices() ?? []
-            } catch {
-                errorMessage = error.localizedDescription
+        let engineID = selectedEngineID
+        let credentialValues = credentialsByEngine[engineID, default: [:]]
+        voiceTask = Task {
+            defer {
+                if !Task.isCancelled { isLoadingVoices = false }
             }
-            isLoadingVoices = false
+            do {
+                let voices: [SpeechVoice]
+                if usesRust {
+                    #if os(macOS) || os(iOS)
+                    let configuration = try rustCredentials(credentialValues, engineID: engineID)
+                    voices = try await rustBackend.voices(engineID: engineID, credentials: configuration)
+                    #else
+                    voices = []
+                    #endif
+                } else {
+                    voices = try await makeNativeClient(engineID: engineID, credentials: credentialValues).getVoices().map {
+                        SpeechVoice(id: $0.id, name: $0.name)
+                    }
+                }
+                try Task.checkCancellation()
+                availableVoices = voices.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                if let selectedVoice, !availableVoices.contains(where: { $0.id == selectedVoice }) {
+                    self.selectedVoice = nil
+                }
+            } catch {
+                if !Task.isCancelled { showError(error) }
+            }
         }
     }
 
-    public func setCredential(_ key: String, value: String) {
-        credentials[key] = value
-        client = nil
-        saveCredentials()
+    func showError(_ error: Error) {
+        #if os(macOS) || os(iOS)
+        if let ttsError = error as? TtsError {
+            errorMessage = ttsError.displayMessage ?? ttsError.message
+            return
+        }
+        #endif
+        errorMessage = error.localizedDescription
     }
 
-    private func ensureClient() {
-        if client == nil {
-            client = TTSClientFactory.create(engine: selectedEngine, credentials: credentials)
+    private var usesRust: Bool {
+        #if os(macOS) || os(iOS)
+        selectedEngineID != SpeechEngine.system.id
+        #else
+        false
+        #endif
+    }
+
+    private func speak(_ text: String, phonemes: Bool) {
+        guard !text.isEmpty, !isImporting || !isSherpa else { return }
+        stop()
+        errorMessage = nil
+        isSpeaking = true
+        let requestID = speechID
+        let engineID = selectedEngineID
+        let voice = selectedVoice
+        let credentialValues = credentialsByEngine[engineID, default: [:]]
+        let options = SpeakOptions(rate: speechRate, pitch: speechPitch, volume: speechVolume, voice: voice)
+        let payload = phonemes && !isSherpa
+            ? text.split(separator: " ").map { "(\($0))[xsampa:\"\($0)\"]" }.joined(separator: " ")
+            : text
+
+        let complete: @MainActor (Error?) -> Void = { [weak self] error in
+            self?.finish(requestID, error: error)
         }
+        speechTask = Task {
+            do {
+                try Task.checkCancellation()
+                if usesRust {
+                    #if os(macOS) || os(iOS)
+                    let configuration = try rustCredentials(credentialValues, engineID: engineID)
+                    let data = try await rustBackend.synthesize(
+                        payload, engineID: engineID, credentials: configuration, voice: voice,
+                        rate: (options.rate ?? .medium).rateValue / SpeechRate.medium.rateValue,
+                        pitch: (options.pitch ?? .medium).pitchValue, volume: options.volume ?? 1
+                    )
+                    try Task.checkCancellation()
+                    try audioPlayer.play(data, completion: complete)
+                    #endif
+                } else {
+                    let client = makeNativeClient(engineID: engineID, credentials: credentialValues)
+                    nativeClient = client
+                    client.onEnd = { Task { @MainActor in complete(nil) } }
+                    client.onError = { error in Task { @MainActor in complete(error) } }
+                    try await client.speak(payload, options: options)
+                }
+            } catch {
+                if !Task.isCancelled { finish(requestID, error: error) }
+            }
+        }
+    }
+
+    private func finish(_ requestID: UUID, error: Error? = nil) {
+        guard speechID == requestID else { return }
+        isSpeaking = false
+        speechTask = nil
+        if let error { showError(error) }
+    }
+
+    private func makeNativeClient(engineID: String, credentials: [String: String]) -> TTSClient {
+        TTSClientFactory.create(engine: TTSEngine(rawValue: engineID) ?? .system, credentials: credentials)
+    }
+
+    private func resetEngine() {
+        stop()
+        refreshModelStatus()
+        voiceTask?.cancel()
+        voiceTask = nil
+        isLoadingVoices = false
+        availableVoices = []
+        errorMessage = nil
+    }
+
+    private func refreshModelStatus() {
+        #if os(macOS) || os(iOS)
+        hasSherpaModel = isSherpa && SpeechModelStorage.isInstalled(selectedSherpaModelID)
+        #endif
+    }
+
+    #if os(macOS) || os(iOS)
+    func loadSherpaCatalog() {
+        guard sherpaCatalog.isEmpty else { return }
+        do {
+            sherpaCatalog = try SherpaModel.bundledCatalog()
+            installedSherpaModels = SpeechModelStorage.installedModelIDs()
+            catalogError = nil
+        } catch {
+            catalogError = String(localized: "Could not load the Sherpa-ONNX model catalog.")
+        }
+    }
+
+    func selectSherpaModel(_ model: SherpaModel) {
+        guard installedSherpaModels.contains(model.id) else { return }
+        selectedSherpaModelID = model.id
+        defaults.set(model.id, forKey: "tts_sherpa_model")
+        resetEngine()
+    }
+
+    func downloadSherpaModel(_ model: SherpaModel) {
+        guard !isImporting else { return }
+        isImporting = true
+        downloadingSherpaModelID = model.id
+        errorMessage = nil
+        modelDownloadTask = Task {
+            defer {
+                modelDownloadTask = nil
+                downloadingSherpaModelID = nil
+                isImporting = false
+            }
+            do {
+                try await SpeechModelStorage.download(model)
+                installedSherpaModels.insert(model.id)
+                if isSherpa { selectSherpaModel(model) }
+            } catch {
+                if !Task.isCancelled { showError(error) }
+            }
+        }
+    }
+
+    func cancelSherpaModelDownload() {
+        modelDownloadTask?.cancel()
+    }
+    #endif
+
+    func importCredentialFile(_ source: URL, fieldID: String) {
+        let engineID = selectedEngineID
+        isImporting = true
+        errorMessage = nil
+        Task {
+            defer { isImporting = false }
+            do {
+                let relativePath = try await Task.detached(priority: .utility) {
+                    try SpeechModelStorage.importFile(from: source)
+                }.value
+                if selectedEngineID == engineID { setCredential(fieldID, value: relativePath) }
+            } catch {
+                showError(error)
+            }
+        }
+    }
+
+    private func rustCredentials(_ values: [String: String], engineID: String) throws -> [String: String] {
+        var configuration = values
+        if engineID == SpeechEngine.sherpaID {
+            guard hasSherpaModel else { throw SpeechSetupError.modelNotInstalled }
+            #if os(macOS) || os(iOS)
+            return ["modelId": selectedSherpaModelID, "modelPath": SpeechModelStorage.models.path]
+            #endif
+        } else {
+            for field in engine.fields where field.kind == .file {
+                if let relative = values[field.id] {
+                    configuration[field.id] = SpeechModelStorage.root.appending(path: relative).path
+                }
+            }
+        }
+        return configuration
     }
 
     private func loadSavedSettings() {
-        let defaults = SharedDefaults.fallback
-        if let raw = defaults.string(forKey: "tts_engine"), let engine = TTSEngine(rawValue: raw) {
-            selectedEngine = engine
+        #if os(macOS) || os(iOS)
+        if let storedModel = defaults.string(forKey: "tts_sherpa_model"),
+           SpeechModelStorage.isModelID(storedModel) {
+            selectedSherpaModelID = storedModel
         }
-        if let data = defaults.data(forKey: "tts_credentials"),
-           let dict = try? JSONDecoder().decode([String: String].self, from: data) {
-            credentials = dict
+        #endif
+        credentialsByEngine = defaults.dictionary(forKey: "tts_credentials_by_engine") as? [String: [String: String]] ?? [:]
+        voicesByEngine = defaults.dictionary(forKey: "tts_voices_by_engine") as? [String: String] ?? [:]
+        let storedEngineID = defaults.string(forKey: "tts_engine") ?? SpeechEngine.system.id
+        if defaults.object(forKey: "tts_credentials_by_engine") == nil,
+           let engine = availableEngines.first(where: { $0.id == storedEngineID }),
+           let data = defaults.data(forKey: "tts_credentials"),
+           let oldCredentials = try? JSONDecoder().decode([String: String].self, from: data) {
+            let keys = Set(engine.fields.filter { $0.kind != .file }.map(\.id))
+            credentialsByEngine[storedEngineID] = oldCredentials.filter { keys.contains($0.key) }
+            defaults.set(credentialsByEngine, forKey: "tts_credentials_by_engine")
         }
-        selectedVoice = defaults.string(forKey: "tts_voice")
-        if let raw = defaults.string(forKey: "tts_rate"), let rate = SpeechRate(rawValue: raw) {
-            speechRate = rate
+        if defaults.object(forKey: "tts_voices_by_engine") == nil, let voice = defaults.string(forKey: "tts_voice") {
+            #if os(macOS) || os(iOS)
+            if storedEngineID != SpeechEngine.sherpaID { voicesByEngine[storedEngineID] = voice }
+            #else
+            voicesByEngine[storedEngineID] = voice
+            #endif
+            defaults.set(voicesByEngine, forKey: "tts_voices_by_engine")
         }
-        if let raw = defaults.string(forKey: "tts_pitch"), let pitch = SpeechPitch(rawValue: raw) {
-            speechPitch = pitch
+        if availableEngines.contains(where: { $0.id == storedEngineID }) { selectedEngineID = storedEngineID }
+        speechRate = defaults.string(forKey: "tts_rate").flatMap(SpeechRate.init(rawValue:)) ?? .medium
+        speechPitch = defaults.string(forKey: "tts_pitch").flatMap(SpeechPitch.init(rawValue:)) ?? .medium
+        if let volume = defaults.object(forKey: "tts_volume") as? Float, volume.isFinite {
+            speechVolume = min(max(volume, 0), 1)
         }
-        speechVolume = defaults.float(forKey: "tts_volume").isNaN ? 1.0 : defaults.float(forKey: "tts_volume")
-        if speechVolume <= 0 { speechVolume = 1.0 }
-    }
-
-    private func saveEngineSelection() {
-        SharedDefaults.fallback.set(selectedEngine.rawValue, forKey: "tts_engine")
-    }
-
-    private func saveCredentials() {
-        if let data = try? JSONEncoder().encode(credentials) {
-            SharedDefaults.fallback.set(data, forKey: "tts_credentials")
-        }
-    }
-
-    public func saveVoiceSelection() {
-        SharedDefaults.fallback.set(selectedVoice, forKey: "tts_voice")
-    }
-
-    private func saveRateSelection() {
-        SharedDefaults.fallback.set(speechRate.rawValue, forKey: "tts_rate")
-    }
-
-    private func savePitchSelection() {
-        SharedDefaults.fallback.set(speechPitch.rawValue, forKey: "tts_pitch")
-    }
-
-    private func saveVolumeSelection() {
-        SharedDefaults.fallback.set(speechVolume, forKey: "tts_volume")
     }
 }

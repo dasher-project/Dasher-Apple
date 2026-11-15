@@ -41,7 +41,7 @@ jobs:
       - name: Guard Localizable.xcstrings against shared catalogue drift (RFC 0003)
         run: python3 Localization/gen-from-shared.py --check
 
-      - name: Run DasherShared unit tests
+      - name: Run Swift package tests
         run: swift test
 
       - name: Install xcodegen

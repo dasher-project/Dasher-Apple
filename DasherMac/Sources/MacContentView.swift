@@ -714,15 +714,15 @@ struct MacContentView: View {
     }
 
     private var speechPicker: some View {
-        let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+        let isOn = viewModel.speaksWords
         return HStack(spacing: 4) {
             Menu {
                 Button("Speech on") {
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                    viewModel.setSpeaksWords(true)
                     UITelemetry.setting("Speak Words", true, surface: "main_ui")
                 }
                 Button("Speech off") {
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                    viewModel.setSpeaksWords(false)
                     UITelemetry.setting("Speak Words", false, surface: "main_ui")
                 }
             } label: {
@@ -973,10 +973,10 @@ struct MacOutputTextView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     Button(action: {
-                    let current = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
+                    let current = viewModel.speaksWords
+                    viewModel.setSpeaksWords(!current)
                     }) {
-                    let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+                    let isOn = viewModel.speaksWords
                     LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 12)
                 }
                     .buttonStyle(.bordered)
