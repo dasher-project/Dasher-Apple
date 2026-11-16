@@ -69,8 +69,16 @@ public struct SpeechSettingsView: View {
                 service.loadSherpaCatalog()
                 showsSherpaCatalog = true
             }
-            if service.downloadingSherpaModelID != nil {
-                ProgressView().controlSize(.small)
+            if let downloadID = service.downloadingSherpaModelID,
+               let model = service.sherpaCatalog.first(where: { $0.id == downloadID }) {
+                ProgressView {
+                    Text("Downloading \(model.displayName)…")
+                }
+                .controlSize(.small)
+            } else if !service.hasSherpaModel {
+                Text("Download a voice to enable Preview.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             #endif
         }
@@ -156,13 +164,7 @@ public struct SpeechSettingsView: View {
 
                 Spacer()
 
-                Button {
-                    if service.isSpeaking { service.stop() } else { service.preview() }
-                } label: {
-                    if service.isSpeaking { Label("Stop", systemImage: "stop.fill") }
-                    else { Label("Preview", systemImage: "play.fill") }
-                }
-                .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
+                SpeechPreviewButton(service: service)
             }
 
             if canBrowseSpeakers, let voice = service.availableVoices.first(where: { $0.id == service.selectedVoice }) {
@@ -216,5 +218,26 @@ public struct SpeechSettingsView: View {
     private func chooseFile(for fieldID: String) {
         importFieldID = fieldID
         isChoosingFile = true
+    }
+}
+
+struct SpeechPreviewButton: View {
+    let service: SpeechService
+
+    var body: some View {
+        Button {
+            if service.isSpeaking {
+                service.stop()
+            } else {
+                service.preview()
+            }
+        } label: {
+            if service.isSpeaking {
+                Label("Stop", systemImage: "stop.fill")
+            } else {
+                Label("Preview", systemImage: "play.fill")
+            }
+        }
+        .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
     }
 }

@@ -10226,7 +10226,16 @@
         }
       }
     },
-    "Download Model": {
+    "Download a voice to enable Preview.": {
+      "localizations": {}
+    },
+    "Download and Use": {
+      "localizations": {}
+    },
+    "Download this voice to preview it and use it offline.": {
+      "localizations": {}
+    },
+    "Downloading %@…": {
       "localizations": {}
     },
     "Dwell Duration": {
@@ -26328,7 +26337,7 @@
     "Select": {
       "localizations": {}
     },
-    "Selected model": {
+    "Selected voice": {
       "localizations": {}
     },
     "Selection Method": {
@@ -33393,7 +33402,7 @@
         }
       }
     },
-    "Use Model": {
+    "Use Voice": {
       "localizations": {}
     },
     "Very Fast": {
@@ -35367,6 +35376,9 @@
           }
         }
       }
+    },
+    "You can preview this voice after the download finishes.": {
+      "localizations": {}
     },
     "Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.": {
       "localizations": {

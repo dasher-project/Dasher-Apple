@@ -49,11 +49,7 @@ struct SherpaModelBrowser: View {
                         HStack(spacing: 12) {
                             VoiceBrowserRow(title: entry.model.displayName, subtitle: entry.subtitle,
                                             selected: installed && entry.id == service.selectedSherpaModelID)
-                            if installed && entry.id != service.selectedSherpaModelID {
-                                Image(systemName: "arrow.down.circle.fill")
-                                    .foregroundStyle(.secondary)
-                                    .accessibilityLabel("Installed")
-                            }
+                            modelStatus(for: entry.model, installed: installed)
                         }
                     }
                 }
@@ -79,6 +75,23 @@ struct SherpaModelBrowser: View {
         #endif
     }
 
+    @ViewBuilder
+    private func modelStatus(for model: SherpaModel, installed: Bool) -> some View {
+        if service.downloadingSherpaModelID == model.id {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel("Downloading")
+        } else if installed && model.id != service.selectedSherpaModelID {
+            Image(systemName: "checkmark.circle")
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Installed")
+        } else if !installed && SpeechModelStorage.downloadUnavailableReason(for: model) == nil {
+            Image(systemName: "arrow.down.circle")
+                .foregroundStyle(.secondary)
+                .accessibilityLabel("Download required")
+        }
+    }
+
     private func details(for model: SherpaModel) -> some View {
         Form {
             Section {
@@ -100,18 +113,23 @@ struct SherpaModelBrowser: View {
             Section {
                 if service.downloadingSherpaModelID == model.id {
                     ProgressView("Downloading model…")
+                    Text("You can preview this voice after the download finishes.")
+                        .foregroundStyle(.secondary)
                     Button("Cancel Download", role: .cancel) { service.cancelSherpaModelDownload() }
                 } else if service.installedSherpaModels.contains(model.id) {
                     if model.id == service.selectedSherpaModelID {
-                        Label("Selected model", systemImage: "checkmark.circle")
+                        Label("Selected voice", systemImage: "checkmark.circle")
+                        SpeechPreviewButton(service: service)
                     } else {
-                        Button("Use Model") { service.selectSherpaModel(model) }
+                        Button("Use Voice") { service.selectSherpaModel(model) }
                             .disabled(service.isImporting)
                     }
                 } else if let reason = SpeechModelStorage.downloadUnavailableReason(for: model) {
                     Text(reason).foregroundStyle(.secondary)
                 } else {
-                    Button("Download Model") { service.downloadSherpaModel(model) }
+                    Text("Download this voice to preview it and use it offline.")
+                        .foregroundStyle(.secondary)
+                    Button("Download and Use") { service.downloadSherpaModel(model) }
                         .disabled(service.isImporting)
                 }
                 if let error = service.errorMessage {
