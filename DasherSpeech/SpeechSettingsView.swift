@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService
     @State private var isChoosingFile = false
+    @State private var showsVoiceBrowser = false
     @State private var importFieldID: String?
     #if os(macOS) || os(iOS)
     @State private var showsSherpaCatalog = false
@@ -47,6 +48,9 @@ public struct SpeechSettingsView: View {
             case .failure(let error): service.showError(error)
             }
         }
+        .sheet(isPresented: $showsVoiceBrowser) {
+            SpeechVoiceBrowser(service: service)
+        }
         #if os(macOS) || os(iOS)
         .sheet(isPresented: $showsSherpaCatalog) {
             SherpaModelBrowser(service: service)
@@ -58,9 +62,10 @@ public struct SpeechSettingsView: View {
         VStack(alignment: .leading, spacing: 6) {
             #if os(macOS) || os(iOS)
             if let model = service.selectedSherpaModel, service.hasSherpaModel {
-                Label(model.displayName, systemImage: "checkmark.circle")
+                Label([model.displayName, model.variantLabel].compactMap { $0 }.joined(separator: " · "),
+                      systemImage: "checkmark.circle")
             }
-            Button("Browse Models") {
+            Button("Browse Voices") {
                 service.loadSherpaCatalog()
                 showsSherpaCatalog = true
             }
@@ -95,12 +100,20 @@ public struct SpeechSettingsView: View {
         let value = binding(for: field.id)
         switch field.kind {
         case .secret:
-            SecureField(field.label, text: value)
-                .textFieldStyle(.roundedBorder)
+            LabeledContent {
+                SecureField(field.label, text: value, prompt: Text(field.prompt ?? ""))
+                    .textFieldStyle(.roundedBorder)
+            } label: {
+                Text(field.label)
+            }
         case .text:
-            TextField(field.label, text: value, prompt: field.defaultValue.map { Text($0) })
-                .textFieldStyle(.roundedBorder)
-                .autocorrectionDisabled()
+            LabeledContent {
+                TextField(field.label, text: value, prompt: Text(field.prompt ?? ""))
+                    .textFieldStyle(.roundedBorder)
+                    .autocorrectionDisabled()
+            } label: {
+                Text(field.label)
+            }
         case .choice:
             Picker(field.label, selection: value) {
                 if !field.required { Text("Default").tag("") }
@@ -131,19 +144,14 @@ public struct SpeechSettingsView: View {
     private var voiceSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Button {
-                    service.loadVoices()
-                } label: {
-                    Label("Load Voices", systemImage: "speaker.wave.2")
-                }
-                .disabled(service.isLoadingVoices || service.isImporting || (service.isSherpa && !service.hasSherpaModel))
-
-                if service.isLoadingVoices {
-                    ProgressView().controlSize(.small)
-                } else if !service.availableVoices.isEmpty {
-                    Text("\(service.availableVoices.count) voices")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if canBrowseSpeakers {
+                    Button {
+                        showsVoiceBrowser = true
+                        if service.availableVoices.isEmpty { service.loadVoices() }
+                    } label: {
+                        Label(service.isSherpa ? "Choose Speaker" : "Choose Voice", systemImage: "speaker.wave.2")
+                    }
+                    .disabled(service.isImporting)
                 }
 
                 Spacer()
@@ -157,13 +165,10 @@ public struct SpeechSettingsView: View {
                 .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
             }
 
-            if !service.availableVoices.isEmpty {
-                Picker("Voice", selection: $service.selectedVoice) {
-                    Text("Default").tag(nil as String?)
-                    ForEach(service.availableVoices) { voice in
-                        Text(voice.name).tag(voice.id as String?)
-                    }
-                }
+            if canBrowseSpeakers, let voice = service.availableVoices.first(where: { $0.id == service.selectedVoice }) {
+                Text(voice.name)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             if service.engine.supportsRate {
                 Picker("Rate", selection: $service.speechRate) {
@@ -193,6 +198,15 @@ public struct SpeechSettingsView: View {
                 }
             }
         }
+    }
+
+    private var canBrowseSpeakers: Bool {
+        #if os(macOS) || os(iOS)
+        if service.isSherpa {
+            return service.hasSherpaModel && (service.selectedSherpaModel?.numSpeakers ?? 0) > 1
+        }
+        #endif
+        return true
     }
 
     private func binding(for key: String) -> Binding<String> {

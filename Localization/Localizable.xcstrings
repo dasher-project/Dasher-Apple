@@ -200,13 +200,16 @@
     "%@ cps · %lld wpm · max %lld · avg %lld": {
       "localizations": {}
     },
+    "%@ results": {
+      "localizations": {}
+    },
     "%@ to %@": {
       "localizations": {}
     },
     "%lld ms per step": {
       "localizations": {}
     },
-    "%lld voices": {
+    "1 result": {
       "localizations": {}
     },
     "A crash report was saved to ~/Library/Logs/DiagnosticReports/Dasher-*.ips. If you can share it in a GitHub issue, it helps us fix the bug.": {
@@ -1976,6 +1979,9 @@
         }
       }
     },
+    "Any": {
+      "localizations": {}
+    },
     "App-Level Dwell to Select": {
       "localizations": {
         "af": {
@@ -3544,7 +3550,7 @@
         }
       }
     },
-    "Browse Models": {
+    "Browse Voices": {
       "localizations": {}
     },
     "Calibrate Tilt": {
@@ -4529,6 +4535,9 @@
           }
         }
       }
+    },
+    "Clear Filters": {
+      "localizations": {}
     },
     "Clear logs": {
       "localizations": {
@@ -11399,6 +11408,9 @@
         }
       }
     },
+    "Filters": {
+      "localizations": {}
+    },
     "Focus an editor to start": {
       "localizations": {
         "af": {
@@ -12378,6 +12390,9 @@
           }
         }
       }
+    },
+    "Gender": {
+      "localizations": {}
     },
     "Got it": {
       "localizations": {
@@ -14932,6 +14947,9 @@
           }
         }
       }
+    },
+    "Installed Only": {
+      "localizations": {}
     },
     "Keyboard": {
       "localizations": {
@@ -23756,6 +23774,9 @@
         }
       }
     },
+    "Reload Voices": {
+      "localizations": {}
+    },
     "Reset": {
       "localizations": {
         "af": {
@@ -27486,7 +27507,7 @@
         }
       }
     },
-    "Sherpa-ONNX Models": {
+    "Sherpa-ONNX Voices": {
       "localizations": {}
     },
     "Show Input Debug Overlay": {
@@ -34159,201 +34180,11 @@
         }
       }
     },
-    "Voice": {
-      "localizations": {
-        "af": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stem"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "صوت"
-          }
-        },
-        "bn": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ভয়েস"
-          }
-        },
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hlas"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stemme"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stimme"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Φωνή"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voz"
-          }
-        },
-        "fa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "صدا"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ääni"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voix"
-          }
-        },
-        "gu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "આવાજ"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "आवाज़"
-          }
-        },
-        "hu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hang"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voce"
-          }
-        },
-        "kn": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ಸ್ವರ"
-          }
-        },
-        "ml": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ശബ്ദം"
-          }
-        },
-        "mr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "आवाज"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stem"
-          }
-        },
-        "pa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ਆਵਾਜ਼"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Głos"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voz"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voz"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Голос"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Röst"
-          }
-        },
-        "sw": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sauti"
-          }
-        },
-        "ta": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "குரல்"
-          }
-        },
-        "te": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "కానుక"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "เสียง"
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "آواز"
-          }
-        },
-        "zh-CN": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "声音"
-          }
-        },
-        "zu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Izwi"
-          }
-        }
-      }
+    "Voice Filters": {
+      "localizations": {}
+    },
+    "Voice Type": {
+      "localizations": {}
     },
     "Volume": {
       "localizations": {

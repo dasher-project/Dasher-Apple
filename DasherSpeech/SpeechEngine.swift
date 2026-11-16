@@ -1,4 +1,5 @@
 import Foundation
+import AVFoundation
 import SwiftTTSWrapper
 #if os(macOS) || os(iOS)
 import RustTtsWrapper
@@ -23,8 +24,20 @@ struct SpeechEngine: Identifiable {
         let kind: Kind
         var required = true
         var defaultValue: String?
+        var placeholder: String?
         var choices: [String] = []
         var help: String?
+
+        static func displayText(_ value: String?) -> String? {
+            guard let text = value?.trimmingCharacters(in: .whitespacesAndNewlines), !text.isEmpty else { return nil }
+            let schemaTypes = ["CredentialKey(", "CredentualKey(", "SetupField("]
+            guard !schemaTypes.contains(where: text.localizedCaseInsensitiveContains) else { return nil }
+            return text
+        }
+
+        var prompt: String? {
+            Self.displayText(placeholder) ?? (kind == .secret ? nil : Self.displayText(defaultValue))
+        }
     }
 
     static let system = SpeechEngine(id: "system", name: "System")
@@ -47,8 +60,9 @@ struct SpeechEngine: Identifiable {
                     default: kind = .text
                     }
                     return Field(
-                        id: field.key, label: field.label, kind: kind, required: field.required,
-                        defaultValue: field.defaultValue, choices: field.choices, help: field.helpText
+                        id: field.key, label: Field.displayText(field.label) ?? field.key, kind: kind,
+                        required: field.required, defaultValue: field.defaultValue, placeholder: field.placeholder,
+                        choices: field.choices, help: Field.displayText(field.helpText)
                     )
                 },
                 requiredAny: setup.requiredAny,
@@ -91,6 +105,50 @@ struct SpeechEngine: Identifiable {
 struct SpeechVoice: Identifiable, Sendable {
     let id: String
     let name: String
+    let metadata: VoiceMetadata
+
+    init(id: String, name: String, metadata: VoiceMetadata) {
+        self.id = id
+        self.name = name.isEmpty ? id : name
+        self.metadata = metadata
+    }
+
+    static func native(_ voices: [UnifiedVoice], engineID: String) -> [Self] {
+        let systemVoices = engineID == SpeechEngine.system.id
+            ? Dictionary(AVSpeechSynthesisVoice.speechVoices().map { ($0.identifier, $0) }, uniquingKeysWith: { first, _ in first })
+            : [:]
+        return voices.map { voice in
+            let native = systemVoices[voice.id]
+            var type = providerVoiceType(engineID: engineID, id: voice.id)
+            if let native {
+                switch native.quality {
+                case .default: type = String(localized: "Standard")
+                case .enhanced: type = String(localized: "Enhanced")
+                case .premium: type = String(localized: "Premium")
+                @unknown default: break
+                }
+            }
+            return Self(id: voice.id, name: voice.name, metadata: VoiceMetadata(
+                languages: voice.languageCodes.map { VoiceLanguage($0.bcp47, name: $0.display) },
+                gender: VoiceGender(voice.gender.rawValue),
+                type: type
+            ))
+        }
+    }
+
+    static func providerVoiceType(engineID: String, id: String) -> String? {
+        if engineID == "azure" || engineID == "edge" {
+            if id.contains(":DragonHDOmni") { return String(localized: "Neural HD Omni") }
+            if id.contains(":DragonHD") { return String(localized: "Neural HD") }
+            if id.hasSuffix("MultilingualNeural") { return String(localized: "Multilingual Neural") }
+            if id.hasSuffix("Neural") { return String(localized: "Neural") }
+        }
+        if engineID == "google" {
+            return ["Chirp3-HD", "Studio", "Neural2", "WaveNet", "Standard"]
+                .first { id.localizedCaseInsensitiveContains("-\($0)-") }
+        }
+        return nil
+    }
 }
 
 #if os(macOS) || os(iOS)
@@ -100,10 +158,20 @@ actor RustSpeechBackend {
     private var previousVoice: String?
     private var credentials: [String: String] = [:]
 
-    func voices(engineID: String, credentials: [String: String]) throws -> [SpeechVoice] {
+    func voices(engineID: String, credentials: [String: String], modelMetadata: VoiceMetadata?) throws -> [SpeechVoice] {
         try Task.checkCancellation()
-        return try configuredClient(engineID: engineID, credentials: credentials).getVoices().map {
-            SpeechVoice(id: $0.id, name: $0.name)
+        return try configuredClient(engineID: engineID, credentials: credentials).getVoices().map { voice in
+            let gender = VoiceGender(voice.gender)
+            let languages = if let modelMetadata, !modelMetadata.languages.isEmpty {
+                modelMetadata.languages
+            } else {
+                voice.language.isEmpty ? [] : [VoiceLanguage(wrapperLabel: voice.language)]
+            }
+            return SpeechVoice(id: voice.id, name: voice.name, metadata: VoiceMetadata(
+                languages: languages,
+                gender: gender == .unspecified ? modelMetadata?.gender ?? gender : gender,
+                type: modelMetadata?.type ?? SpeechVoice.providerVoiceType(engineID: engineID, id: voice.id)
+            ))
         }
     }
 
