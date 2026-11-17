@@ -143,18 +143,7 @@ struct SpeechModelStorage {
     }
 
     private static func archiveChecksum(for model: SherpaModel) -> String? {
-        // The upstream release replaced these files after registry 1.1.0.
-        // Keep the replacement digests pinned until the registry includes them.
-        // https://github.com/AACTools/sherpa-onnx-tts-models/issues/3
-        let updated: [String: String] = [
-            "kokoro-zh_en-int8": "259c9c8bc906d6078e4e0570421885dabb68b539c2f970fcbb890a58eeaf3e9c",
-            "kokoro-zh_en-multi-lang": "b78e1ac42b852e839cceaafbe88f66806bf5860992d1d7b9a3f2ad1198427aed",
-            "icefall-en-ljspeech": "cff849fee69d7d3b22e0b0267aa6b863e32d05039a1eca963765a314a73450c0",
-            "icefall-en-ljspeech-low": "e5ae18c97b566099a2a748f243d4d44ea7cd188acc34e3533a2adc2565c9f845",
-            "icefall-en-ljspeech-medium": "93efae74fe0c72199c51b11ca7acb20b4966c2dc8b728109910266784f39f720",
-            "icefall-zh-baker": "ae70096b19c6e283ea351a26b8a718ce6427c8bde8c1da22eb46a5478d39a69b",
-        ]
-        guard let checksum = updated[model.id] ?? model.sha256,
+        guard let checksum = model.sha256,
               checksum.range(of: #"^[a-fA-F0-9]{64}$"#, options: .regularExpression) != nil else { return nil }
         return checksum
     }

@@ -46,7 +46,7 @@ extension SpeechSettingsTests {
         let english = try XCTUnwrap(models.first(where: { $0.id == "inflect-en-nano-v2" }))
         let french = try XCTUnwrap(models.first(where: { $0.id == "mms_fra" }))
         let alan = try XCTUnwrap(models.first(where: { $0.id == "piper-en_GB-alan-medium" }))
-        let polishPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-pl_PL-gosia-medium" }))
+        let persianPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-fa_IR-amir-medium" }))
         XCTAssertTrue(english.matches("inflect english"))
         XCTAssertTrue(french.matches("French MMS"))
         XCTAssertFalse(french.matches("French Kokoro"))
@@ -62,14 +62,15 @@ extension SpeechSettingsTests {
         for id in [
             "piper-de_DE-thorsten-medium", "piper-en_US-amy-low", "piper-fr_FR-siwis-medium",
             "piper-es_ES-sharvard-medium", "piper-pt_BR-faber-medium", "piper-it_IT-paola-medium",
-            "piper-ru_RU-dmitri-medium",
+            "piper-ru_RU-dmitri-medium", "piper-pl_PL-gosia-medium", "piper-es_MX-claude-high",
+            "piper-pt_PT-dii-high",
         ] {
             let model = try XCTUnwrap(models.first(where: { $0.id == id }), id)
             XCTAssertTrue(model.usesG2PBundle, id)
             XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: model), id)
         }
-        XCTAssertEqual(polishPiper.readiness, "blocked:bundle-not-validated")
-        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: polishPiper))
+        XCTAssertEqual(persianPiper.readiness, "blocked:bundle-not-validated")
+        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: persianPiper))
         XCTAssertFalse(SpeechModelStorage.isModelID("../invalid"))
     }
 
