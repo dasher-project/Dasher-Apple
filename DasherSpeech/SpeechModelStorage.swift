@@ -127,12 +127,7 @@ struct SpeechModelStorage {
                 return nil
             }.value
             try Task.checkCancellation()
-            if let bundleError {
-                guard model.modelType == "vits", model.isEnglishOnly else { throw bundleError }
-                if !hasLexicon(in: modelFolder) {
-                    try await downloadEnglishLexicon(to: modelFolder)
-                }
-            }
+            if let bundleError { throw bundleError }
         }
         try model.id.write(to: modelFolder.appending(path: verificationFile), atomically: true, encoding: .utf8)
         try Task.checkCancellation()
