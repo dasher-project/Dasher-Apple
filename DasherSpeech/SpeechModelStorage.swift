@@ -3,6 +3,7 @@ import Foundation
 import CBZip2
 import CRustTtsWrapper
 import CryptoKit
+import RustTtsWrapper
 import SWCompression
 #endif
 
@@ -106,11 +107,7 @@ struct SpeechModelStorage {
                 guard model.isEnglishOnly else {
                     throw SpeechSetupError.modelNeedsLexicon
                 }
-                try await fetch(
-                    githubAssets.appending(path: "lexicon-en-us.txt"),
-                    checksum: .sha256("8b67ae549a465eee78f92ecb74644ad90c3c58ce65f19c68baf85878a10ef73a"),
-                    to: modelFolder.appending(path: "lexicon.txt")
-                )
+                try await downloadEnglishLexicon(to: modelFolder)
             }
             if model.modelType == "kitten", !contains("model.onnx", in: modelFolder),
                let modelFile = ["model.int8.onnx", "model.fp16.onnx"].first(where: { contains($0, in: modelFolder) }) {
@@ -123,11 +120,19 @@ struct SpeechModelStorage {
         try Task.checkCancellation()
         if model.usesG2PBundle {
             let id = model.id
-            let provisioned = await Task.detached(priority: .utility) {
-                id.withCString { tts_provision_sherpa_g2p_bundle($0) }
+            let bundleError = await Task.detached(priority: .utility) { () -> SpeechSetupError? in
+                guard id.withCString({ tts_provision_sherpa_g2p_bundle($0) }) else {
+                    return .modelBundleDownloadFailed(TtsClient.getGlobalLastErrorDetail()?.message)
+                }
+                return nil
             }.value
             try Task.checkCancellation()
-            guard provisioned else { throw SpeechSetupError.modelBundleDownloadFailed }
+            if let bundleError {
+                guard model.modelType == "vits", model.isEnglishOnly else { throw bundleError }
+                if !hasLexicon(in: modelFolder) {
+                    try await downloadEnglishLexicon(to: modelFolder)
+                }
+            }
         }
         try model.id.write(to: modelFolder.appending(path: verificationFile), atomically: true, encoding: .utf8)
         try Task.checkCancellation()
@@ -140,6 +145,14 @@ struct SpeechModelStorage {
         var values = URLResourceValues()
         values.isExcludedFromBackup = true
         try? destination.setResourceValues(values)
+    }
+
+    private static func downloadEnglishLexicon(to folder: URL) async throws {
+        try await fetch(
+            githubAssets.appending(path: "lexicon-en-us.txt"),
+            checksum: .sha256("8b67ae549a465eee78f92ecb74644ad90c3c58ce65f19c68baf85878a10ef73a"),
+            to: folder.appending(path: "lexicon.txt")
+        )
     }
 
     private static func archiveChecksum(for model: SherpaModel) -> String? {
@@ -384,7 +397,7 @@ enum SpeechSetupError: LocalizedError {
     case credentialFileRequired
     case modelNotInstalled
     case modelDownloadFailed
-    case modelBundleDownloadFailed
+    case modelBundleDownloadFailed(String?)
     case modelNeedsLexicon
     case invalidModelFiles
     case playbackFailed
@@ -394,7 +407,10 @@ enum SpeechSetupError: LocalizedError {
         case .credentialFileRequired: String(localized: "Choose a credentials file.")
         case .modelNotInstalled: String(localized: "Download a speech model before speaking.")
         case .modelDownloadFailed: String(localized: "Could not download or verify the speech model.")
-        case .modelBundleDownloadFailed: String(localized: "Could not download or verify the pronunciation dictionary.")
+        case .modelBundleDownloadFailed(let detail):
+            [String(localized: "Could not download or verify the pronunciation dictionary."), detail]
+                .compactMap { $0 }
+                .joined(separator: "\n")
         case .modelNeedsLexicon: String(localized: "This model needs a pronunciation dictionary that Dasher cannot install yet.")
         case .invalidModelFiles: String(localized: "The downloaded model is missing files required by Sherpa-ONNX.")
         case .playbackFailed: String(localized: "Could not play the synthesized audio.")
