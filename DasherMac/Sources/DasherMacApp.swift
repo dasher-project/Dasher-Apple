@@ -443,7 +443,7 @@ struct MacDasherSettingsView: View {
                 ? alphabets
                 : alphabets + [DasherAlphabet(name: currentId)]
             if !pickerAlphabets.isEmpty {
-                Picker("Alphabet", selection: Binding(
+                AlphabetPicker(names: pickerAlphabets.map(\.name), selection: Binding(
                     get: {
                     let id = viewModel.bridge.alphabetId
                     if id == "Default" || id.isEmpty {
@@ -456,11 +456,7 @@ struct MacDasherSettingsView: View {
                         viewModel.bridge.setAlphabetId($0)
                         UITelemetry.alphabetSelected($0)
                     }
-                )) {
-                    ForEach(pickerAlphabets, id: \.name) { a in
-                        Text(a.name).tag(a.name)
-                    }
-                }
+                ))
             }
 
             let lmId = viewModel.bridge.currentLanguageModelId

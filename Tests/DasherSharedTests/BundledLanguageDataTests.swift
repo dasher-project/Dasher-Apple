@@ -3,6 +3,30 @@ import XCTest
 @testable import DasherShared
 
 final class BundledLanguageDataTests: XCTestCase {
+    func testLocaleAlphabetListPreservesBilingualSelectionAndShowAll() {
+        let metadata = [("English", "en"), ("Español", "es"), ("Français", "fr")].map { name, language in
+            AlphabetInfo(id: name, orientation: "ltr", lang: language, script: "Latn",
+                         scriptName: "Latin", chars: 30, source: "maintained")
+        }
+        let names = metadata.map(\.id) + ["My alphabet"]
+        XCTAssertEqual(
+            AlphabetIndex.visibleNames(names, selectedID: "English", showAll: false, localeTag: "en_GB", index: metadata),
+            ["English", "My alphabet"]
+        )
+        XCTAssertEqual(
+            AlphabetIndex.visibleNames(names, selectedID: "Español", showAll: false, localeTag: "en-GB", index: metadata),
+            ["English", "Español", "My alphabet"]
+        )
+        XCTAssertEqual(
+            AlphabetIndex.visibleNames(names, selectedID: "Español", showAll: true, localeTag: "en-GB", index: metadata),
+            names
+        )
+        XCTAssertEqual(
+            AlphabetIndex.visibleNames(names, selectedID: "Español", showAll: false, localeTag: "es-MX", index: metadata),
+            ["Español", "My alphabet"]
+        )
+    }
+
     func testFullAppBundleIncludesSpanishAlphabetAndTraining() throws {
         let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
@@ -44,5 +68,33 @@ final class BundledLanguageDataTests: XCTestCase {
         XCTAssertEqual(suggested.lang, "es")
         let selected = try XCTUnwrap(index.first { $0.id == "Español / Spanish with punctuation and numerals" })
         XCTAssertEqual(suggested.id, selected.id)
+
+        struct TrainingIndex: Decodable {
+            struct Entry: Decodable {
+                let id: String
+                let lang: String?
+                let script: String?
+                let conversion: String
+                let training: String?
+            }
+            let alphabets: [Entry]
+        }
+        let entries = try JSONDecoder().decode(
+            TrainingIndex.self, from: Data(contentsOf: destination.appendingPathComponent("alphabets/alphabet_index.json"))
+        ).alphabets
+        let supplied = root.appendingPathComponent("DasherCore/Data/training")
+        let trained = Set(entries.compactMap { entry -> [String]? in
+            guard let language = entry.lang, let script = entry.script,
+                  let filename = entry.training, !filename.isEmpty, entry.conversion == "none",
+                  FileManager.default.fileExists(atPath: supplied.appendingPathComponent(filename).path) else { return nil }
+            return [language, script]
+        })
+        for entry in entries {
+            guard let language = entry.lang, let script = entry.script,
+                  let filename = entry.training, !filename.isEmpty, entry.conversion == "none" else { continue }
+            if trained.contains([language, script]) {
+                XCTAssertTrue(FileManager.default.fileExists(atPath: training.appendingPathComponent(filename).path), entry.id)
+            }
+        }
     }
 }

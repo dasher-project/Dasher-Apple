@@ -22,21 +22,29 @@ def prepare(destination: Path) -> None:
     )
     shutil.copytree(ROOT / "DasherCore/Strings", destination / "Strings", dirs_exist_ok=True)
 
-    # The maintained Spanish definitions use the older corpus filenames.
-    # Keep those names so existing user training files continue to apply.
     training = destination / "training"
-    spanish = (training / "training_wa_es_Latn.txt").read_text(encoding="utf-8")
-    for name, form in [
-        ("training_spanish_ES.txt", "NFC"),
-        ("training_spanishC_ES.txt", "NFD"),
-    ]:
-        (training / name).write_text(unicodedata.normalize(form, spanish), encoding="utf-8")
-
     index_path = destination / "alphabets/alphabet_index.json"
     index = json.loads(index_path.read_text(encoding="utf-8"))
+    corpora = {}
     for alphabet in index["alphabets"]:
-        corpus = alphabet.get("training")
-        alphabet["training_available"] = bool(corpus and (training / corpus).is_file())
+        language = alphabet.get("lang")
+        script = alphabet.get("script")
+        corpus = training / (alphabet.get("training") or "")
+        if language and script and alphabet.get("conversion") == "none" and corpus.is_file():
+            corpora.setdefault((language, script), corpus)
+
+    # Keep legacy filenames so existing user training files continue to apply.
+    for alphabet in index["alphabets"]:
+        name = alphabet.get("training")
+        if not name:
+            continue
+        corpus = training / name
+        source = corpora.get((alphabet.get("lang"), alphabet.get("script")))
+        if not corpus.exists() and source and alphabet.get("conversion") == "none":
+            text = source.read_text(encoding="utf-8")
+            form = "NFD" if "combining accents" in alphabet["id"].lower() else "NFC"
+            corpus.write_text(unicodedata.normalize(form, text), encoding="utf-8")
+        alphabet["training_available"] = corpus.is_file()
     index_path.write_text(json.dumps(index, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
 
 
