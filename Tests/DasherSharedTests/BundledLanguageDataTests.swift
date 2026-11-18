@@ -72,29 +72,27 @@ final class BundledLanguageDataTests: XCTestCase {
         struct TrainingIndex: Decodable {
             struct Entry: Decodable {
                 let id: String
-                let lang: String?
-                let script: String?
-                let conversion: String
                 let training: String?
+                let training_available: Bool
             }
             let alphabets: [Entry]
         }
+        let bundledIndex = try Data(contentsOf: destination.appendingPathComponent("alphabets/alphabet_index.json"))
+        XCTAssertEqual(
+            bundledIndex,
+            try Data(contentsOf: root.appendingPathComponent("DasherCore/Data/alphabets/alphabet_index.json"))
+        )
         let entries = try JSONDecoder().decode(
-            TrainingIndex.self, from: Data(contentsOf: destination.appendingPathComponent("alphabets/alphabet_index.json"))
+            TrainingIndex.self, from: bundledIndex
         ).alphabets
         let supplied = root.appendingPathComponent("DasherCore/Data/training")
-        let trained = Set(entries.compactMap { entry -> [String]? in
-            guard let language = entry.lang, let script = entry.script,
-                  let filename = entry.training, !filename.isEmpty, entry.conversion == "none",
-                  FileManager.default.fileExists(atPath: supplied.appendingPathComponent(filename).path) else { return nil }
-            return [language, script]
-        })
         for entry in entries {
-            guard let language = entry.lang, let script = entry.script,
-                  let filename = entry.training, !filename.isEmpty, entry.conversion == "none" else { continue }
-            if trained.contains([language, script]) {
-                XCTAssertTrue(FileManager.default.fileExists(atPath: training.appendingPathComponent(filename).path), entry.id)
-            }
+            guard entry.training_available, let filename = entry.training else { continue }
+            XCTAssertEqual(
+                try Data(contentsOf: training.appendingPathComponent(filename)),
+                try Data(contentsOf: supplied.appendingPathComponent(filename)),
+                entry.id
+            )
         }
     }
 }
