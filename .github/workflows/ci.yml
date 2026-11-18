@@ -77,5 +77,9 @@ jobs:
             -scheme DasherMac \
             -configuration Debug \
             -destination 'generic/platform=macOS' \
+            -derivedDataPath build/ci-macos \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Verify installed-copy resource signature
+        run: python3 Scripts/check-mac-install.py build/ci-macos/Build/Products/Debug/Dasher.app
