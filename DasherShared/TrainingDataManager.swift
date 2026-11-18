@@ -49,27 +49,46 @@ public enum TrainingDataManager {
         applicationSupportOverride: URL? = nil
     ) -> String {
         let fm = FileManager.default
+        var directories: [URL] = []
 
-        if let explicit = explicitUserDir, !explicit.isEmpty, explicit != fallbackDataDir,
-           prepareUserDirectory(URL(fileURLWithPath: explicit, isDirectory: true)) {
-            return explicit
+        if let explicit = explicitUserDir, !explicit.isEmpty, explicit != fallbackDataDir {
+            directories.append(URL(fileURLWithPath: explicit, isDirectory: true))
         }
 
         if applicationSupportOverride == nil,
            let sharedURL = fm.containerURL(forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier),
-           sharedURL.path != explicitUserDir,
-           prepareUserDirectory(sharedURL) {
-            return sharedURL.path
+           sharedURL.path != explicitUserDir {
+            directories.append(sharedURL)
+        }
+        for directory in directories where prepareUserDirectory(directory) {
+            return directory.path
         }
 
         let appSupportBase = applicationSupportOverride
             ?? fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         if let appSupportBase {
             let dasherDir = appSupportBase.appendingPathComponent("Dasher", isDirectory: true)
-            if prepareUserDirectory(dasherDir) { return dasherDir.path }
+            if prepareUserDirectory(dasherDir) {
+                for directory in directories { copyReadableUserFiles(from: directory, to: dasherDir) }
+                return dasherDir.path
+            }
         }
 
         return fallbackDataDir
+    }
+
+    private static func copyReadableUserFiles(from source: URL, to destination: URL) {
+        let fm = FileManager.default
+        let files = (try? fm.contentsOfDirectory(at: source, includingPropertiesForKeys: nil)) ?? []
+        for file in files {
+            let name = file.lastPathComponent
+            guard name == "dasher_settings.xml" || name == "appearance_settings.xml"
+                    || (name.hasPrefix("training_") && name.hasSuffix(".txt")) else { continue }
+            let target = destination.appendingPathComponent(name)
+            guard !fm.fileExists(atPath: target.path), let data = try? Data(contentsOf: file) else { continue }
+            // Write fresh files so read-only permissions do not follow the data.
+            try? data.write(to: target, options: .atomic)
+        }
     }
 
     private static func prepareUserDirectory(_ directory: URL) -> Bool {

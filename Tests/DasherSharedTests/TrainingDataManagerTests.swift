@@ -99,6 +99,8 @@ final class TrainingDataManagerTests: XCTestCase {
         try FileManager.default.createDirectory(at: group, withIntermediateDirectories: true)
         let existing = group.appendingPathComponent("dasher_settings.xml")
         try Data("<settings/>".utf8).write(to: existing)
+        let training = group.appendingPathComponent("training_spanish_ES.txt")
+        try Data("Hola, ¿cómo estás?".utf8).write(to: training)
         try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: existing.path)
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: existing.path) }
         let applicationSupport = tempDir.appendingPathComponent("ApplicationSupport", isDirectory: true)
@@ -109,6 +111,19 @@ final class TrainingDataManagerTests: XCTestCase {
         )
         XCTAssertEqual(resolved, applicationSupport.appendingPathComponent("Dasher").path)
         XCTAssertEqual(try String(contentsOf: existing, encoding: .utf8), "<settings/>")
+        let migrated = URL(fileURLWithPath: resolved).appendingPathComponent("dasher_settings.xml")
+        XCTAssertEqual(try String(contentsOf: migrated, encoding: .utf8), "<settings/>")
+        XCTAssertTrue(FileManager.default.isWritableFile(atPath: migrated.path))
+        let migratedTraining = URL(fileURLWithPath: resolved).appendingPathComponent("training_spanish_ES.txt")
+        XCTAssertEqual(try Data(contentsOf: migratedTraining), try Data(contentsOf: training))
+        try "<settings><long name=\"MaxBitRate\" value=\"250\"/></settings>"
+            .write(to: migrated, atomically: true, encoding: .utf8)
+        _ = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: group.path,
+            fallbackDataDir: "/read-only-bundle/Data",
+            applicationSupportOverride: applicationSupport
+        )
+        XCTAssertTrue(try String(contentsOf: migrated, encoding: .utf8).contains("250"))
     }
 
     func testMigrateStrandedFilesSkipsBundledDataDirectory() throws {
