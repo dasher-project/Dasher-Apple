@@ -101,10 +101,11 @@ final class LocalizationSyncTests: XCTestCase {
 
         // Also verify Apple-only static and format keys are registered in the catalog scaffold
         let requiredPresentKeys = [
-            "Voice",
+            "Browse Voices",
+            "Voice Filters",
             "Appearance",
             "Dwell Duration",
-            "%lld voices",
+            "%@ results",
             "%lld ms per step",
             "Phrase %lld · %@ wpm"
         ]

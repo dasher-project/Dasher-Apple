@@ -25,6 +25,7 @@ struct SherpaModel: Decodable, Identifiable, Sendable {
     let licenseUrl: URL?
     let deprecated: Bool?
     let readiness: String?
+    let gender: String?
 
     static func catalog(from json: String) throws -> [Self] {
         let decoder = JSONDecoder()
@@ -43,10 +44,47 @@ struct SherpaModel: Decodable, Identifiable, Sendable {
 
     var displayName: String {
         if id == SpeechModelStorage.englishModelID { return "Inflect Nano v2" }
-        return [developer.capitalized, name, quality, quantization == "fp32" ? nil : quantization]
+        let title = name.replacingOccurrences(of: "_", with: " ")
+        if title.isEmpty || title == "unknown" { return voiceType }
+        return title.prefix(1).uppercased() + title.dropFirst()
+    }
+
+    var voiceType: String {
+        switch developer.lowercased() {
+        case "piper": "Piper"
+        case "mms": "MMS"
+        case "kokoro": "Kokoro"
+        case "kitten": "Kitten"
+        default:
+            switch modelType {
+            case "vits": developer.isEmpty || developer == "unknown" ? "VITS" : developer.capitalized
+            default: modelType.capitalized
+            }
+        }
+    }
+
+    var voiceMetadata: VoiceMetadata {
+        let languages = language.compactMap { item -> VoiceLanguage? in
+            guard !item.langCode.isEmpty, item.langCode != "unknown" else { return nil }
+            let country = item.country ?? ""
+            let code = item.langCode.count == 2 && country.count == 2 ? "\(item.langCode)-\(country)" : item.langCode
+            return VoiceLanguage(code, name: code == item.langCode ? item.languageName : nil)
+        }
+        var voiceGender = VoiceGender(gender)
+        if voiceGender == .unspecified, developer == "piper", numSpeakers == 1 {
+            // Alan uses the apope dataset, listed as MALE1 in Mimic 3's speech-dispatcher config.
+            let nameParts = name.lowercased().split(separator: "_")
+            if id.hasPrefix("piper-en_GB-alan-") || nameParts.contains("male") { voiceGender = .male }
+            if nameParts.contains("female") { voiceGender = .female }
+        }
+        return VoiceMetadata(languages: languages, gender: voiceGender, type: voiceType)
+    }
+
+    var variantLabel: String? {
+        let parts = [quality, quantization == "fp32" ? nil : quantization]
             .compactMap { $0 }
             .filter { !$0.isEmpty && $0 != "unknown" }
-            .joined(separator: " ")
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     var isEnglishOnly: Bool {
@@ -68,10 +106,9 @@ struct SherpaModel: Decodable, Identifiable, Sendable {
     }
 
     func matches(_ search: String) -> Bool {
-        search.split(whereSeparator: \.isWhitespace).allSatisfy { term in
-            [displayName, id, modelType, languages, language.map(\.langCode).joined(separator: " ")]
-                .contains { $0.localizedStandardContains(String(term)) }
-        }
+        VoiceFilters().matches(voiceMetadata, search: search, terms: searchTerms)
     }
+
+    var searchTerms: [String] { [displayName, id, modelType, developer, variantLabel ?? ""] }
 }
 #endif

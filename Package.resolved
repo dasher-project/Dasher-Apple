@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/AACTools/rust-tts-wrapper.git",
       "state" : {
-        "revision" : "5a6f4de062898b3e00a5ddff58390355572abdb0",
-        "version" : "1.11.0"
+        "revision" : "99bb5d71802b2b1626789f659d11140cd2df9843",
+        "version" : "1.13.1"
       }
     },
     {

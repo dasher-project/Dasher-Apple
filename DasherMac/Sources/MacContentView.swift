@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 import CoreVideo
 
 struct MacContentView: View {
+    @AppStorage(AlphabetIndex.showAllLanguagesKey, store: SharedDefaults.fallback)
+    private var showAllAlphabetLanguages = false
     @ObservedObject var viewModel: MacDasherViewModel
     @ObservedObject private var directService: DirectModeService
     @State private var showSettings = false
@@ -570,13 +572,18 @@ struct MacContentView: View {
     }
 
     private var alphabetPicker: some View {
-        let alphabets = viewModel.bridge.allAlphabets
+        let alphabets = AlphabetIndex.visibleNames(
+            viewModel.bridge.allAlphabets.map(\.name),
+            selectedID: viewModel.bridge.alphabetId, showAll: showAllAlphabetLanguages
+        )
         return Menu {
-            ForEach(alphabets, id: \.name) { a in
-                Button(a.name) {
+            Toggle("Show All Languages", isOn: $showAllAlphabetLanguages)
+            Divider()
+            ForEach(alphabets, id: \.self) { name in
+                Button(name) {
                     AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
-                    viewModel.bridge.setAlphabetId(a.name)
-                    UITelemetry.alphabetSelected(a.name)
+                    viewModel.bridge.setAlphabetId(name)
+                    UITelemetry.alphabetSelected(name)
                 }
             }
         } label: {

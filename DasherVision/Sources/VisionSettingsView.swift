@@ -33,18 +33,14 @@ struct VisionSettingsView: View {
                         ? alphabets
                         : alphabets + [DasherAlphabet(name: currentId)]
                     if !pickerAlphabets.isEmpty {
-                        Picker("Alphabet", selection: Binding(
+                        AlphabetPicker(names: pickerAlphabets.map(\.name), selection: Binding(
                             get: { viewModel.bridge.alphabetId },
                             set: {
                                 AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
                                 viewModel.bridge.setAlphabetId($0)
                                 UITelemetry.alphabetSelected($0)
                             }
-                        )) {
-                            ForEach(pickerAlphabets, id: \.name) { a in
-                                Text(a.name).tag(a.name)
-                            }
-                        }
+                        ))
                     }
                 }
 

@@ -3,6 +3,7 @@ import Foundation
 import CBZip2
 import CRustTtsWrapper
 import CryptoKit
+import RustTtsWrapper
 import SWCompression
 #endif
 
@@ -106,11 +107,7 @@ struct SpeechModelStorage {
                 guard model.isEnglishOnly else {
                     throw SpeechSetupError.modelNeedsLexicon
                 }
-                try await fetch(
-                    githubAssets.appending(path: "lexicon-en-us.txt"),
-                    checksum: .sha256("8b67ae549a465eee78f92ecb74644ad90c3c58ce65f19c68baf85878a10ef73a"),
-                    to: modelFolder.appending(path: "lexicon.txt")
-                )
+                try await downloadEnglishLexicon(to: modelFolder)
             }
             if model.modelType == "kitten", !contains("model.onnx", in: modelFolder),
                let modelFile = ["model.int8.onnx", "model.fp16.onnx"].first(where: { contains($0, in: modelFolder) }) {
@@ -123,11 +120,14 @@ struct SpeechModelStorage {
         try Task.checkCancellation()
         if model.usesG2PBundle {
             let id = model.id
-            let provisioned = await Task.detached(priority: .utility) {
-                id.withCString { tts_provision_sherpa_g2p_bundle($0) }
+            let bundleError = await Task.detached(priority: .utility) { () -> SpeechSetupError? in
+                guard id.withCString({ tts_provision_sherpa_g2p_bundle($0) }) else {
+                    return .modelBundleDownloadFailed(TtsClient.getGlobalLastErrorDetail()?.message)
+                }
+                return nil
             }.value
             try Task.checkCancellation()
-            guard provisioned else { throw SpeechSetupError.modelBundleDownloadFailed }
+            if let bundleError { throw bundleError }
         }
         try model.id.write(to: modelFolder.appending(path: verificationFile), atomically: true, encoding: .utf8)
         try Task.checkCancellation()
@@ -142,19 +142,16 @@ struct SpeechModelStorage {
         try? destination.setResourceValues(values)
     }
 
+    private static func downloadEnglishLexicon(to folder: URL) async throws {
+        try await fetch(
+            githubAssets.appending(path: "lexicon-en-us.txt"),
+            checksum: .sha256("8b67ae549a465eee78f92ecb74644ad90c3c58ce65f19c68baf85878a10ef73a"),
+            to: folder.appending(path: "lexicon.txt")
+        )
+    }
+
     private static func archiveChecksum(for model: SherpaModel) -> String? {
-        // The upstream release replaced these files after registry 1.1.0.
-        // Keep the replacement digests pinned until the registry includes them.
-        // https://github.com/AACTools/sherpa-onnx-tts-models/issues/3
-        let updated: [String: String] = [
-            "kokoro-zh_en-int8": "259c9c8bc906d6078e4e0570421885dabb68b539c2f970fcbb890a58eeaf3e9c",
-            "kokoro-zh_en-multi-lang": "b78e1ac42b852e839cceaafbe88f66806bf5860992d1d7b9a3f2ad1198427aed",
-            "icefall-en-ljspeech": "cff849fee69d7d3b22e0b0267aa6b863e32d05039a1eca963765a314a73450c0",
-            "icefall-en-ljspeech-low": "e5ae18c97b566099a2a748f243d4d44ea7cd188acc34e3533a2adc2565c9f845",
-            "icefall-en-ljspeech-medium": "93efae74fe0c72199c51b11ca7acb20b4966c2dc8b728109910266784f39f720",
-            "icefall-zh-baker": "ae70096b19c6e283ea351a26b8a718ce6427c8bde8c1da22eb46a5478d39a69b",
-        ]
-        guard let checksum = updated[model.id] ?? model.sha256,
+        guard let checksum = model.sha256,
               checksum.range(of: #"^[a-fA-F0-9]{64}$"#, options: .regularExpression) != nil else { return nil }
         return checksum
     }
@@ -395,7 +392,7 @@ enum SpeechSetupError: LocalizedError {
     case credentialFileRequired
     case modelNotInstalled
     case modelDownloadFailed
-    case modelBundleDownloadFailed
+    case modelBundleDownloadFailed(String?)
     case modelNeedsLexicon
     case invalidModelFiles
     case playbackFailed
@@ -405,7 +402,10 @@ enum SpeechSetupError: LocalizedError {
         case .credentialFileRequired: String(localized: "Choose a credentials file.")
         case .modelNotInstalled: String(localized: "Download a speech model before speaking.")
         case .modelDownloadFailed: String(localized: "Could not download or verify the speech model.")
-        case .modelBundleDownloadFailed: String(localized: "Could not download or verify the pronunciation dictionary.")
+        case .modelBundleDownloadFailed(let detail):
+            [String(localized: "Could not download or verify the pronunciation dictionary."), detail]
+                .compactMap { $0 }
+                .joined(separator: "\n")
         case .modelNeedsLexicon: String(localized: "This model needs a pronunciation dictionary that Dasher cannot install yet.")
         case .invalidModelFiles: String(localized: "The downloaded model is missing files required by Sherpa-ONNX.")
         case .playbackFailed: String(localized: "Could not play the synthesized audio.")

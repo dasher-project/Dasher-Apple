@@ -45,24 +45,74 @@ extension SpeechSettingsTests {
         XCTAssertEqual(models.first?.id, SpeechModelStorage.englishModelID)
         let english = try XCTUnwrap(models.first(where: { $0.id == "inflect-en-nano-v2" }))
         let french = try XCTUnwrap(models.first(where: { $0.id == "mms_fra" }))
-        let polishPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-pl_PL-gosia-medium" }))
+        let alan = try XCTUnwrap(models.first(where: { $0.id == "piper-en_GB-alan-medium" }))
+        let persianPiper = try XCTUnwrap(models.first(where: { $0.id == "piper-fa_IR-amir-medium" }))
         XCTAssertTrue(english.matches("inflect english"))
         XCTAssertTrue(french.matches("French MMS"))
         XCTAssertFalse(french.matches("French Kokoro"))
+        XCTAssertEqual(alan.displayName, "Alan")
+        XCTAssertEqual(alan.voiceMetadata.type, "Piper")
+        XCTAssertEqual(alan.voiceMetadata.gender, .male)
+        XCTAssertEqual(alan.voiceMetadata.languages.first?.code, "en-GB")
+        XCTAssertTrue(alan.matches("alan piper male"))
+        XCTAssertEqual(french.voiceMetadata.gender, .unspecified)
+        XCTAssertEqual(french.voiceMetadata.languages.first?.filterName, VoiceLanguage("fr-FR").filterName)
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: english))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: french))
         for id in [
             "piper-de_DE-thorsten-medium", "piper-en_US-amy-low", "piper-fr_FR-siwis-medium",
             "piper-es_ES-sharvard-medium", "piper-pt_BR-faber-medium", "piper-it_IT-paola-medium",
-            "piper-ru_RU-dmitri-medium",
+            "piper-ru_RU-dmitri-medium", "piper-pl_PL-gosia-medium", "piper-es_MX-claude-high",
+            "piper-pt_PT-dii-high",
         ] {
             let model = try XCTUnwrap(models.first(where: { $0.id == id }), id)
             XCTAssertTrue(model.usesG2PBundle, id)
             XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: model), id)
         }
-        XCTAssertEqual(polishPiper.readiness, "blocked:bundle-not-validated")
-        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: polishPiper))
+        XCTAssertEqual(persianPiper.readiness, "blocked:bundle-not-validated")
+        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: persianPiper))
         XCTAssertFalse(SpeechModelStorage.isModelID("../invalid"))
+    }
+
+    func testVoiceFiltersCombineLanguageGenderTypeAndSearch() {
+        let language = VoiceLanguage(wrapperLabel: "English (United Kingdom) [en-GB]")
+        let type = SpeechVoice.providerVoiceType(engineID: "azure", id: "en-GB-SoniaNeural")
+        let metadata = VoiceMetadata(languages: [language], gender: VoiceGender("Female"), type: type)
+        var filters = VoiceFilters(language: VoiceLanguage("en-US").filterName, gender: .female, type: type)
+        XCTAssertEqual(language.code, "en-GB")
+        XCTAssertEqual(language.name, "English (United Kingdom)")
+        XCTAssertEqual(type, String(localized: "Neural"))
+        XCTAssertTrue(filters.matches(metadata, search: "sonia en-gb", terms: ["Sonia"]))
+        XCTAssertFalse(filters.matches(metadata, search: "sonia fr-fr", terms: ["Sonia"]))
+        XCTAssertFalse(filters.matches(metadata, search: "sonia \(VoiceGender.male.title)", terms: ["Sonia"]))
+        filters.type = "Standard"
+        XCTAssertFalse(filters.matches(metadata, search: "", terms: []))
+        filters.type = type
+        filters.gender = .male
+        XCTAssertFalse(filters.matches(metadata, search: "", terms: []))
+        filters.gender = .female
+        filters.language = VoiceLanguage("fr-FR").filterName
+        XCTAssertFalse(filters.matches(metadata, search: "", terms: []))
+    }
+
+    func testCredentialPromptsUseUserFacingText() throws {
+        let azure = try XCTUnwrap(SpeechEngine.available().first { $0.id == "azure" })
+        let subscriptionKey = try XCTUnwrap(azure.fields.first { $0.id == "subscriptionKey" })
+        let region = try XCTUnwrap(azure.fields.first { $0.id == "region" })
+        XCTAssertEqual(subscriptionKey.label, "Subscription key")
+        XCTAssertEqual(region.label, "Region")
+        XCTAssertTrue(region.choices.contains("eastus"))
+
+        let field = SpeechEngine.Field(
+            id: "apiKey", label: "API Key", kind: .secret,
+            defaultValue: "test-secret", placeholder: "Enter CredentialKey(key: \"apiKey\")"
+        )
+        XCTAssertNil(field.prompt)
+        let url = SpeechEngine.Field(
+            id: "endpoint", label: "Endpoint", kind: .text, defaultValue: "https://example.org/",
+            placeholder: "Enter your service URL"
+        )
+        XCTAssertEqual(url.prompt, "Enter your service URL")
     }
 
     @MainActor

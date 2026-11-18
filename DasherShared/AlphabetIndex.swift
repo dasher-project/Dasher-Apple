@@ -25,6 +25,7 @@ public struct AlphabetInfo: Equatable, Sendable {
 }
 
 public enum AlphabetIndex {
+    public static let showAllLanguagesKey = "show_all_alphabet_languages"
     /// The engine's historical default — preferred within its tier for
     /// locale-follow.
     public static let engineDefaultAlphabet = "English with limited punctuation"
@@ -66,6 +67,23 @@ public enum AlphabetIndex {
         }
         cached = list
         return list
+    }
+
+    public static func visibleNames(
+        _ names: [String], selectedID: String, showAll: Bool,
+        localeTag: String = Locale.current.identifier, index: [AlphabetInfo]? = nil
+    ) -> [String] {
+        guard !showAll else { return names }
+        let metadata = index ?? load(dataDir: Bundle.main.path(forResource: "Data", ofType: nil) ?? "")
+        guard !metadata.isEmpty else { return names }
+        let language = Locale.Language(identifier: localeTag).languageCode
+        let byName = Dictionary(uniqueKeysWithValues: metadata.map { ($0.id, $0) })
+        let visible = names.filter { name in
+            if name == selectedID || byName[name] == nil { return true }
+            guard let code = byName[name]?.lang else { return false }
+            return Locale.Language(identifier: code).languageCode == language
+        }
+        return visible.isEmpty ? names : visible
     }
 
     /// Best alphabet for a BCP-47 locale tag ("ar", "pt-BR", "zh-Hans-CN").

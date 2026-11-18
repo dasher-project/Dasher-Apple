@@ -147,14 +147,16 @@ public final class SpeechService {
                 if usesRust {
                     #if os(macOS) || os(iOS)
                     let configuration = try rustCredentials(credentialValues, engineID: engineID)
-                    voices = try await rustBackend.voices(engineID: engineID, credentials: configuration)
+                    let modelMetadata = isSherpa ? selectedSherpaModel?.voiceMetadata : nil
+                    voices = try await rustBackend.voices(
+                        engineID: engineID, credentials: configuration, modelMetadata: modelMetadata
+                    )
                     #else
                     voices = []
                     #endif
                 } else {
-                    voices = try await makeNativeClient(engineID: engineID, credentials: credentialValues).getVoices().map {
-                        SpeechVoice(id: $0.id, name: $0.name)
-                    }
+                    let native = try await makeNativeClient(engineID: engineID, credentials: credentialValues).getVoices()
+                    voices = SpeechVoice.native(native, engineID: engineID)
                 }
                 try Task.checkCancellation()
                 availableVoices = voices.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
