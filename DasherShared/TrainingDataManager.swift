@@ -50,14 +50,15 @@ public enum TrainingDataManager {
     ) -> String {
         let fm = FileManager.default
 
-        if let explicit = explicitUserDir, !explicit.isEmpty, explicit != fallbackDataDir {
-            try? fm.createDirectory(atPath: explicit, withIntermediateDirectories: true)
+        if let explicit = explicitUserDir, !explicit.isEmpty, explicit != fallbackDataDir,
+           prepareUserDirectory(URL(fileURLWithPath: explicit, isDirectory: true)) {
             return explicit
         }
 
         if applicationSupportOverride == nil,
-           let sharedURL = fm.containerURL(forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier) {
-            try? fm.createDirectory(at: sharedURL, withIntermediateDirectories: true)
+           let sharedURL = fm.containerURL(forSecurityApplicationGroupIdentifier: SharedDefaults.groupIdentifier),
+           sharedURL.path != explicitUserDir,
+           prepareUserDirectory(sharedURL) {
             return sharedURL.path
         }
 
@@ -65,11 +66,29 @@ public enum TrainingDataManager {
             ?? fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         if let appSupportBase {
             let dasherDir = appSupportBase.appendingPathComponent("Dasher", isDirectory: true)
-            try? fm.createDirectory(at: dasherDir, withIntermediateDirectories: true)
-            return dasherDir.path
+            if prepareUserDirectory(dasherDir) { return dasherDir.path }
         }
 
         return fallbackDataDir
+    }
+
+    private static func prepareUserDirectory(_ directory: URL) -> Bool {
+        let fm = FileManager.default
+        let probe = directory.appendingPathComponent(".dasher-write-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: probe) }
+        do {
+            try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+            for name in ["dasher_settings.xml", "appearance_settings.xml"] {
+                let path = directory.appendingPathComponent(name).path
+                if fm.fileExists(atPath: path), !fm.isReadableFile(atPath: path) || !fm.isWritableFile(atPath: path) {
+                    return false
+                }
+            }
+            try Data().write(to: probe)
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// Rescues any `training_*.txt` files stranded in `<userDir>/training/` by

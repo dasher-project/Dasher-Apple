@@ -72,6 +72,45 @@ final class TrainingDataManagerTests: XCTestCase {
         )
     }
 
+    func testUnavailableUserDirectoryUsesWritableApplicationSupport() throws {
+        let invalidDirectory = tempDir.appendingPathComponent("blocked")
+        try Data("existing file".utf8).write(to: invalidDirectory)
+        let applicationSupport = tempDir.appendingPathComponent("ApplicationSupport", isDirectory: true)
+        let resolved = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: invalidDirectory.path,
+            fallbackDataDir: "/read-only-bundle/Data",
+            applicationSupportOverride: applicationSupport
+        )
+        XCTAssertEqual(resolved, applicationSupport.appendingPathComponent("Dasher").path)
+        let settings = URL(fileURLWithPath: resolved).appendingPathComponent("dasher_settings.xml")
+        try "<settings/>".write(to: settings, atomically: true, encoding: .utf8)
+        XCTAssertEqual(try String(contentsOf: settings, encoding: .utf8), "<settings/>")
+        XCTAssertEqual(
+            TrainingDataManager.resolveUserDirectory(
+                explicitUserDir: invalidDirectory.path,
+                fallbackDataDir: "/read-only-bundle/Data",
+                applicationSupportOverride: applicationSupport
+            ), resolved
+        )
+    }
+
+    func testProtectedSettingsFileUsesWritableApplicationSupport() throws {
+        let group = tempDir.appendingPathComponent("Group", isDirectory: true)
+        try FileManager.default.createDirectory(at: group, withIntermediateDirectories: true)
+        let existing = group.appendingPathComponent("dasher_settings.xml")
+        try Data("<settings/>".utf8).write(to: existing)
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: existing.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: existing.path) }
+        let applicationSupport = tempDir.appendingPathComponent("ApplicationSupport", isDirectory: true)
+        let resolved = TrainingDataManager.resolveUserDirectory(
+            explicitUserDir: group.path,
+            fallbackDataDir: "/read-only-bundle/Data",
+            applicationSupportOverride: applicationSupport
+        )
+        XCTAssertEqual(resolved, applicationSupport.appendingPathComponent("Dasher").path)
+        XCTAssertEqual(try String(contentsOf: existing, encoding: .utf8), "<settings/>")
+    }
+
     func testMigrateStrandedFilesSkipsBundledDataDirectory() throws {
         let bundleTrainingDir = tempDir.appendingPathComponent("training", isDirectory: true)
         try FileManager.default.createDirectory(at: bundleTrainingDir, withIntermediateDirectories: true)

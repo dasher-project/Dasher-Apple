@@ -191,11 +191,12 @@ targets:
           PLIST="DasherApp/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
-      - name: Copy Locale Strings
+    postBuildScripts:
+      - name: Prepare Full Language Data
         basedOnDependencyAnalysis: false
         script: |
-          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
-          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
+          set -e
+          python3 "$SRCROOT/Scripts/prepare-engine-data.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Data"
     settings:
       base:
         PRODUCT_NAME: "Dasher"
@@ -384,11 +385,12 @@ targets:
           PLIST="DasherMac/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
-      - name: Copy Locale Strings
+    postBuildScripts:
+      - name: Prepare Full Language Data
         basedOnDependencyAnalysis: false
         script: |
-          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
-          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
+          set -e
+          python3 "$SRCROOT/Scripts/prepare-engine-data.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Data"
     settings:
       base:
         PRODUCT_NAME: "Dasher"
@@ -477,11 +479,12 @@ targets:
           PLIST="DasherVision/Info.plist"
           /usr/libexec/PlistBuddy -c "Set :DasherGitCommit $COMMIT" "$SRCROOT/$PLIST" 2>/dev/null || \
           /usr/libexec/PlistBuddy -c "Add :DasherGitCommit string $COMMIT" "$SRCROOT/$PLIST"
-      - name: Copy Locale Strings
+    postBuildScripts:
+      - name: Prepare Full Language Data
         basedOnDependencyAnalysis: false
         script: |
-          mkdir -p "${SRCROOT}/DasherEngine/Resources/Data/Strings"
-          cp -f "${SRCROOT}/DasherCore/Strings/"*.json "${SRCROOT}/DasherEngine/Resources/Data/Strings/"
+          set -e
+          python3 "$SRCROOT/Scripts/prepare-engine-data.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/Data"
     settings:
       base:
         PRODUCT_NAME: "Dasher"
