@@ -356,6 +356,9 @@ struct PronunciationEditor: View {
             .onAppear {
                 fileText = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
             }
+            #if os(macOS)
+            .frame(minWidth: 500, minHeight: 460)
+            #endif
         }
     }
 
