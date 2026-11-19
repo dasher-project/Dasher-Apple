@@ -1198,9 +1198,6 @@
     "Add": {
       "localizations": {}
     },
-    "Add a pronunciation": {
-      "localizations": {}
-    },
     "Advanced logging": {
       "localizations": {
         "af": {
@@ -35405,9 +35402,6 @@
       }
     },
     "You can preview this voice after the download finishes.": {
-      "localizations": {}
-    },
-    "Your exceptions": {
       "localizations": {}
     },
     "Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.": {

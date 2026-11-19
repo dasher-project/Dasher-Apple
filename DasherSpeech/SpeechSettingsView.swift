@@ -6,7 +6,6 @@ public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService
     @State private var isChoosingFile = false
     @State private var showsVoiceBrowser = false
-    @State private var showsPronunciationEditor = false
     @State private var importFieldID: String?
     #if os(macOS) || os(iOS)
     @State private var showsSherpaCatalog = false
@@ -58,25 +57,10 @@ public struct SpeechSettingsView: View {
             SherpaModelBrowser(service: service)
         }
         #endif
-        .sheet(isPresented: $showsPronunciationEditor) {
-            PronunciationEditor(service: service)
-        }
     }
 
     private var pronunciationsSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Button {
-                    showsPronunciationEditor = true
-                } label: {
-                    Label("Pronunciations", systemImage: "character.book.closed")
-                }
-                Spacer()
-            }
-            Text("Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
+        PronunciationsSection(service: service)
     }
 
     private var modelSection: some View {
@@ -263,9 +247,12 @@ struct SpeechPreviewButton: View {
     }
 }
 
-struct PronunciationEditor: View {
-    @Environment(\.dismiss) private var dismiss
-    var service: SpeechService
+/// Inline pronunciation exceptions: an add form, then a scrollable list of
+/// saved entries with preview and remove. Edits rewrite the shared
+/// plain-text file; the wrapper (and the system-engine pass) pick up
+/// changes on the next utterance.
+struct PronunciationsSection: View {
+    let service: SpeechService
     @State private var fileText = ""
     @State private var newWord = ""
     @State private var newSaying = ""
@@ -281,84 +268,81 @@ struct PronunciationEditor: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField("Word or phrase", text: $newWord)
-                    TextField("Say it like — bow tocks or /wɪn/", text: $newSaying)
-                    HStack {
-                        Button {
-                            service.previewPronunciation(newSaying)
-                        } label: {
-                            Label("Preview", systemImage: "play.fill")
-                        }
-                        .disabled(!canAdd)
-                        Spacer()
-                        Button("Add", action: addEntry)
-                            .disabled(!canAdd)
-                    }
-                } header: {
-                    Text("Add a pronunciation")
-                } footer: {
-                    if let errorMessage {
-                        Text(errorMessage).foregroundStyle(.red)
-                    } else {
-                        Text("Respelling for any voice, or IPA between slashes for voices that support phonemes.")
-                    }
-                }
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Pronunciations", systemImage: "character.book.closed")
+                .font(.headline)
+            Text("Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
 
-                Section {
-                    if entries.isEmpty {
-                        Text("No pronunciation exceptions yet.")
-                            .foregroundStyle(.secondary)
-                    } else {
+            TextField("Word or phrase", text: $newWord)
+            TextField("Say it like — bow tocks or /wɪn/", text: $newSaying)
+            HStack {
+                Button {
+                    service.previewPronunciation(newSaying)
+                } label: {
+                    Label("Preview", systemImage: "play.fill")
+                }
+                .disabled(!canAdd)
+                Spacer()
+                Button("Add", action: addEntry)
+                    .disabled(!canAdd)
+            }
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red)
+            } else {
+                Text("Respelling for any voice, or IPA between slashes for voices that support phonemes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if entries.isEmpty {
+                Text("No pronunciation exceptions yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
                         ForEach(entries) { entry in
-                            HStack {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(entry.word)
-                                    Text("Says \(entry.displayValue)")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                                Spacer()
-                                Button {
-                                    service.previewOverride(entry.word)
-                                } label: {
-                                    Image(systemName: "play.circle")
-                                }
-                                .buttonStyle(.borderless)
-                                .accessibilityLabel("Preview \(entry.word)")
-                                Button(role: .destructive) {
-                                    removeEntry(entry)
-                                } label: {
-                                    Image(systemName: "trash")
-                                }
-                                .buttonStyle(.borderless)
-                                .accessibilityLabel("Remove \(entry.word)")
-                            }
+                            row(entry)
                         }
                     }
-                } header: {
-                    Text("Your exceptions")
-                } footer: {
-                    Text("Changes apply on the next utterance.")
+                    .padding(.vertical, 4)
                 }
+                .frame(maxHeight: 240)
             }
-            .navigationTitle("Pronunciations")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
+            Text("Changes apply on the next utterance.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            fileText = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
+        }
+    }
+
+    private func row(_ entry: PronunciationOverrides.Entry) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.word)
+                Text("Says \(entry.displayValue)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .onAppear {
-                fileText = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
+            Spacer()
+            Button {
+                service.previewOverride(entry.word)
+            } label: {
+                Image(systemName: "play.circle")
             }
-            #if os(macOS)
-            .frame(minWidth: 500, minHeight: 460)
-            #endif
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Preview \(entry.word)")
+            Button(role: .destructive) {
+                removeEntry(entry)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Remove \(entry.word)")
         }
     }
 
