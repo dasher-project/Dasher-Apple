@@ -47,4 +47,29 @@ final class PronunciationOverridesTests: XCTestCase {
     func testStarterTextParsesToNoEntries() {
         XCTAssertTrue(PronunciationOverrides.entries(from: PronunciationOverrides.starterText).isEmpty)
     }
+
+    func testAddingAppendsLineAndReplacesExistingKeyCaseInsensitively() {
+        let text = "# keep me\nbotox = bow tocks\n\n"
+        let replaced = PronunciationOverrides.adding(
+            PronunciationOverrides.Entry(word: "Botox", respell: "bow tocks!", ipa: nil), to: text
+        )
+        XCTAssertEqual(replaced, "# keep me\nBotox = bow tocks!\n")
+        XCTAssertEqual(PronunciationOverrides.entries(from: replaced).count, 1)
+
+        let added = PronunciationOverrides.adding(
+            PronunciationOverrides.Entry(word: "nguyen", respell: nil, ipa: "wɪn"), to: replaced
+        )
+        XCTAssertEqual(PronunciationOverrides.entries(from: added), [
+            PronunciationOverrides.Entry(word: "Botox", respell: "bow tocks!", ipa: nil),
+            PronunciationOverrides.Entry(word: "nguyen", respell: nil, ipa: "wɪn"),
+        ])
+    }
+
+    func testRemovingDeletesTheEntryLineButKeepsComments() {
+        let text = "# header\nbotox = bow tocks\nnguyen = /wɪn/\n"
+        let removed = PronunciationOverrides.removing(
+            PronunciationOverrides.Entry(word: "botox", respell: "bow tocks", ipa: nil), from: text
+        )
+        XCTAssertEqual(removed, "# header\nnguyen = /wɪn/\n")
+    }
 }

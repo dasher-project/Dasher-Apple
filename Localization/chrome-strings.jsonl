@@ -4,6 +4,8 @@
 {"key": "Access", "source": "Access", "context": "DasherApp/Sources/DasherSettingsView.swift:266"}
 {"key": "Accessibility Permission Required", "source": "Accessibility Permission Required", "context": "DasherMac/Sources/MacContentView.swift:783"}
 {"key": "Adapt Speed Automatically", "source": "Adapt Speed Automatically", "context": "DasherVision/Sources/VisionSettingsView.swift:79"}
+{"key": "Add", "source": "Add", "context": "DasherSpeech/SpeechSettingsView.swift:297"}
+{"key": "Add a pronunciation", "source": "Add a pronunciation", "context": "DasherSpeech/SpeechSettingsView.swift:301"}
 {"key": "Advanced logging", "source": "Advanced logging", "context": "DasherShared/LogManager.swift:352"}
 {"key": "All Dasher settings will be restored to their default values. This cannot be undone.", "source": "All Dasher settings will be restored to their default values. This cannot be undone.", "context": "DasherShared/AnalyticsViews.swift:137"}
 {"key": "Alphabet", "source": "Alphabet", "context": "DasherApp/Sources/ContentView.swift:702"}
@@ -21,6 +23,7 @@
 {"key": "Calibrate Tilt", "source": "Calibrate Tilt", "context": "DasherShared/AccessSettingsView.swift:143"}
 {"key": "Cancel", "source": "Cancel", "context": "DasherShared/AnalyticsViews.swift:135"}
 {"key": "Cancel Download", "source": "Cancel Download", "context": "DasherSpeech/SherpaModelBrowser.swift:118"}
+{"key": "Changes apply on the next utterance.", "source": "Changes apply on the next utterance.", "context": "DasherSpeech/SpeechSettingsView.swift:344"}
 {"key": "Choose File...", "source": "Choose File...", "context": "DasherMac/Sources/DasherMacApp.swift:556"}
 {"key": "Choose...", "source": "Choose...", "context": "DasherApp/Sources/DasherSettingsView.swift:477"}
 {"key": "Clear", "source": "Clear", "context": "DasherApp/Sources/OutputTextView.swift:321"}
@@ -105,10 +108,10 @@
 {"key": "New session (clear text and context)", "source": "New session (clear text and context)", "context": "DasherMac/Sources/MacContentView.swift:464"}
 {"key": "No credentials required", "source": "No credentials required", "context": "DasherSpeech/SpeechSettingsView.swift:114"}
 {"key": "No Dasher 5 data found on this Mac.", "source": "No Dasher 5 data found on this Mac.", "context": "DasherShared/V5MigrationViews.swift:120"}
+{"key": "No pronunciation exceptions yet.", "source": "No pronunciation exceptions yet.", "context": "DasherSpeech/SpeechSettingsView.swift:312"}
 {"key": "Not now", "source": "Not now", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:45"}
 {"key": "OK", "source": "OK", "context": "DasherMac/Sources/DasherMacApp.swift:105"}
 {"key": "On visionOS, pinch and hold on the canvas to start writing, look around while pinching to steer, and release to pause. The input model is pinch-and-look.", "source": "On visionOS, pinch and hold on the canvas to start writing, look around while pinching to steer, and release to pause. The input model is pinch-and-look.", "context": "DasherVision/Sources/VisionSettingsView.swift:121"}
-{"key": "One entry per line: botox = bow tocks, or IPA between slashes: nguyen = /wɪn/. Changes apply on the next utterance.", "source": "One entry per line: botox = bow tocks, or IPA between slashes: nguyen = /wɪn/. Changes apply on the next utterance.", "context": "DasherSpeech/SpeechSettingsView.swift:280"}
 {"key": "Open Keyboard Settings", "source": "Open Keyboard Settings", "context": "DasherApp/Sources/KeyboardSetupSection.swift:20"}
 {"key": "Open Settings", "source": "Open Settings", "context": "DasherApp/Sources/KeyboardOnboardingView.swift:41"}
 {"key": "Open System Settings", "source": "Open System Settings", "context": "DasherMac/Sources/MacContentView.swift:794"}
@@ -141,10 +144,10 @@
 {"key": "Reset to defaults", "source": "Reset to defaults", "context": "DasherShared/AnalyticsViews.swift:118"}
 {"key": "Reset Training Data", "source": "Reset Training Data", "context": "DasherShared/TrainingTextManagement.swift:101"}
 {"key": "Reset Training Data?", "source": "Reset Training Data?", "context": "DasherShared/TrainingTextManagement.swift:174"}
+{"key": "Respelling for any voice, or IPA between slashes for voices that support phonemes.", "source": "Respelling for any voice, or IPA between slashes for voices that support phonemes.", "context": "DasherSpeech/SpeechSettingsView.swift:306"}
 {"key": "Restart your Mac, then check the list again.", "source": "Restart your Mac, then check the list again.", "context": "DasherMac/Sources/MacContentView.swift:758"}
 {"key": "Restore all Dasher settings to their default values. This cannot be undone.", "source": "Restore all Dasher settings to their default values. This cannot be undone.", "context": "DasherShared/AnalyticsViews.swift:125"}
 {"key": "Right side", "source": "Right side", "context": "DasherApp/Sources/ContentView.swift:517"}
-{"key": "Save", "source": "Save", "context": "DasherSpeech/SpeechSettingsView.swift:294"}
 {"key": "Save...", "source": "Save...", "context": "DasherMac/Sources/DasherMacApp.swift:128"}
 {"key": "Scan Speed", "source": "Scan Speed", "context": "DasherShared/AccessSettingsView.swift:102"}
 {"key": "Select", "source": "Select", "context": "DasherSpeech/SpeechSettingsView.swift:149"}
@@ -172,7 +175,7 @@
 {"key": "Stop", "source": "Stop", "context": "DasherApp/Sources/OutputTextView.swift:380"}
 {"key": "Switch Setup", "source": "Switch Setup", "context": "DasherShared/AccessSettingsView.swift:121"}
 {"key": "System", "source": "System", "context": "DasherApp/Sources/DasherSettingsView.swift:176"}
-{"key": "Teach voices how to say a name or word, e.g. botox = bow tocks. Applies to every engine.", "source": "Teach voices how to say a name or word, e.g. botox = bow tocks. Applies to every engine.", "context": "DasherSpeech/SpeechSettingsView.swift:76"}
+{"key": "Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.", "source": "Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.", "context": "DasherSpeech/SpeechSettingsView.swift:76"}
 {"key": "The debug overlay draws a green panel top-left of the canvas showing live touch event counts and the last reported (x, y). When you pinch and hold, you should see touch.began then touch.moved with changing coordinates as you look around.", "source": "The debug overlay draws a green panel top-left of the canvas showing live touch event counts and the last reported (x, y). When you pinch and hold, you should see touch.began then touch.moved with changing coordinates as you look around.", "context": "DasherVision/Sources/VisionSettingsView.swift:133"}
 {"key": "This deletes your accumulated training data. The language model will return to built-in defaults on next launch. This cannot be undone.", "source": "This deletes your accumulated training data. The language model will return to built-in defaults on next launch. This cannot be undone.", "context": "DasherShared/TrainingTextManagement.swift:184"}
 {"key": "This model is deprecated.", "source": "This model is deprecated.", "context": "DasherSpeech/SherpaModelBrowser.swift:110"}
@@ -202,4 +205,5 @@
 {"key": "Y range:", "source": "Y range:", "context": "DasherShared/TiltCalibrationView.swift:87"}
 {"key": "You can import later in Settings > Privacy & Migration", "source": "You can import later in Settings > Privacy & Migration", "context": "DasherShared/V5MigrationViews.swift:99"}
 {"key": "You can preview this voice after the download finishes.", "source": "You can preview this voice after the download finishes.", "context": "DasherSpeech/SherpaModelBrowser.swift:116"}
+{"key": "Your exceptions", "source": "Your exceptions", "context": "DasherSpeech/SpeechSettingsView.swift:342"}
 {"key": "Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.", "source": "Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.", "context": "DasherVision/Sources/VisionContentView.swift:125"}

@@ -20,10 +20,18 @@ public enum PronunciationOverrides {
 
     /// One parsed `word = value` line. `value` is a respell, or IPA when
     /// wrapped in forward slashes.
-    struct Entry: Equatable {
+    struct Entry: Equatable, Identifiable {
         let word: String
         let respell: String?
         let ipa: String?
+
+        var id: String { "\(word)|\(respell ?? ipa ?? "")" }
+
+        /// The value as displayed: the respell, or the IPA between slashes.
+        var displayValue: String {
+            if let ipa { return "/\(ipa)/" }
+            return respell ?? ""
+        }
     }
 
     static let starterText = """
@@ -75,6 +83,40 @@ public enum PronunciationOverrides {
     static func save(_ text: String) throws {
         let url = try ensureFile()
         try text.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// The file line for an entry: `word = respell` or `word = /IPA/`.
+    static func entryLine(_ entry: Entry) -> String {
+        "\(entry.word) = \(entry.displayValue)"
+    }
+
+    /// Add (or replace, case-insensitively) an entry in the file text,
+    /// preserving comments and the rest of the file.
+    static func adding(_ entry: Entry, to text: String) -> String {
+        var lines = removing(word: entry.word, from: text)
+            .split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+        while let last = lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+            lines.removeLast()
+        }
+        lines.append(entryLine(entry))
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// Remove every line for `entry`'s word (case-insensitive) from the file
+    /// text, leaving comments and unrelated entries untouched.
+    static func removing(_ entry: Entry, from text: String) -> String {
+        removing(word: entry.word, from: text)
+    }
+
+    private static func removing(word: String, from text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { line in
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                guard !trimmed.hasPrefix("#"), let separator = trimmed.firstIndex(of: "=") else { return true }
+                let key = trimmed[..<separator].trimmingCharacters(in: .whitespaces)
+                return key.caseInsensitiveCompare(word) != .orderedSame
+            }
+            .joined(separator: "\n")
     }
 
     // MARK: - Parsing

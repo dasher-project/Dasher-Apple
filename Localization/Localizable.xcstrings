@@ -1195,6 +1195,12 @@
     "Adaptive training: %@": {
       "localizations": {}
     },
+    "Add": {
+      "localizations": {}
+    },
+    "Add a pronunciation": {
+      "localizations": {}
+    },
     "Advanced logging": {
       "localizations": {
         "af": {
@@ -3946,6 +3952,9 @@
       }
     },
     "Cancel Download": {
+      "localizations": {}
+    },
+    "Changes apply on the next utterance.": {
       "localizations": {}
     },
     "Choose File...": {
@@ -18880,6 +18889,9 @@
         }
       }
     },
+    "No pronunciation exceptions yet.": {
+      "localizations": {}
+    },
     "Not now": {
       "localizations": {
         "af": {
@@ -19467,9 +19479,6 @@
           }
         }
       }
-    },
-    "One entry per line: botox = bow tocks, or IPA between slashes: nguyen = /wɪn/. Changes apply on the next utterance.": {
-      "localizations": {}
     },
     "Open Keyboard Settings": {
       "localizations": {
@@ -25360,6 +25369,9 @@
         }
       }
     },
+    "Respelling for any voice, or IPA between slashes for voices that support phonemes.": {
+      "localizations": {}
+    },
     "Restart your Mac, then check the list again.": {
       "localizations": {
         "af": {
@@ -25948,202 +25960,6 @@
         }
       }
     },
-    "Save": {
-      "localizations": {
-        "af": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Stoor"
-          }
-        },
-        "ar": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "حفظ"
-          }
-        },
-        "bn": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "সংরক্ষণ করুন"
-          }
-        },
-        "cs": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Uložit"
-          }
-        },
-        "da": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Gem"
-          }
-        },
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Speichern"
-          }
-        },
-        "el": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Αποθήκευση"
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar"
-          }
-        },
-        "fa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ذخیره"
-          }
-        },
-        "fi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tallenna"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Enregistrer"
-          }
-        },
-        "gu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "સેવ કરો"
-          }
-        },
-        "hi": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "सहेजें"
-          }
-        },
-        "hu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mentés"
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Salva"
-          }
-        },
-        "kn": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ಉಳಿಸಿ"
-          }
-        },
-        "ml": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "സംരക്ഷിക്കുക"
-          }
-        },
-        "mr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "जतन करा"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Opslaan"
-          }
-        },
-        "pa": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ਸੇਵ ਕਰੋ"
-          }
-        },
-        "pl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zapisz"
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Salvar"
-          }
-        },
-        "pt-PT": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Guardar"
-          }
-        },
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сохранить"
-          }
-        },
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Spara"
-          }
-        },
-        "sw": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hifadhi"
-          }
-        },
-        "ta": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "சேமிக்கவும்"
-          }
-        },
-        "te": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "సేవ్ చేయండి"
-          }
-        },
-        "th": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "บันทึก"
-          }
-        },
-        "ur": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "محفوظ کریں۔"
-          }
-        },
-        "zh-CN": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "保存"
-          }
-        },
-        "zu": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Londoloza"
-          }
-        }
-      }
-    },
     "Save...": {
       "localizations": {
         "af": {
@@ -26339,6 +26155,9 @@
           }
         }
       }
+    },
+    "Says %@": {
+      "localizations": {}
     },
     "Scan Speed": {
       "localizations": {
@@ -30860,7 +30679,7 @@
         }
       }
     },
-    "Teach voices how to say a name or word, e.g. botox = bow tocks. Applies to every engine.": {
+    "Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.": {
       "localizations": {}
     },
     "The debug overlay draws a green panel top-left of the canvas showing live touch event counts and the last reported (x, y). When you pinch and hold, you should see touch.began then touch.moved with changing coordinates as you look around.": {
@@ -35586,6 +35405,9 @@
       }
     },
     "You can preview this voice after the download finishes.": {
+      "localizations": {}
+    },
+    "Your exceptions": {
       "localizations": {}
     },
     "Your gaze is tracked continuously only while you pinch and hold — this is how all visionOS gaze apps work.": {

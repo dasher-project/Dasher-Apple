@@ -59,7 +59,7 @@ public struct SpeechSettingsView: View {
         }
         #endif
         .sheet(isPresented: $showsPronunciationEditor) {
-            PronunciationEditor()
+            PronunciationEditor(service: service)
         }
     }
 
@@ -73,7 +73,7 @@ public struct SpeechSettingsView: View {
                 }
                 Spacer()
             }
-            Text("Teach voices how to say a name or word, e.g. botox = bow tocks. Applies to every engine.")
+            Text("Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -265,45 +265,128 @@ struct SpeechPreviewButton: View {
 
 struct PronunciationEditor: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var text = ""
+    var service: SpeechService
+    @State private var fileText = ""
+    @State private var newWord = ""
+    @State private var newSaying = ""
     @State private var errorMessage: String?
+
+    private var entries: [PronunciationOverrides.Entry] {
+        PronunciationOverrides.entries(from: fileText)
+    }
+
+    private var canAdd: Bool {
+        !newWord.trimmingCharacters(in: .whitespaces).isEmpty
+            && !newSaying.trimmingCharacters(in: .whitespaces).isEmpty
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 8) {
-                TextEditor(text: $text)
-                    .font(.system(.body, design: .monospaced))
-                    .accessibilityLabel("Pronunciation overrides")
-                if let errorMessage {
-                    Text(errorMessage).foregroundStyle(.red)
+            Form {
+                Section {
+                    TextField("Word or phrase", text: $newWord)
+                    TextField("Say it like — bow tocks or /wɪn/", text: $newSaying)
+                    HStack {
+                        Button {
+                            service.previewPronunciation(newSaying)
+                        } label: {
+                            Label("Preview", systemImage: "play.fill")
+                        }
+                        .disabled(!canAdd)
+                        Spacer()
+                        Button("Add", action: addEntry)
+                            .disabled(!canAdd)
+                    }
+                } header: {
+                    Text("Add a pronunciation")
+                } footer: {
+                    if let errorMessage {
+                        Text(errorMessage).foregroundStyle(.red)
+                    } else {
+                        Text("Respelling for any voice, or IPA between slashes for voices that support phonemes.")
+                    }
                 }
-                Text("One entry per line: botox = bow tocks, or IPA between slashes: nguyen = /wɪn/. Changes apply on the next utterance.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+
+                Section {
+                    if entries.isEmpty {
+                        Text("No pronunciation exceptions yet.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(entries) { entry in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(entry.word)
+                                    Text("Says \(entry.displayValue)")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Button {
+                                    service.previewOverride(entry.word)
+                                } label: {
+                                    Image(systemName: "play.circle")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Preview \(entry.word)")
+                                Button(role: .destructive) {
+                                    removeEntry(entry)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .buttonStyle(.borderless)
+                                .accessibilityLabel("Remove \(entry.word)")
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Your exceptions")
+                } footer: {
+                    Text("Changes apply on the next utterance.")
+                }
             }
-            .padding()
             .navigationTitle("Pronunciations")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        do {
-                            try PronunciationOverrides.save(text)
-                            dismiss()
-                        } catch {
-                            errorMessage = error.localizedDescription
-                        }
-                    }
+                    Button("Done") { dismiss() }
                 }
             }
             .onAppear {
-                text = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
+                fileText = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
             }
+        }
+    }
+
+    private func addEntry() {
+        let word = newWord.trimmingCharacters(in: .whitespaces)
+        let saying = newSaying.trimmingCharacters(in: .whitespaces)
+        guard !word.isEmpty, !saying.isEmpty else { return }
+        let entry: PronunciationOverrides.Entry
+        if saying.count > 2, saying.hasPrefix("/"), saying.hasSuffix("/") {
+            entry = PronunciationOverrides.Entry(word: word, respell: nil, ipa: String(saying.dropFirst().dropLast()))
+        } else {
+            entry = PronunciationOverrides.Entry(word: word, respell: saying, ipa: nil)
+        }
+        do {
+            try PronunciationOverrides.save(PronunciationOverrides.adding(entry, to: fileText))
+            fileText = PronunciationOverrides.loadText() ?? ""
+            newWord = ""
+            newSaying = ""
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func removeEntry(_ entry: PronunciationOverrides.Entry) {
+        do {
+            try PronunciationOverrides.save(PronunciationOverrides.removing(entry, from: fileText))
+            fileText = PronunciationOverrides.loadText() ?? ""
+            errorMessage = nil
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }

@@ -121,6 +121,26 @@ public final class SpeechService {
         speak(String(localized: "Hello, this is a preview of the selected voice."), phonemes: false)
     }
 
+    /// Hear how an override sounds: speaks the word through the normal
+    /// pipeline, so the file's substitutions are applied exactly as they
+    /// will be when Dasher speaks it.
+    func previewOverride(_ word: String) {
+        speak(word, phonemes: false)
+    }
+
+    /// Hear a not-yet-saved "say it like" text raw (no override application,
+    /// slashes stripped for IPA-style input).
+    func previewPronunciation(_ saying: String) {
+        let trimmed = saying.trimmingCharacters(in: .whitespaces)
+        let text: String
+        if trimmed.count > 2, trimmed.hasPrefix("/"), trimmed.hasSuffix("/") {
+            text = String(trimmed.dropFirst().dropLast())
+        } else {
+            text = trimmed
+        }
+        speak(text.isEmpty ? saying : text, phonemes: false, applyOverrides: false)
+    }
+
     public func stop() {
         speechID = UUID()
         speechTask?.cancel()
@@ -188,7 +208,7 @@ public final class SpeechService {
         #endif
     }
 
-    private func speak(_ text: String, phonemes: Bool) {
+    private func speak(_ text: String, phonemes: Bool, applyOverrides: Bool = true) {
         guard !text.isEmpty, !isImporting || !isSherpa else { return }
         stop()
         errorMessage = nil
@@ -209,7 +229,7 @@ public final class SpeechService {
         } else {
             // Apple system engine bypasses Rust, so apply the same respell
             // substitutions here for parity.
-            payload = PronunciationOverrides.applyingRespells(to: text)
+            payload = applyOverrides ? PronunciationOverrides.applyingRespells(to: text) : text
         }
 
         let complete: @MainActor (Error?) -> Void = { [weak self] error in
