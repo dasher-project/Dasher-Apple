@@ -106,6 +106,7 @@ enum DasherSettingsSection: String, CaseIterable {
 @MainActor
 class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     private var ctx: OpaquePointer?
+    private var bootstrapTask: Task<Void, Never>?
     private var lastOutputText: String = ""
     private var fontParamKey: Int = -1
     /// Current canvas font name (SP_DASHER_FONT). Shared by opcode-5 drawing
@@ -165,6 +166,17 @@ class DasherBridge: InputMethodBridge, DasherBridgeProtocol {
     ///    realize to startEngine (after the v5-migration choice).
     func bootstrap(realizeDefaultScreen: Bool = true) async {
         guard ctx == nil else { return }
+        if let bootstrapTask {
+            await bootstrapTask.value
+            return
+        }
+        let task = Task { await createEngine(realizeDefaultScreen: realizeDefaultScreen) }
+        bootstrapTask = task
+        await task.value
+        bootstrapTask = nil
+    }
+
+    private func createEngine(realizeDefaultScreen: Bool) async {
         let dataDir = self.dataDir
         let userDir = self.userDir
         let localeTag = Self.engineLocaleTag(dataDir: dataDir)

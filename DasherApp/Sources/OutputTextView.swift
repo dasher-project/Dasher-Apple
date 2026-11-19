@@ -338,11 +338,11 @@ struct OutputTextView: View {
 
     private func speechButton(showLabel: Bool) -> some View {
         Button(action: {
-            let current = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
-            viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
+            let current = viewModel.speaksWords
+            viewModel.setSpeaksWords(!current)
             UITelemetry.setting("Speak Words", !current, surface: "main_ui")
         }) {
-            let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+            let isOn = viewModel.speaksWords
             if showLabel {
                 HStack(spacing: 4) {
                     ZStack(alignment: .bottomTrailing) {

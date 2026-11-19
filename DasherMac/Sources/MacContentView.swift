@@ -5,6 +5,8 @@ import UniformTypeIdentifiers
 import CoreVideo
 
 struct MacContentView: View {
+    @AppStorage(AlphabetIndex.showAllLanguagesKey, store: SharedDefaults.fallback)
+    private var showAllAlphabetLanguages = false
     @ObservedObject var viewModel: MacDasherViewModel
     @ObservedObject private var directService: DirectModeService
     @State private var showSettings = false
@@ -570,13 +572,18 @@ struct MacContentView: View {
     }
 
     private var alphabetPicker: some View {
-        let alphabets = viewModel.bridge.allAlphabets
+        let alphabets = AlphabetIndex.visibleNames(
+            viewModel.bridge.allAlphabets.map(\.name),
+            selectedID: viewModel.bridge.alphabetId, showAll: showAllAlphabetLanguages
+        )
         return Menu {
-            ForEach(alphabets, id: \.name) { a in
-                Button(a.name) {
+            Toggle("Show All Languages", isOn: $showAllAlphabetLanguages)
+            Divider()
+            ForEach(alphabets, id: \.self) { name in
+                Button(name) {
                     AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
-                    viewModel.bridge.setAlphabetId(a.name)
-                    UITelemetry.alphabetSelected(a.name)
+                    viewModel.bridge.setAlphabetId(name)
+                    UITelemetry.alphabetSelected(name)
                 }
             }
         } label: {
@@ -714,15 +721,15 @@ struct MacContentView: View {
     }
 
     private var speechPicker: some View {
-        let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+        let isOn = viewModel.speaksWords
         return HStack(spacing: 4) {
             Menu {
                 Button("Speech on") {
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                    viewModel.setSpeaksWords(true)
                     UITelemetry.setting("Speak Words", true, surface: "main_ui")
                 }
                 Button("Speech off") {
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                    viewModel.setSpeaksWords(false)
                     UITelemetry.setting("Speak Words", false, surface: "main_ui")
                 }
             } label: {
@@ -973,10 +980,10 @@ struct MacOutputTextView: View {
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
                     Button(action: {
-                    let current = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
-                    viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: !current)
+                    let current = viewModel.speaksWords
+                    viewModel.setSpeaksWords(!current)
                     }) {
-                    let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+                    let isOn = viewModel.speaksWords
                     LucideIcon(isOn ? DasherIcon.speak : DasherIcon.mute, size: 12)
                 }
                     .buttonStyle(.bordered)

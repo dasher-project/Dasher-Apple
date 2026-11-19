@@ -335,7 +335,7 @@ struct DasherSettingsView: View {
             Section {
             let alphabets = viewModel.bridge.allAlphabets
             if !alphabets.isEmpty {
-                Picker("Alphabet", selection: Binding(
+                AlphabetPicker(names: alphabets.map(\.name), selection: Binding(
                     get: {
                     let id = viewModel.bridge.alphabetId
                     // DasherCore #88 removed the dead "Default" alphabet; old
@@ -351,11 +351,7 @@ struct DasherSettingsView: View {
                         viewModel.bridge.setAlphabetId($0)
                         UITelemetry.alphabetSelected($0)
                     }
-                )) {
-                    ForEach(alphabets, id: \.name) { a in
-                        Text(a.name).tag(a.name)
-                    }
-                }
+                ))
             }
 
             let lmId = viewModel.bridge.currentLanguageModelId

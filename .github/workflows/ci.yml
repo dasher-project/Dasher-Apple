@@ -41,7 +41,7 @@ jobs:
       - name: Guard Localizable.xcstrings against shared catalogue drift (RFC 0003)
         run: python3 Localization/gen-from-shared.py --check
 
-      - name: Run DasherShared unit tests
+      - name: Run Swift package tests
         run: swift test
 
       - name: Install xcodegen
@@ -77,5 +77,9 @@ jobs:
             -scheme DasherMac \
             -configuration Debug \
             -destination 'generic/platform=macOS' \
+            -derivedDataPath build/ci-macos \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Verify installed-copy resource signature
+        run: python3 Scripts/check-mac-install.py build/ci-macos/Build/Products/Debug/Dasher.app

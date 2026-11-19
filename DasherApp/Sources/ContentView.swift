@@ -4,6 +4,8 @@ import LucideIcons
 import UniformTypeIdentifiers
 
 struct ContentView: View {
+    @AppStorage(AlphabetIndex.showAllLanguagesKey, store: SharedDefaults.fallback)
+    private var showAllAlphabetLanguages = false
     @StateObject private var viewModel = DasherViewModel()
     @State private var showSettings = false
     @State private var currentLayoutPosition = "Right"
@@ -659,7 +661,10 @@ struct ContentView: View {
     }
 
     private var alphabetPicker: some View {
-        let alphabets = viewModel.bridge.allAlphabets
+        let alphabets = AlphabetIndex.visibleNames(
+            viewModel.bridge.allAlphabets.map(\.name),
+            selectedID: viewModel.bridge.alphabetId, showAll: showAllAlphabetLanguages
+        )
         return Button {
             showAlphabetPopover.toggle()
         } label: {
@@ -674,22 +679,25 @@ struct ContentView: View {
         .buttonStyle(.plain)
         .popover(isPresented: $showAlphabetPopover, arrowEdge: .top) {
             NavigationView {
-                List(alphabets, id: \.name) { a in
-                    Button {
-                        AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
-                        viewModel.bridge.setAlphabetId(a.name)
-                        UITelemetry.alphabetSelected(a.name)
-                        showAlphabetPopover = false
-                    } label: {
-                        HStack {
-                            Text(a.name)
-                            Spacer()
-                            if viewModel.bridge.alphabetId == a.name {
-                                LucideIcon(DasherIcon.check, size: 16, color: .accentColor)
+                List {
+                    Toggle("Show All Languages", isOn: $showAllAlphabetLanguages)
+                    ForEach(alphabets, id: \.self) { name in
+                        Button {
+                            AlphabetFollow.followsLocale = false // explicit pick pins it (RFC 0003 locale-follow)
+                            viewModel.bridge.setAlphabetId(name)
+                            UITelemetry.alphabetSelected(name)
+                            showAlphabetPopover = false
+                        } label: {
+                            HStack {
+                                Text(name)
+                                Spacer()
+                                if viewModel.bridge.alphabetId == name {
+                                    LucideIcon(DasherIcon.check, size: 16, color: .accentColor)
+                                }
                             }
                         }
+                        .foregroundColor(.primary)
                     }
-                    .foregroundColor(.primary)
                 }
                 .navigationTitle("Alphabet")
                 .navigationBarTitleDisplayMode(.inline)
@@ -837,14 +845,14 @@ struct ContentView: View {
     }
 
     private var speechPicker: some View {
-        let isOn = viewModel.bridge.getBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"))
+        let isOn = viewModel.speaksWords
         return Menu {
             Button("Speech on") {
-                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: true)
+                viewModel.setSpeaksWords(true)
                 UITelemetry.setting("Speak Words", true, surface: "main_ui")
             }
             Button("Speech off") {
-                viewModel.bridge.setBoolParameter(key: viewModel.bridge.findParameterKey("BP_SPEAK_WORDS"), value: false)
+                viewModel.setSpeaksWords(false)
                 UITelemetry.setting("Speak Words", false, surface: "main_ui")
             }
         } label: {
