@@ -219,8 +219,12 @@ public final class SpeechService {
         let credentialValues = credentialsByEngine[engineID, default: [:]]
         let options = SpeakOptions(rate: speechRate, pitch: speechPitch, volume: speechVolume, voice: voice)
         let payload: String
-        if phonemes && !isSherpa {
-            // X-SAMPA phoneme alphabet: tokens are already pronunciations.
+        if phonemes && !usesRust {
+            // X-SAMPA phoneme alphabet on the native path: swift-tts-wrapper
+            // auto-detects the SpeechMarkdown and converts it to SSML
+            // <phoneme> tags. Rust engines have no SpeechMarkdown detection,
+            // so markup sent there would be spoken literally — send raw text
+            // until the wrapper's SSML <phoneme> follow-up lands.
             payload = text.split(separator: " ").map { "(\($0))[xsampa:\"\($0)\"]" }.joined(separator: " ")
         } else if usesRust {
             // Rust engines (sherpa, cloud) apply the pronunciation-override
