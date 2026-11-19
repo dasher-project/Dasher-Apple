@@ -6,6 +6,7 @@ public struct SpeechSettingsView: View {
     @Bindable public var service: SpeechService
     @State private var isChoosingFile = false
     @State private var showsVoiceBrowser = false
+    @State private var showsPronunciationEditor = false
     @State private var importFieldID: String?
     #if os(macOS) || os(iOS)
     @State private var showsSherpaCatalog = false
@@ -34,6 +35,7 @@ public struct SpeechSettingsView: View {
                 credentialsSection
             }
             voiceSection
+            pronunciationsSection
             if let error = service.errorMessage {
                 Text(error)
                     .foregroundStyle(.red)
@@ -56,6 +58,25 @@ public struct SpeechSettingsView: View {
             SherpaModelBrowser(service: service)
         }
         #endif
+        .sheet(isPresented: $showsPronunciationEditor) {
+            PronunciationEditor()
+        }
+    }
+
+    private var pronunciationsSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Button {
+                    showsPronunciationEditor = true
+                } label: {
+                    Label("Pronunciations", systemImage: "character.book.closed")
+                }
+                Spacer()
+            }
+            Text("Teach voices how to say a name or word, e.g. botox = bow tocks. Applies to every engine.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var modelSection: some View {
@@ -239,5 +260,50 @@ struct SpeechPreviewButton: View {
             }
         }
         .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
+    }
+}
+
+struct PronunciationEditor: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var text = ""
+    @State private var errorMessage: String?
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 8) {
+                TextEditor(text: $text)
+                    .font(.system(.body, design: .monospaced))
+                    .accessibilityLabel("Pronunciation overrides")
+                if let errorMessage {
+                    Text(errorMessage).foregroundStyle(.red)
+                }
+                Text("One entry per line: botox = bow tocks, or IPA between slashes: nguyen = /wɪn/. Changes apply on the next utterance.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .navigationTitle("Pronunciations")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        do {
+                            try PronunciationOverrides.save(text)
+                            dismiss()
+                        } catch {
+                            errorMessage = error.localizedDescription
+                        }
+                    }
+                }
+            }
+            .onAppear {
+                text = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
+            }
+        }
     }
 }

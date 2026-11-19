@@ -85,6 +85,7 @@ public final class SpeechService {
 
     init(defaults: UserDefaults = SharedDefaults.fallback) {
         self.defaults = defaults
+        PronunciationOverrides.activate()
         do {
             availableEngines = try SpeechEngine.available()
         } catch {
@@ -197,9 +198,19 @@ public final class SpeechService {
         let voice = selectedVoice
         let credentialValues = credentialsByEngine[engineID, default: [:]]
         let options = SpeakOptions(rate: speechRate, pitch: speechPitch, volume: speechVolume, voice: voice)
-        let payload = phonemes && !isSherpa
-            ? text.split(separator: " ").map { "(\($0))[xsampa:\"\($0)\"]" }.joined(separator: " ")
-            : text
+        let payload: String
+        if phonemes && !isSherpa {
+            // X-SAMPA phoneme alphabet: tokens are already pronunciations.
+            payload = text.split(separator: " ").map { "(\($0))[xsampa:\"\($0)\"]" }.joined(separator: " ")
+        } else if usesRust {
+            // Rust engines (sherpa, cloud) apply the pronunciation-override
+            // file themselves; see PronunciationOverrides.activate().
+            payload = text
+        } else {
+            // Apple system engine bypasses Rust, so apply the same respell
+            // substitutions here for parity.
+            payload = PronunciationOverrides.applyingRespells(to: text)
+        }
 
         let complete: @MainActor (Error?) -> Void = { [weak self] error in
             self?.finish(requestID, error: error)

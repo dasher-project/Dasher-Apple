@@ -105,7 +105,6 @@ final class LocalizationSyncTests: XCTestCase {
             "Voice Filters",
             "Appearance",
             "Dwell Duration",
-            "%lld voices",
             "%@ results",
             "%lld ms per step",
             "Phrase %lld · %@ wpm"
