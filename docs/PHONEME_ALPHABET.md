@@ -27,10 +27,10 @@ Engine speaks with correct pronunciation
 
 | File | What |
 |---|---|
-| `DasherCore/Data/alphabets/alphabet.english.x-sampa.phonetic.xml` | New v6 alphabet — 36 phonemes in 3 groups (vowels, diphthongs, consonants) + punctuation + space |
-| `DasherCore/Data/training/training_sampa_GB.txt` | X-SAMPA training data (664 lines of phonetically transcribed English) |
-| `DasherEngine/Resources/Data/alphabets/alphabet.english.x-sampa.phonetic.xml` | Bundle copy of the alphabet |
-| `DasherEngine/Resources/Data/training/training_sampa_GB.txt` | Bundle copy of the training data |
+| `DasherEngine/Resources/Data/alphabets/alphabet.english.x-sampa.phonetic.xml` | The v6 alphabet — 36 phonemes in 3 groups (vowels, diphthongs, consonants) + punctuation + space |
+| `DasherEngine/Resources/Data/alphabets/alphabet.english.x-sampa.phonetic.symbols.xml` | Symbol-map companion for the alphabet |
+| `DasherEngine/Resources/Data/training/training_sampa_GB.txt` | X-SAMPA training data (664 lines of phonetically transcribed English) |
+| `DasherEngine/Resources/Data/training/gamemode_sampa_GB.txt` | Game-mode X-SAMPA training variant |
 | `DasherSpeech/SpeechService.swift` | Added `phonemeMode` flag; when true, wraps output in `(token)[xsampa:"token"]` SpeechMarkdown |
 | `DasherApp/Sources/DasherViewModel.swift` | Sets `speech.phonemeMode` based on `bridge.alphabetId.contains("X-SAMPA")` |
 | `DasherMac/Sources/MacDasherViewModel.swift` | Same |
