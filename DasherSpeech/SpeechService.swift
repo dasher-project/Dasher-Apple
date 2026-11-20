@@ -86,6 +86,7 @@ public final class SpeechService {
     init(defaults: UserDefaults = SharedDefaults.fallback) {
         self.defaults = defaults
         PronunciationOverrides.activate()
+        SpeechModelStorage.activateLexiconCacheDir()
         do {
             availableEngines = try SpeechEngine.available()
         } catch {
