@@ -69,8 +69,11 @@ extension SpeechSettingsTests {
             XCTAssertTrue(model.usesG2PBundle, id)
             XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: model), id)
         }
-        XCTAssertEqual(persianPiper.readiness, "blocked:bundle-not-validated")
-        XCTAssertNotNil(SpeechModelStorage.downloadUnavailableReason(for: persianPiper))
+        // v1.14.0 validated the fa locale family, so Persian piper now
+        // downloads with its G2P bundle instead of staying blocked.
+        XCTAssertEqual(persianPiper.readiness, "needs_bundle")
+        XCTAssertTrue(persianPiper.usesG2PBundle)
+        XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: persianPiper))
         XCTAssertFalse(SpeechModelStorage.isModelID("../invalid"))
     }
 

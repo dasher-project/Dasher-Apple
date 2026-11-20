@@ -34,6 +34,7 @@ public struct SpeechSettingsView: View {
                 credentialsSection
             }
             voiceSection
+            pronunciationsSection
             if let error = service.errorMessage {
                 Text(error)
                     .foregroundStyle(.red)
@@ -56,6 +57,10 @@ public struct SpeechSettingsView: View {
             SherpaModelBrowser(service: service)
         }
         #endif
+    }
+
+    private var pronunciationsSection: some View {
+        PronunciationsSection(service: service)
     }
 
     private var modelSection: some View {
@@ -239,5 +244,166 @@ struct SpeechPreviewButton: View {
             }
         }
         .disabled(service.isImporting || (service.isSherpa && !service.hasSherpaModel))
+    }
+}
+
+/// Inline pronunciation exceptions: an add form, then a scrollable list of
+/// saved entries with preview and remove. Edits rewrite the shared
+/// plain-text file; the wrapper (and the system-engine pass) pick up
+/// changes on the next utterance.
+struct PronunciationsSection: View {
+    let service: SpeechService
+    @State private var fileText = ""
+    @State private var newWord = ""
+    @State private var newSaying = ""
+    @State private var errorMessage: String?
+    @State private var wrapperCheck: String?
+
+    private var entries: [PronunciationOverrides.Entry] {
+        PronunciationOverrides.entries(from: fileText)
+    }
+
+    private var canAdd: Bool {
+        !newWord.trimmingCharacters(in: .whitespaces).isEmpty
+            && !newSaying.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    /// Wrapper-side health of the overrides file: skipped lines (typos like
+    /// `botox =`) or an inactive feature.
+    private var wrapperWarning: String? {
+        if let stats = PronunciationOverrides.wrapperStats(), stats.skipped > 0 {
+            return String(localized: "\(stats.skipped) lines couldn't be parsed — check for entries like 'botox ='.")
+        }
+        if !entries.isEmpty, !PronunciationOverrides.wrapperActive {
+            return String(localized: "Overrides aren't active in the speech engine.")
+        }
+        return nil
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("Pronunciations", systemImage: "character.book.closed")
+                .font(.headline)
+            Text("Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            TextField("Word or phrase", text: $newWord)
+            TextField("Say it like — bow tocks or /wɪn/", text: $newSaying)
+            HStack {
+                Button {
+                    service.previewPronunciation(newSaying)
+                } label: {
+                    Label("Preview", systemImage: "play.fill")
+                }
+                .disabled(!canAdd)
+                Spacer()
+                Button("Add", action: addEntry)
+                    .disabled(!canAdd)
+            }
+            if let errorMessage {
+                Text(errorMessage).foregroundStyle(.red)
+            } else if let wrapperCheck {
+                Text(wrapperCheck)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Respelling for any voice, or IPA between slashes for voices that support phonemes.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let warning = wrapperWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+
+            if entries.isEmpty {
+                Text("No pronunciation exceptions yet.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(entries) { entry in
+                            row(entry)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+                .frame(maxHeight: 240)
+            }
+            Text("Changes apply on the next utterance.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .onAppear {
+            fileText = PronunciationOverrides.loadText() ?? PronunciationOverrides.starterText
+        }
+    }
+
+    private func row(_ entry: PronunciationOverrides.Entry) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(entry.word)
+                Text("Says \(entry.displayValue)")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Button {
+                service.previewOverride(entry.word)
+            } label: {
+                Image(systemName: "play.circle")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Preview \(entry.word)")
+            Button(role: .destructive) {
+                removeEntry(entry)
+            } label: {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .accessibilityLabel("Remove \(entry.word)")
+        }
+    }
+
+    private func addEntry() {
+        let word = newWord.trimmingCharacters(in: .whitespaces)
+        let saying = newSaying.trimmingCharacters(in: .whitespaces)
+        guard !word.isEmpty, !saying.isEmpty else { return }
+        let entry: PronunciationOverrides.Entry
+        if saying.count > 2, saying.hasPrefix("/"), saying.hasSuffix("/") {
+            entry = PronunciationOverrides.Entry(word: word, respell: nil, ipa: String(saying.dropFirst().dropLast()))
+        } else {
+            entry = PronunciationOverrides.Entry(word: word, respell: saying, ipa: nil)
+        }
+        do {
+            try PronunciationOverrides.save(PronunciationOverrides.adding(entry, to: fileText))
+            fileText = PronunciationOverrides.loadText() ?? ""
+            newWord = ""
+            newSaying = ""
+            errorMessage = nil
+            // Wrapper self-test: dry-run the word to confirm the new entry
+            // actually fires end-to-end (file reloaded on mtime change).
+            let rewritten = PronunciationOverrides.dryRun(word)
+            wrapperCheck = rewritten == word
+                ? nil
+                : String(localized: "Wrapper check: \"\(word)\" → \"\(rewritten)\" ✓")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    private func removeEntry(_ entry: PronunciationOverrides.Entry) {
+        do {
+            try PronunciationOverrides.save(PronunciationOverrides.removing(entry, from: fileText))
+            fileText = PronunciationOverrides.loadText() ?? ""
+            errorMessage = nil
+            wrapperCheck = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 }

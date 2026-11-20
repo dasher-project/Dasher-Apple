@@ -1195,6 +1195,9 @@
     "Adaptive training: %@": {
       "localizations": {}
     },
+    "Add": {
+      "localizations": {}
+    },
     "Advanced logging": {
       "localizations": {
         "af": {
@@ -3946,6 +3949,9 @@
       }
     },
     "Cancel Download": {
+      "localizations": {}
+    },
+    "Changes apply on the next utterance.": {
       "localizations": {}
     },
     "Choose File...": {
@@ -18880,6 +18886,9 @@
         }
       }
     },
+    "No pronunciation exceptions yet.": {
+      "localizations": {}
+    },
     "Not now": {
       "localizations": {
         "af": {
@@ -22999,6 +23008,9 @@
         }
       }
     },
+    "Pronunciations": {
+      "localizations": {}
+    },
     "Rate": {
       "localizations": {
         "af": {
@@ -25354,6 +25366,9 @@
         }
       }
     },
+    "Respelling for any voice, or IPA between slashes for voices that support phonemes.": {
+      "localizations": {}
+    },
     "Restart your Mac, then check the list again.": {
       "localizations": {
         "af": {
@@ -26137,6 +26152,9 @@
           }
         }
       }
+    },
+    "Says %@": {
+      "localizations": {}
     },
     "Scan Speed": {
       "localizations": {
@@ -30657,6 +30675,9 @@
           }
         }
       }
+    },
+    "Teach voices how to say a name or word — respell it or give IPA. Applies to every engine.": {
+      "localizations": {}
     },
     "The debug overlay draws a green panel top-left of the canvas showing live touch event counts and the last reported (x, y). When you pinch and hold, you should see touch.began then touch.moved with changing coordinates as you look around.": {
       "localizations": {
