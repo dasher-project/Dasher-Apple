@@ -16,6 +16,18 @@ struct SpeechVoiceBrowser: View {
         let results = results
         NavigationStack {
             List {
+                #if os(iOS)
+                // safeAreaInset(edge: .top) + searchable collapses the search
+                // field on iOS 26 and leaves a dead gap between the toolbar
+                // and the filter bar — render the bar as a list row instead.
+                if !service.availableVoices.isEmpty {
+                    VoiceFilterBar(filters: $filters, metadata: service.availableVoices.map(\.metadata),
+                                   resultCount: results.count)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+                #endif
                 if service.isLoadingVoices {
                     ProgressView("Loading voices…")
                 } else if service.availableVoices.isEmpty {
@@ -43,12 +55,14 @@ struct SpeechVoiceBrowser: View {
             .buttonStyle(.plain)
             .searchable(text: $search, prompt: "Search voices")
             .navigationTitle(service.isSherpa ? "Model Speakers" : "Voices")
+            #if os(macOS)
             .safeAreaInset(edge: .top, spacing: 0) {
                 if !service.availableVoices.isEmpty {
                     VoiceFilterBar(filters: $filters, metadata: service.availableVoices.map(\.metadata),
                                    resultCount: results.count)
                 }
             }
+            #endif
             .toolbar {
                 if !service.availableVoices.isEmpty {
                     ToolbarItem {
