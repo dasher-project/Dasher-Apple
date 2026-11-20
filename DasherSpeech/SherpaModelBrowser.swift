@@ -37,6 +37,18 @@ struct SherpaModelBrowser: View {
                 if let error = service.catalogError {
                     Text(error).foregroundStyle(.red)
                 }
+                #if os(iOS)
+                // safeAreaInset(edge: .top) + searchable collapses the search
+                // field on iOS 26 and leaves a dead gap between the toolbar
+                // and the filter bar — render the bar as a list section
+                // instead.
+                Section {
+                    VoiceFilterBar(filters: $filters, metadata: entries.map(\.metadata), resultCount: results.count)
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                        .listRowBackground(Color.clear)
+                }
+                #endif
                 Section {
                     Toggle("Installed Only", isOn: $installedOnly)
                 }
@@ -56,9 +68,11 @@ struct SherpaModelBrowser: View {
             }
             .searchable(text: $search, prompt: "Search voices")
             .navigationTitle("Sherpa-ONNX Voices")
+            #if os(macOS)
             .safeAreaInset(edge: .top, spacing: 0) {
                 VoiceFilterBar(filters: $filters, metadata: entries.map(\.metadata), resultCount: results.count)
             }
+            #endif
             .navigationDestination(for: String.self) { id in
                 if let model = service.sherpaCatalog.first(where: { $0.id == id }) {
                     details(for: model)

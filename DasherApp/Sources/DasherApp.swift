@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import DasherShared
+import DasherSpeech
 
 @main
 struct DasherApp: App {
