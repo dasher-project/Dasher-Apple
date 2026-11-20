@@ -15,6 +15,21 @@ struct SpeechModelStorage {
     static var models: URL { root.appending(path: "Models", directoryHint: .isDirectory) }
     static let englishModelID = "inflect-en-nano-v2"
 
+    /// Point the wrapper's VoiceGarden lexicon cache at a guaranteed-writable
+    /// folder. The wrapper defaults to `$HOME/.voicegarden/lexicons`, and iOS
+    /// devices reject creating dot-directories at the data-container root
+    /// (the simulator permissively allows it — which is why this only fails
+    /// on real hardware). The env var is the documented override
+    /// (voicegarden-lexicons resolves it before the default). iOS only:
+    /// macOS keeps the shared default so existing caches keep working.
+    static func activateLexiconCacheDir() {
+        #if os(iOS)
+        let dir = root.appending(path: "voicegarden-lexicons", directoryHint: .isDirectory)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        setenv("VOICEGARDEN_LEXICON_DIR", dir.path, 1)
+        #endif
+    }
+
     #if os(macOS) || os(iOS)
     private static let githubAssets = URL(string: "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/")!
     private static let mmsRepository = "willwade/mms-tts-multilingual-models-onnx"
