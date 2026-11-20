@@ -29,13 +29,23 @@ its modification time changes).
 
 | Engine path | How overrides apply |
 |---|---|
-| Rust engines (sherpa-onnx, cloud) via `RustSpeechBackend` | The wrapper applies the file itself. At startup `SpeechService` calls `PronunciationOverrides.activate()`, which writes the starter file and points the wrapper at it via `setenv("RUST_TTS_PRONUNCIATIONS", path)`. The env var is the documented frontend mechanism; a typed Swift binding (`TtsClient.setPronunciationsFile`) is pending upstream (#130). |
+| Rust engines (sherpa-onnx, cloud) via `RustSpeechBackend` | The wrapper applies the file itself. At startup `SpeechService` calls `PronunciationOverrides.activate()`, which writes the starter file and points the wrapper at it via `TtsClient.setPronunciationsFile(_:)` (rust-tts-wrapper 1.16.0 Swift surface, #130/#135). |
 | Apple system engine (AVSpeechSynthesizer, via swift-tts-wrapper) | Does not go through Rust, so `SpeechService.speak` applies the same respell substitutions app-side (`PronunciationOverrides.applyingRespells`) for parity. IPA-only entries are skipped there — add a respell line too. |
-| X-SAMPA phoneme mode | Overrides are not applied — the tokens are already pronunciations. |
+| X-SAMPA phoneme mode | Overrides are not applied — the tokens are already pronunciations. SpeechMarkdown converts to SSML `<phoneme>` wrapper-side on cloud engines (`preprocess_speech_markdown`) and swift-tts-wrapper-side on the native path. |
 
 Matching rules mirror the wrapper: whole-word, case-insensitive, longest
 key first. Heteronyms (`tear` = cry vs rip) can't be solved by a static
 file — see upstream issue #125.
+
+## Wrapper-side editor support (1.16.0)
+
+- `pronunciationsStats()` flags malformed lines (`botox =`) in place — the
+  section shows a warning when anything was skipped.
+- `pronunciationsActive` badges the section when overrides aren't firing.
+- `applyPronunciations(_:)` dry-runs a saved entry after Add — the
+  "Wrapper check: … ✓" line confirms the substitution fires end-to-end.
+- The parser strips BOMs (leading and per-line), so files synced from
+  Windows editors survive.
 
 ## Files
 

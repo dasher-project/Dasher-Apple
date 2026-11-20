@@ -257,6 +257,7 @@ struct PronunciationsSection: View {
     @State private var newWord = ""
     @State private var newSaying = ""
     @State private var errorMessage: String?
+    @State private var wrapperCheck: String?
 
     private var entries: [PronunciationOverrides.Entry] {
         PronunciationOverrides.entries(from: fileText)
@@ -265,6 +266,18 @@ struct PronunciationsSection: View {
     private var canAdd: Bool {
         !newWord.trimmingCharacters(in: .whitespaces).isEmpty
             && !newSaying.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    /// Wrapper-side health of the overrides file: skipped lines (typos like
+    /// `botox =`) or an inactive feature.
+    private var wrapperWarning: String? {
+        if let stats = PronunciationOverrides.wrapperStats(), stats.skipped > 0 {
+            return String(localized: "\(stats.skipped) lines couldn't be parsed — check for entries like 'botox ='.")
+        }
+        if !entries.isEmpty, !PronunciationOverrides.wrapperActive {
+            return String(localized: "Overrides aren't active in the speech engine.")
+        }
+        return nil
     }
 
     var body: some View {
@@ -290,10 +303,20 @@ struct PronunciationsSection: View {
             }
             if let errorMessage {
                 Text(errorMessage).foregroundStyle(.red)
+            } else if let wrapperCheck {
+                Text(wrapperCheck)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             } else {
                 Text("Respelling for any voice, or IPA between slashes for voices that support phonemes.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+            }
+
+            if let warning = wrapperWarning {
+                Label(warning, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
             }
 
             if entries.isEmpty {
@@ -362,6 +385,12 @@ struct PronunciationsSection: View {
             newWord = ""
             newSaying = ""
             errorMessage = nil
+            // Wrapper self-test: dry-run the word to confirm the new entry
+            // actually fires end-to-end (file reloaded on mtime change).
+            let rewritten = PronunciationOverrides.dryRun(word)
+            wrapperCheck = rewritten == word
+                ? nil
+                : String(localized: "Wrapper check: \"\(word)\" → \"\(rewritten)\" ✓")
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -372,6 +401,7 @@ struct PronunciationsSection: View {
             try PronunciationOverrides.save(PronunciationOverrides.removing(entry, from: fileText))
             fileText = PronunciationOverrides.loadText() ?? ""
             errorMessage = nil
+            wrapperCheck = nil
         } catch {
             errorMessage = error.localizedDescription
         }

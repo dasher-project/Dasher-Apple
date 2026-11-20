@@ -1,8 +1,11 @@
 import Foundation
+#if os(macOS) || os(iOS)
+import RustTtsWrapper
+#endif
 
-/// User pronunciation overrides (rust-tts-wrapper #125/#127, exposed in
-/// aactools/rust-tts-wrapper#130 discussion): a plain-text file teaching the
-/// wrapper how words should sound —
+/// User pronunciation overrides (rust-tts-wrapper #125/#127, Swift surface
+/// landed in 1.16.0 via #130/#135): a plain-text file teaching the wrapper
+/// how words should sound —
 ///
 ///     # respell — works on every engine
 ///     botox = bow tocks
@@ -12,12 +15,10 @@ import Foundation
 /// The Rust wrapper applies this file automatically on every utterance for
 /// engines it synthesizes (sherpa-onnx, cloud). This type owns the Dasher
 /// copy of the file, points the Rust wrapper at it via
-/// `RUST_TTS_PRONUNCIATIONS`, and re-applies the same respell substitutions
-/// to the Apple system engine (AVSpeechSynthesizer), which does not go
-/// through Rust.
+/// `TtsClient.setPronunciationsFile`, and re-applies the same respell
+/// substitutions to the Apple system engine (AVSpeechSynthesizer), which
+/// does not go through Rust.
 public enum PronunciationOverrides {
-    static let envKey = "RUST_TTS_PRONUNCIATIONS"
-
     /// One parsed `word = value` line. `value` is a respell, or IPA when
     /// wrapped in forward slashes.
     struct Entry: Equatable, Identifiable {
@@ -69,11 +70,46 @@ public enum PronunciationOverrides {
         return url
     }
 
-    /// Point the Rust wrapper at the Dasher-owned file. The wrapper resolves
-    /// the path per utterance, so this only needs to happen once at startup.
+    /// Point the Rust wrapper at the Dasher-owned file (takes precedence
+    /// over the default resolution; edits apply on the next utterance).
     public static func activate() {
         guard let url = try? ensureFile() else { return }
-        setenv(envKey, url.path, 1)
+        #if os(macOS) || os(iOS)
+        TtsClient.setPronunciationsFile(url.path)
+        #endif
+    }
+
+    /// Whether the wrapper has the file loaded with at least one matching
+    /// entry. False here means overrides aren't firing (bad path, or a
+    /// bindings pin older than the feature).
+    static var wrapperActive: Bool {
+        #if os(macOS) || os(iOS)
+        TtsClient.pronunciationsActive
+        #else
+        false
+        #endif
+    }
+
+    /// The wrapper's own parse counts: entries loaded and malformed lines
+    /// skipped — lets the editor flag `botox =` typos in place.
+    static func wrapperStats() -> (entries: Int, skipped: Int)? {
+        #if os(macOS) || os(iOS)
+        let stats = TtsClient.pronunciationsStats()
+        return (entries: stats.entries, skipped: stats.skipped)
+        #else
+        return nil
+        #endif
+    }
+
+    /// Wrapper dry-run: the text after respell substitution — what a
+    /// plain-text engine will speak. Used to confirm a new entry fires
+    /// end-to-end without speaking.
+    static func dryRun(_ text: String) -> String {
+        #if os(macOS) || os(iOS)
+        TtsClient.applyPronunciations(text)
+        #else
+        text
+        #endif
     }
 
     static func loadText() -> String? {
