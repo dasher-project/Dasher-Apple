@@ -59,6 +59,13 @@ extension SpeechSettingsTests {
         XCTAssertEqual(french.voiceMetadata.languages.first?.filterName, VoiceLanguage("fr-FR").filterName)
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: english))
         XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: french))
+        // needs_bundle kokoro ships no lexicon.txt (the G2P bundle IS the
+        // dictionary — issue #98): it must still be offered for download,
+        // not gated by the pre-v2 blocked vocabulary.
+        let kokoroEn = try XCTUnwrap(models.first(where: { $0.id == "kokoro-en-v0_19" }))
+        XCTAssertEqual(kokoroEn.readiness, "needs_bundle")
+        XCTAssertTrue(kokoroEn.usesG2PBundle)
+        XCTAssertNil(SpeechModelStorage.downloadUnavailableReason(for: kokoroEn))
         for id in [
             "piper-de_DE-thorsten-medium", "piper-en_US-amy-low", "piper-fr_FR-siwis-medium",
             "piper-es_ES-sharvard-medium", "piper-pt_BR-faber-medium", "piper-it_IT-paola-medium",
