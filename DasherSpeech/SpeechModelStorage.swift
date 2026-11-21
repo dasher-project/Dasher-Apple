@@ -357,7 +357,14 @@ struct SpeechModelStorage {
         case "mms":
             required = [["model.onnx"], ["tokens.txt"]]
         case "kokoro", "kitten":
-            guard hasLexicon(in: folder) else { throw SpeechSetupError.modelNeedsLexicon }
+            // needs_bundle models phonemize through the G2P bundle — their
+            // tarballs ship no lexicon.txt (catalog v2, wrapper ≥ 1.14:
+            // readiness "needs_bundle", provisioned via
+            // tts_provision_sherpa_g2p_bundle). Dasher-GTK#122 hit the
+            // same failure and fixed it identically.
+            guard model.usesG2PBundle || hasLexicon(in: folder) else {
+                throw SpeechSetupError.modelNeedsLexicon
+            }
             required = [["model.onnx", "model.int8.onnx"], ["tokens.txt"], ["voices.bin"]]
         case "supertonic":
             required = ["duration_predictor", "text_encoder", "vector_estimator", "vocoder"].map {
